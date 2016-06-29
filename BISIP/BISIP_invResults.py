@@ -4,6 +4,11 @@ Created on Sat Apr 25 14:51:26 2015
 
 @author:    clafreniereberube@gmail.com
             École Polytechnique de Montréal
+
+Copyright (c) 2015-2016 Charles L. Bérubé
+
+This module contains functions to visualize the bayesian inversion results
+
 """
 
 #==============================================================================

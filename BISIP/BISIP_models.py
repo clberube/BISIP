@@ -5,6 +5,8 @@ Created on Tue Apr 21 12:05:22 2015
 @author:    clafreniereberube@gmail.com
             École Polytechnique de Montréal 2016
 
+Copyright (c) 2015-2016 Charles L. Bérubé
+
 This python module may be used to import SIP data, run MCMC inversion and
 return the results. It may be imported as
 from BISIP_models import mcmcSIPinv

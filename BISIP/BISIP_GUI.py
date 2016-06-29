@@ -6,6 +6,8 @@ Created on Tue Apr 21 12:05:22 2015
 @author:    clafreniereberube@gmail.com
             École Polytechnique de Montréal
 
+Copyright (c) 2015-2016 Charles L. Bérubé
+
 This python script builds the graphical user interface may be used to call the
 Bayesian inversion module for SIP models (BISIP_models.py)
 """

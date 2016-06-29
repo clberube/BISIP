@@ -9,7 +9,11 @@
 """
 Created on Wed Nov  4 14:05:35 2015
 
-@author: Charles
+@author:    clafreniereberube@gmail.com
+            École Polytechnique de Montréal
+
+Copyright (c) 2015-2016 Charles L. Bérubé
+
 """
 
 import numpy as np
