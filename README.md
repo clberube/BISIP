@@ -2,6 +2,7 @@
 Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
 1. Installation
+
   Clone or Download repository to local folder
 
   Install Python dependencies (Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter)
