@@ -17,10 +17,10 @@ import BISIP_invResults as iR
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-#model = "ColeCole"
+model = "ColeCole"
 #model = "Dias"
 #model = "Debye"
-model = "BDebye"
+#model = "BDebye"
 #model = "Shin"
 
 #==============================================================================

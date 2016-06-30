@@ -523,26 +523,37 @@ def plot_fit(data, fit, model, filepath, save=False, draw=True):
 #        plt.title(sample_name, fontsize=10)
         # Freq-Phas
         plt.axes(ax[0])
-        NRMS_P = 100*np.sqrt(np.mean((Pha_dat-Pha_fit)**2))/abs(max(Pha_dat)-min(Pha_fit))
+#        NRMS_P = 100*np.sqrt(np.mean((Pha_dat-Pha_fit)**2))/abs(max(Pha_dat)-min(Pha_fit))
         plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
-        plt.loglog(f, -Pha_fit, 'r-', label='Model (%.2f%%)'%NRMS_P)
+        plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color='0.5', alpha=0.5)
+        plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3, label='95% HPD')
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['phas'], fontsize=14)
-        plt.legend(loc=2, numpoints=1, fontsize=14)
+
+#        handles, labels = ax[0].get_legend_handles_labels()
+        # sort both labels and handles by labels
+#        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+#        ax[0].legend(handles, labels, loc=2, numpoints=1, fontsize=14)
+
+        ax[0].legend(loc=2, numpoints=1, fontsize=12)
         plt.ylim([1,1000])
 #        plt.title(sample_name, fontsize=10)
 
         # Freq-Ampl
         plt.axes(ax[1])
-        NRMS_A = 100*np.sqrt(np.mean((Amp_dat-Amp_fit)**2))/abs(max(Amp_dat)-min(Amp_fit))
+#        NRMS_A = 100*np.sqrt(np.mean((Amp_dat-Amp_fit)**2))/abs(max(Amp_dat)-min(Amp_fit))
         plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-        plt.semilogx(f, Amp_fit, 'r-', label='Model (%.2f%%)'%NRMS_A)
-        plt.fill_between(f, Amp_max, Amp_min, color='0.5', alpha=0.5)
+        plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
+        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3, label='95% HPD')
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['ampl'], fontsize=14)
-        plt.legend(numpoints=1, fontsize=14)
+
+#        handles, labels = ax[1].get_legend_handles_labels()
+        # sort both labels and handles by labels
+#        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+#        ax[1].legend(handles, labels, loc=1, numpoints=1, fontsize=14)
+        ax[1].legend(loc=1, numpoints=1, fontsize=12)
         plt.ylim([None,1.0])
 #        plt.title(sample_name, fontsize=12)
         fig.tight_layout()

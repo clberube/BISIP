@@ -75,7 +75,7 @@ def load_window_parameters():
             "Burn-in period:"   : int(itera*0.80),
             "Thinning factor:"  : 1,
             "Tuning interval:"  : 1000,
-            "Proposal scale:"   : 1,
+            "Proposal scale:"   : 1.0,
             "Nb header lines"   : 1,
             "Phase units"       : "mrad",
             "Keep txt traces"   : False,
@@ -692,6 +692,8 @@ Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
     doi:10.1190/geo2011-0244.1.
 Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
     Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
+Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
+    Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
 Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
 Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
