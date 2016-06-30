@@ -96,7 +96,7 @@ def plot_histo(MDL, model, filename, save):
     for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
         a.set_visible(False)
     if save:
-        save_where = '/Histograms/'
+        save_where = '/Figures/Histograms/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving parameter histograms in:\n", save_path
@@ -147,7 +147,7 @@ def plot_traces(MDL, model, filename, save):
         a.set_visible(False)
 
     if save:
-        save_where = '/Traces/'
+        save_where = '/Figures/Traces/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving traces figure in:\n", save_path
@@ -208,7 +208,7 @@ def plot_scores(MDL, model, filename, save):
         a.set_visible(False)
 
     if save:
-        save_where = '/Scores/'
+        save_where = '/Figures/Scores/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving Geweke scores in:\n", save_path
@@ -278,7 +278,7 @@ def plot_summary(MDL, model, filename, ch_n, save):
     ax1.set_xlabel("Parameter values")
 
     if save:
-        save_where = '/Summaries/'
+        save_where = '/Figures/Summaries/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving summary figure in:\n", save_path
@@ -327,7 +327,7 @@ def plot_autocorr(MDL, model, filename, save):
     for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
         a.set_visible(False)
     if save:
-        save_where = '/Autocorrelations/'
+        save_where = '/Figures/Autocorrelations/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving autocorrelation figure in:\n", save_path
@@ -338,29 +338,53 @@ def plot_autocorr(MDL, model, filename, save):
     except: pass
     return fig
 
-def plot_debye(pm, filename, tau, save, draw):
+def plot_debye(sol, filename, save, draw):
     if draw or save:
-        m = pm["m"]
-        fig, ax = plt.subplots(figsize=(5,8./3))
-        plt.errorbar(tau, 100*m, None, None, "-k", linewidth=2, label="Debye RTD")
+        fig, ax = plt.subplots(figsize=(6,4))
+        x = sol["data"]["tau"]
+        y = 100*sol["params"]["m"]
+        plt.errorbar(x[(x>1e-3)&(x<1e1)], y[(x>1e-3)&(x<1e1)], None, None, "-k", linewidth=2, label="Debye RTD")
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        plt.xlabel("Relaxation time (s)", fontsize=10)
-        plt.ylabel("Chargeability (%)", fontsize=10)
-        plt.yticks(fontsize=10), plt.xticks(fontsize=10)
+        plt.xlabel("Relaxation time (s)", fontsize=14)
+        plt.ylabel("Chargeability (%)", fontsize=14)
+        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
         plt.xscale("log")
-        plt.ylim([0, None])
-        plt.legend(numpoints=1, fontsize=9)
-        plt.title(filename, fontsize=10)
-#        plt.ylim([0,10])
+        plt.xlim([1e-3, 1e1])
+        plt.legend(numpoints=1, fontsize=14)
         fig.tight_layout()
     if save:
-        save_where = '/Debye distributions/'
+        save_where = '/Figures/Debye distributions/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving relaxation time distribution figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'RTD-%s.pdf'%(filename))
+        fig.savefig(save_path+'Polynomial-RTD-%s.pdf'%(filename))
+    try:    plt.close(fig)
+    except: pass
+    if draw:    return fig
+    else:       return None
+
+def plot_debye_histo(sol, filename, save, draw):
+    if draw or save:
+        fig, ax = plt.subplots(figsize=(6,4))
+        x = np.log10(sol["data"]["tau"])
+        y = 100*sol["params"]["m"]
+        plt.bar(x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], width=0.2)
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+        plt.xlabel("log Relaxation time (s)", fontsize=14)
+        plt.ylabel("Chargeability (%)", fontsize=14)
+        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
+        plt.legend(numpoints=1, fontsize=14)
+        fig.tight_layout()
+    if save:
+        save_where = '/Figures/Debye distributions/'
+        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        save_path = actual_path+save_where
+        print "\nSaving relaxation time distribution figure in:\n", save_path
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'Discrete-RTD-%s.pdf'%(filename))
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
@@ -483,48 +507,48 @@ def plot_fit(data, fit, model, filepath, save=False, draw=True):
     Amp_min = abs(fit["lo95"])/Zr0
     Amp_max = abs(fit["up95"])/Zr0
     if draw or save:
-        fig, ax = plt.subplots(3, 1, figsize=(5,8))
+        fig, ax = plt.subplots(2, 1, figsize=(6,8))
         for t in ax:
-            t.tick_params(labelsize=12)
+            t.tick_params(labelsize=14)
         # Real-Imag
-        plt.axes(ax[0])
-        plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
-        plt.plot(zn_fit.real, -zn_fit.imag, 'r-', label='Fit')
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='0.5', alpha=0.5)
-        plt.xlabel(sym_labels['real'], fontsize=12)
-        plt.ylabel(sym_labels['imag'], fontsize=12)
-        plt.legend(numpoints=1, fontsize=12)
-        plt.xlim([None, 1])
-        plt.ylim([0, None])
+#        plt.axes(ax[0])
+#        plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
+#        plt.plot(zn_fit.real, -zn_fit.imag, 'r-', label='Fit')
+#        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='0.5', alpha=0.5)
+#        plt.xlabel(sym_labels['real'], fontsize=14)
+#        plt.ylabel(sym_labels['imag'], fontsize=14)
+#        plt.legend(numpoints=1, fontsize=14)
+#        plt.xlim([None, 1])
+#        plt.ylim([0, None])
 #        plt.title(sample_name, fontsize=10)
         # Freq-Phas
-        plt.axes(ax[1])
+        plt.axes(ax[0])
         NRMS_P = 100*np.sqrt(np.mean((Pha_dat-Pha_fit)**2))/abs(max(Pha_dat)-min(Pha_fit))
         plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
-        plt.loglog(f, -Pha_fit, 'r-', label='Fit (RMSE: %.2f%%)'%NRMS_P)
-        ax[1].set_yscale("log", nonposy='clip')
+        plt.loglog(f, -Pha_fit, 'r-', label='Model (%.2f%%)'%NRMS_P)
+        ax[0].set_yscale("log", nonposy='clip')
         plt.fill_between(f, -Pha_max, -Pha_min, color='0.5', alpha=0.5)
-        plt.xlabel(sym_labels['freq'], fontsize=12)
-        plt.ylabel(sym_labels['phas'], fontsize=12)
-        plt.legend(loc=2, numpoints=1, fontsize=12)
+        plt.xlabel(sym_labels['freq'], fontsize=14)
+        plt.ylabel(sym_labels['phas'], fontsize=14)
+        plt.legend(loc=2, numpoints=1, fontsize=14)
         plt.ylim([1,1000])
 #        plt.title(sample_name, fontsize=10)
 
         # Freq-Ampl
-        plt.axes(ax[2])
+        plt.axes(ax[1])
         NRMS_A = 100*np.sqrt(np.mean((Amp_dat-Amp_fit)**2))/abs(max(Amp_dat)-min(Amp_fit))
         plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-        plt.semilogx(f, Amp_fit, 'r-', label='Fit (RMSE: %.2f%%)'%NRMS_A)
+        plt.semilogx(f, Amp_fit, 'r-', label='Model (%.2f%%)'%NRMS_A)
         plt.fill_between(f, Amp_max, Amp_min, color='0.5', alpha=0.5)
-        plt.xlabel(sym_labels['freq'], fontsize=12)
-        plt.ylabel(sym_labels['ampl'], fontsize=12)
-        plt.legend(numpoints=1, fontsize=12)
+        plt.xlabel(sym_labels['freq'], fontsize=14)
+        plt.ylabel(sym_labels['ampl'], fontsize=14)
+        plt.legend(numpoints=1, fontsize=14)
         plt.ylim([None,1.0])
 #        plt.title(sample_name, fontsize=12)
         fig.tight_layout()
 
     if save:
-        save_where = '/Fit figures/'
+        save_where = '/Figures/Fit figures/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
         print "\nSaving fit figure in:\n", save_path
@@ -593,7 +617,7 @@ def plot_par():
           u'docstring.hardcopy': True,
           u'examples.directory': u'',
           u'figure.autolayout': False,
-          u'figure.dpi': 80.0,
+          u'figure.dpi': 72.0,
           u'figure.edgecolor': u'white',
           u'figure.facecolor': u'white',
           u'figure.figsize': [6.0, 4.0],
@@ -646,15 +670,15 @@ def plot_par():
                           u'Palatino',
                           u'Charter',
                           u'serif'],
-          u'font.size': 10.0,
+          u'font.size': 14.0,
           u'font.stretch': u'normal',
           u'font.style': u'normal',
           u'font.variant': u'normal',
           u'font.weight': u'medium',
-          u'grid.alpha': 0.8,
+          u'grid.alpha': 0.3,
           u'grid.color': u'black',
           u'grid.linestyle': u':',
-          u'grid.linewidth': 0.2,
+          u'grid.linewidth': 1.0,
           u'image.aspect': u'equal',
           u'image.cmap': u'jet',
           u'image.interpolation': u'bilinear',
@@ -698,7 +722,7 @@ def plot_par():
           u'lines.linestyle': u'-',
           u'lines.linewidth': 1.0,
           u'lines.marker': u'None',
-          u'lines.markeredgewidth': 0.5,
+          u'lines.markeredgewidth': 1.0,
           u'lines.markersize': 6.0,
           u'lines.solid_capstyle': u'projecting',
           u'lines.solid_joinstyle': u'miter',
@@ -738,7 +762,7 @@ def plot_par():
           u'ps.usedistiller': False,
           u'savefig.bbox': u'tight',
           u'savefig.directory': u'~',
-          u'savefig.dpi': 72.0,
+          u'savefig.dpi': 200,
           u'savefig.edgecolor': u'white',
           u'savefig.facecolor': u'white',
           u'savefig.format': u'pdf',
@@ -772,17 +796,17 @@ def plot_par():
           u'xtick.labelsize': 12.0,
           u'xtick.major.pad': 4.0,
           u'xtick.major.size': 6.0,
-          u'xtick.major.width': 0.7,
+          u'xtick.major.width': 1.0,
           u'xtick.minor.pad': 4.0,
           u'xtick.minor.size': 3.0,
-          u'xtick.minor.width': 0.7,
+          u'xtick.minor.width': 1.0,
           u'ytick.color': u'k',
           u'ytick.direction': u'in',
           u'ytick.labelsize': 12.0,
           u'ytick.major.pad': 4.0,
           u'ytick.major.size': 6.0,
-          u'ytick.major.width': 0.7,
+          u'ytick.major.width': 1.0,
           u'ytick.minor.pad': 4.0,
           u'ytick.minor.size': 3.0,
-          u'ytick.minor.width': 0.7}
+          u'ytick.minor.width': 1.0}
     return rc

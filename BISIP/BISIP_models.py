@@ -71,7 +71,7 @@ def get_data(filename,headers,ph_units):
 # Arguments: model <pymc model object>, maximum amplitude measured <float>
 def format_results(M, Z_max):
     var_keys = [s.__name__ for s in M.stochastics] + [d.__name__ for d in M.deterministics]
-    var_keys = [s for s in var_keys if s not in ["zmod"]]
+    var_keys = [s for s in var_keys if s not in ["zmod", "mp"]]
     Mst = M.stats(chain=-1)
     pm = {k: Mst[k]["mean"] for k in var_keys}
     pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
@@ -194,14 +194,11 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
         def m(a=a):
             return np.sum((a*log_taus.T).T, axis=0)
         @pymc.deterministic(plot=False)
-        def totalM(m=m, a=a):
-            return np.sum(m[(log_tau > -2)&(log_tau < 1)])
+        def totalM(m=m):
+            return np.sum(m[(log_tau > -3)&(log_tau < 1)])
         @pymc.deterministic(plot=False)
         def log_meanTau(m=m, totalM=totalM, a=a):
-            return np.log10(np.exp(np.sum(m[(log_tau > -2)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -2)&(log_tau < 1)]))/totalM))
-#        @pymc.deterministic(plot=False)
-#        def U(m=m, totalM=totalM, a=a):
-#            return tau_10[np.argmax(np.cumsum(m/totalM) > 0.6)] / tau_10[np.argmax(np.cumsum(m/totalM) > 0.1)]
+            return np.log10(np.exp(np.sum(m[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/totalM))
         # Likelihood
         obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
         return locals()
@@ -210,24 +207,30 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
 ##==============================================================================
 #    """Debye Bayesian Model"""
 ##==============================================================================
-#    def DebyeModel(poly_n):
-#        # Initial guesses
-#        p0 = {'R0'         : 1.00,
-#              'mp'         : [1/len(tau_10)]*len(tau_10),
-#             }
-#        # Stochastics
-#        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
-#        mp = pymc.Uniform('mp', lower=-4.0, upper=3.0, value=p0['mp'], size=len(tau_10))
-#        # Deterministics
-#        @pymc.deterministic(plot=False)
-#        def m(mp=mp):
-#            return m_cyth(mp)
-#        @pymc.deterministic(plot=False)
-#        def zmod(R0=R0, m=m):
-#            return Debye_cyth2(w, tau_10, R0, m)
-#        # Likelihood
-#        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2,n_freq), observed=True)
-#        return locals()
+    def BruteDebyeModel():
+        # Initial guesses
+        p0 = {'R0'         : 1.00,
+              'mp'         : [1/len(tau_10)]*len(tau_10),
+             }
+        # Stochastics
+        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
+        mp = pymc.Uniform('mp', lower=-4.0, upper=3.0, value=p0['mp'], size=len(tau_10))
+        # Deterministics
+        @pymc.deterministic(plot=False)
+        def m(mp=mp):
+            return m_cyth(mp)
+        @pymc.deterministic(plot=False)
+        def totalM(m=m):
+            return np.sum(m[(log_tau > -3)&(log_tau < 1)])
+        @pymc.deterministic(plot=False)
+        def log_meanTau(m=m, totalM=totalM):
+            return np.log10(np.exp(np.sum(m[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/totalM))
+        @pymc.deterministic(plot=False)
+        def zmod(R0=R0, m=m):
+            return Debye_cyth2(w, tau_10, R0, m)
+        # Likelihood
+        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2,n_freq), observed=True)
+        return locals()
 
 #==============================================================================
     """
@@ -239,7 +242,6 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
     seigle_m = ((data["amp"][-1] - data["amp"][0]) / data["amp"][-1] ) # Estimating Seigel chargeability
     w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
     n_freq = len(w)
-#    n_freq = 50
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
     log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), n_freq)
 
@@ -269,10 +271,11 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
     #==========================================================================
     """
     # "ColeCole", "Dias", "Debye" or "Shin"
-    sim_dict = {"ColeCole": {"func": ColeColeModel, "args": [cc_modes]   },
-                "Dias":     {"func": DiasModel,     "args": []           },
-                "Debye":    {"func": DebyeModel,    "args": [debye_poly] },
-                "Shin":     {"func": ShinModel,     "args": []           },
+    sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [cc_modes]   },
+                "Dias":     {"func": DiasModel,         "args": []           },
+                "Debye":    {"func": DebyeModel,        "args": [debye_poly] },
+                "BDebye":   {"func": BruteDebyeModel,   "args": [] },
+                "Shin":     {"func": ShinModel,         "args": []           },
 #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
                 }
     simulation = sim_dict[model] # Pick entries for the selected model

@@ -142,7 +142,7 @@ def run_inversion():
     sel_files = [str(open_files[i]) for i in text_files.curselection()]
     if len(sel_files) == 0:
         tkMessageBox.showwarning("Inversion error",
-                                 "No data selected for inversion \nImport and select at least one data file first", parent=root)
+                                 "No data selected for inversion \nSelect at least one data file in the left panel", parent=root)
     if len(sel_files) >= 1:
         try:
             Inversion()
@@ -199,7 +199,9 @@ def Inversion():
         if check_vars[0][1].get():
             plot_window(fig_fit, "Inversion results: "+f_n)
         if model == "Debye":
-            iR.plot_debye(sol["params"], f_n, sol["data"]["tau"], save=check_vars[1][1].get(), draw=False)
+            iR.plot_debye(sol, f_n, save=check_vars[1][1].get(), draw=False)
+        if model == "BDebye":
+            iR.plot_debye_histo(sol, f_n, save=check_vars[1][1].get(), draw=False)
         if check_vars[2][1].get():
             iR.plot_histo(all_results[f_n]["MDL"], model, f_n, save=True)
             iR.plot_traces(all_results[f_n]["MDL"], model, f_n, save=True)
@@ -315,7 +317,12 @@ def plot_fit_now():
 def plot_rtd_now():
     f_n = var_review.get()
     pm = all_results[f_n]["pm"]
-    fig_debye = iR.plot_debye(pm, f_n, sol["data"]["tau"], save=False, draw=True)
+    fig_debye = iR.plot_debye(sol, f_n, save=False, draw=True)
+    plot_window(fig_debye, "Debye RTD: "+f_n)
+
+def plot_rtdhisto_now():
+    f_n = var_review.get()
+    fig_debye = iR.plot_debye_histo(sol, f_n, save=False, draw=True)
     plot_window(fig_debye, "Debye RTD: "+f_n)
 
 def plot_window(fig, name):
@@ -518,14 +525,20 @@ def diagn_buttons():
                             command = plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
         but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
 
+    if mod.get() == "BDebye":
+        but_rtd = tk.Button(frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
+                            command = plot_rtdhisto_now, font=fontz["normal_small"], relief=tk.GROOVE)
+        but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+
+
 #==============================================================================
 # Block for model frame
 def model_choice():
     # Available models
     models = [("Pelton Cole-Cole","ColeCole"),
               ("Dias model","Dias"),
-              ("Debye decomposition","Debye"),
-              ("R-CPE circuits (Shin)","Shin"),]
+              ("Polynomial Debye","Debye"),
+              ("Discrete Debye","BDebye"),]
     modes_n, poly_n = tk.IntVar(), tk.IntVar()
     modes_n.set(root_ini["Nb modes"]), poly_n.set(root_ini["Polyn order"])    # Initial values for sliders in case None given
     def draw_rtd_check():
@@ -713,22 +726,21 @@ Amplitude units may be Ohm-m or Ohm
 A number of header lines may be skipped in the main window
 In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines
-The "Current (A)" column is NOT required
-Data must be formatted using the following template:
 Scientific or standard notation is OK
+Data must be formatted using the following template:
 
 =============================================================================
 
-Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg), Current (A)
-6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02, 5.47134e-05
-3.000e+03, 1.22177e+05, -1.46221e+02, 1.392825e+01, 1.134464e-01, 5.24889e-05
-1.500e+03, 1.25553e+05, -9.51099e+01, 2.762214e+01, 2.199114e-01, 5.10578e-05
-........., ..........., ............, ............, ............, ...........
-........., ..........., ............, ............, ............, ...........
-........., ..........., ............, ............, ............, ...........
-4.575e-02, 1.66153e+05, -1.21143e+01, 1.947314e+02, 1.171115e+00, 3.57086e-05
-2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00, 3.51025e-05
-1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00, 3.44761e-05
+Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
+6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02
+3.000e+03, 1.22177e+05, -1.46221e+02, 1.392825e+01, 1.134464e-01
+1.500e+03, 1.25553e+05, -9.51099e+01, 2.762214e+01, 2.199114e-01
+........., ..........., ............, ............, ............
+........., ..........., ............, ............, ............
+........., ..........., ............, ............, ............
+4.575e-02, 1.66153e+05, -1.21143e+01, 1.947314e+02, 1.171115e+00
+2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00
+1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
 =============================================================================
 """
@@ -797,18 +809,19 @@ def about(fontz):
     top.title("About")
     top.lift()
     tk.Label(top,
-              text="""Stochastic inversion of spectral induced polarization data""",
+              text="""Bayesian inversion of spectral induced polarization data""",
               justify = tk.CENTER, font=fontz["bold"]).grid(row=0, column=0,columnspan=2,pady=(10,10), padx=(10,10))
     tk.Label(top,
-              text="""École Polytechnique de Montréal
+              text="""Copyright (c) 2015-2016 Charles L. Bérubé
+École Polytechnique de Montréal
 Groupe de recherche en géophysique appliquée
-2015""",
+""",
               justify = tk.CENTER).grid(row=1, column=0,columnspan=2, pady=(10,10), padx=(10,10))
-    tk.Label(top, font=fontz["normal"],
+    tk.Label(top,
               text="""Contact:""",
               justify = tk.CENTER).grid(row=2, column=0,columnspan=1, pady=(10,10), padx=(10,10))
-    about_message = """clafreniereberube@gmail.com"""
-    msg = tk.Text(top, height=1, width=27, font=fontz["normal"])
+    about_message = """charleslberube@gmail.com"""
+    msg = tk.Text(top, height=1, width=27)
     msg.grid(row=2,column=1,padx=(10,10), pady=(10,10))
     msg.insert("1.0", about_message)
     button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
@@ -821,7 +834,7 @@ Groupe de recherche en géophysique appliquée
 #==============================================================================
 # Window start
 root = tk.Tk()
-root.wm_title("Spectral IP MCMC inversion tool")
+root.wm_title("Bayesian inversion of SIP data using MCMC")
 root.option_add("*Font", window_font)
 #==============================================================================
 # Build and display menu

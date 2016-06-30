@@ -17,9 +17,10 @@ import BISIP_invResults as iR
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-model = "ColeCole"
+#model = "ColeCole"
 #model = "Dias"
 #model = "Debye"
+model = "BDebye"
 #model = "Shin"
 
 #==============================================================================
@@ -31,6 +32,7 @@ mcmc_params = {'nb_chain'   : 1,
                'thin'       : 1,
                'prop_scale' : 1,
                'tune_inter' : 1000,
+               'verbose'    : False,
                }
 
 #==============================================================================
@@ -74,9 +76,6 @@ for i, fn in enumerate(filename):
     """Plot fit and data ?"""
     if True:
         fig_fit = iR.plot_fit(sol["data"], sol["fit"], model, fn, save=True)
-#        plt.bar(np.log10(sol["data"]["tau"]), sol["params"]["m"], width=0.2)
-#        plt.yscale("log")
-#        plt.show()
 
     """Save results ?"""
     if False:
@@ -84,7 +83,7 @@ for i, fn in enumerate(filename):
 
     """Plot Debye relaxation time distribution ?"""
     if False:
-        fig_RTD = iR.plot_debye(sol["params"], fn, save=False, draw=True)
+        fig_RTD = iR.plot_debye(sol, fn, save=False, draw=True)
 
     """Print numerical results ?"""
     if True:
