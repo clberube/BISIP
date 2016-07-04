@@ -26,14 +26,14 @@ model = "ColeCole"
 #==============================================================================
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
-mcmc_params = {'nb_chain'   : 1,
-               'nb_iter'    : 10000,
-               'nb_burn'    : 9000,
-               'thin'       : 1,
-               'prop_scale' : 1,
-               'tune_inter' : 1000,
-               'verbose'    : False,
-               }
+mcmc_p = {'nb_chain'   : 1,
+          'nb_iter'    : 10000,
+          'nb_burn'    : 9000,
+          'thin'       : 1,
+          'prop_scale' : 1,
+          'tune_inter' : 1000,
+          'verbose'    : False,
+          }
 
 #==============================================================================
 """ 3.
@@ -71,7 +71,7 @@ ph_units = "mrad"
 # Call to the inversion function for every file
 for i, fn in enumerate(filename):
     print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
-    sol = mcmcSIPinv(model, mcmc_params, fn, headers=skip_header, ph_units=ph_units, debye_poly=4, keep_traces=False)
+    sol = mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, debye_poly=4, keep_traces=False)
 
     """Plot fit and data ?"""
     if True:
@@ -156,9 +156,14 @@ Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
     doi:10.1190/geo2011-0244.1.
 Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
     Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
+Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
+    Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
 Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
 Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
     “Mineral Discrimination and Removal of Inductive Coupling with
     Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
-"""
+Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
+    Circuit Model for Spectral Induced Polarization Data Analysis of Ore
+    Samples.” Environmental Earth Sciences 74 (7): 5711–16.
+    doi:10.1007/s12665-015-4588-z."""

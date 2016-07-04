@@ -185,9 +185,9 @@ def Inversion():
         activity(f_n,files.index(f_n),len(files),done=False)
         var_review.set(f_n)
 
-        sol = mcmcSIPinv(model, mcmc_params, sel_files[i], headers=headers,
-                         ph_units=units, cc_modes=modes_n.get(),
-                         debye_poly=poly_n.get(),
+        sol = mcmcSIPinv(model, sel_files[i], mcmc= mcmc_params,
+                         headers=headers, ph_units=units,
+                         cc_modes=modes_n.get(), debye_poly=poly_n.get(),
                          keep_traces=check_vars[3][1].get())
 
         all_results[f_n] = {"pm":sol["params"],"MDL":sol["pymc_model"],"data":sol["data"],"fit":sol["fit"]}
@@ -640,7 +640,7 @@ def main_frames():
     frame_mcmc.grid(row = 7, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15), ipady=3)
     frame_mcmc.grid_columnconfigure(0, weight=1)
     frame_ruex = tk.LabelFrame(root, text="4. Options", width=200, height=4, font=fontz["bold"])
-    frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,10))
+    frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=(5,10))
     frame_ruex.columnconfigure(0, weight=1)
     frame_list = tk.LabelFrame(root, text="List of imported files", font=fontz["bold"])
     frame_list.grid(row = 0, column=0, columnspan=1, rowspan=15, sticky=tk.W+tk.E+tk.N+tk.S, padx=10, pady=(5,10))
@@ -698,11 +698,7 @@ Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
 Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
     “Mineral Discrimination and Removal of Inductive Coupling with
-    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
-Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
-    Circuit Model for Spectral Induced Polarization Data Analysis of Ore
-    Samples.” Environmental Earth Sciences 74 (7): 5711–16.
-    doi:10.1007/s12665-015-4588-z."""
+    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839."""
 
     msg = tk.Text(top, height=30, font=('courier', size, 'normal'))
     msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
@@ -719,7 +715,6 @@ def example(size):
     about_message = """DATA FILE TEMPLATE
 
 Save data in .csv, .txt, .dat, ... extension file
-All files must have the same extension if doing batch inversion
 Comma separation between columns is mandatory
 Column order is very important
 Phase units may be milliradians, radians or degrees

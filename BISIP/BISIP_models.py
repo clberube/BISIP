@@ -85,7 +85,16 @@ def format_results(M, Z_max):
 # Main inversion function.
 # Import in script using
 # from BISIP_models import mcmcSIPinv
-def mcmcSIPinv(model, mc_p, filename, headers=1,
+# Default MCMC parameters:
+mcmc_params = {"nb_chain"   : 1,
+               "nb_iter"    : 10000,
+               "nb_burn"    : 8000,
+               "thin"       : 1,
+               "tune_inter" : 1000,
+               "prop_scale" : 1.0,
+               "verbose"    : False,
+                }
+def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
                ph_units="mrad", cc_modes=2, debye_poly=4, keep_traces=False):
 
 #==============================================================================
@@ -171,7 +180,7 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
 #==============================================================================
     """Debye Bayesian Model"""
 #==============================================================================
-    def DebyeModel(debye_poly):
+    def PolyDebyeModel(debye_poly):
         # Initial guesses
         p0 = {'R0'         : 1.0,
               'a'          : ([0.01, -0.001, -0.001, 0.001, 0.001]+[0.0]*(debye_poly-4))[:(debye_poly+1)],
@@ -207,7 +216,7 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
 ##==============================================================================
 #    """Debye Bayesian Model"""
 ##==============================================================================
-    def BruteDebyeModel():
+    def DiscDebyeModel():
         # Initial guesses
         p0 = {'R0'         : 1.00,
               'mp'         : [1/len(tau_10)]*len(tau_10),
@@ -273,13 +282,13 @@ def mcmcSIPinv(model, mc_p, filename, headers=1,
     # "ColeCole", "Dias", "Debye" or "Shin"
     sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [cc_modes]   },
                 "Dias":     {"func": DiasModel,         "args": []           },
-                "Debye":    {"func": DebyeModel,        "args": [debye_poly] },
-                "BDebye":   {"func": BruteDebyeModel,   "args": [] },
+                "PDebye":   {"func": PolyDebyeModel,    "args": [debye_poly] },
+                "DDebye":   {"func": DiscDebyeModel,    "args": []           },
                 "Shin":     {"func": ShinModel,         "args": []           },
 #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
                 }
     simulation = sim_dict[model] # Pick entries for the selected model
-    MDL = run_MCMC(simulation["func"](*simulation["args"]), mc_p, save_path) # Run MCMC simulation with selected model and arguments
+    MDL = run_MCMC(simulation["func"](*simulation["args"]), mcmc, save_path) # Run MCMC simulation with selected model and arguments
     if not keep_traces: rmtree(save_path)   # Deletes the traces if not wanted
 
     """
