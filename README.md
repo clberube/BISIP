@@ -27,7 +27,7 @@
   
   Where `mcmc_params` is a python dictionary:
   `mcmc_params = {"nb_chain"   : 1,
-  
+                   
                   "nb_iter"    : 50000,
                   
                   "nb_burn"    : 40000,
