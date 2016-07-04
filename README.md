@@ -42,6 +42,7 @@
 Save data in .csv, .txt, .dat, ... extension file  
 Comma separation between columns is mandatory  
 Column order is very important  
+Frequency, Amplitude, Phase, Error of Amplitude, Error of Phase
 Phase units may be milliradians, radians or degrees  
 Units are specified in main GUI window or as function argument (e.g. `ph_units="mrad"`)  
 Amplitude units may be Ohm-m or Ohm  
@@ -49,8 +50,9 @@ A number of header lines may be skipped in the main GUI window or as function ar
 In this example Nb header lines = 1  
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
-Data must be formatted using the following template:  
+**Data must be formatted using the following template:**  
 
+=============================================================================  
 Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)  
 6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02  
 3.000e+03, 1.22177e+05, -1.46221e+02, 1.392825e+01, 1.134464e-01  
@@ -60,7 +62,7 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
 ........., ..........., ............, ............, ............  
 4.575e-02, 1.66153e+05, -1.21143e+01, 1.947314e+02, 1.171115e+00  
 2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00  
-1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00  
+1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
 **4. References**
 
