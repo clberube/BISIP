@@ -1,5 +1,6 @@
 # BISIP
-###### Bayesian inference of spectral induced polarization parameters (Python 2.7)
+#### Bayesian inference of spectral induced polarization parameters (Python 2.7)
+#
 
 **1. Installation**
 
