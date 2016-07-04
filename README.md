@@ -106,8 +106,3 @@ This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
     “Mineral Discrimination and Removal of Inductive Coupling with
     Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
     
-<sub>Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
-    Circuit Model for Spectral Induced Polarization Data Analysis of Ore
-    Samples.” Environmental Earth Sciences 74 (7): 5711–16.
-    doi:10.1007/s12665-015-4588-z.<sub>
-
