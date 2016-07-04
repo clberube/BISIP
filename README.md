@@ -9,15 +9,15 @@
   
 **2. Usage**
   
-  Run BISIP_GUI.py to start the GUI
+  a. Run BISIP_GUI.py to start the GUI
   
-  OR
+  **_OR_**
 
-  Import the inversion function using:
+  b. Import the inversion function using:
   
   `from BISIP_models import mcmcSIPinv`
   
-  And obtain results using all default arguments
+  And obtain results using all default arguments and MCMC parameters with:
   
   `sol = mcmcSIPinv("ColeCole", "/Documents/DataFiles/DATA.dat")`
   
@@ -32,10 +32,10 @@
                   "thin"       : 1,
                   "tune_inter" : 1000,
                   "prop_scale" : 1.0,
-                  "verbose"    : False,
+                  "verbose"    : False
                   }`
   
-  (See run_BISIP.py for an example script on how to use the function)
+  (See run_BISIP.py for an example script on how to use the inversion function and plot results)
 
 This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
 
