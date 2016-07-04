@@ -1,6 +1,5 @@
 # BISIP
-#### Bayesian inference of spectral induced polarization parameters (Python 2.7)
-#
+## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
 **1. Installation**
 
@@ -14,7 +13,8 @@
 
   Import the inversion function using:
   
-  from BISIP_models import mcmcSIPinv
+  `from BISIP_models import mcmcSIPinv`
+  `sol = mcmcSIPinv("ColeCole", "/Users/User/Documents/DataFiles/DATA.dat")`
   
   (See run_BISIP.py for an example script on how to use the function)
 
