@@ -28,7 +28,9 @@
   
   The full list of optional arguments is:
   
-    sol = mcmcSIPinv(model="ColeCole", filename="/Documents/DataFiles/DATA.dat", mcmc=mcmc_params, headers=1, ph_units="mrad", cc_modes=2, debye_poly=4, keep_traces=False)
+    sol = mcmcSIPinv( model="ColeCole", filename="/Documents/DataFiles/DATA.dat", 
+                      mcmc=mcmc_params, headers=1, ph_units="mrad", cc_modes=2, 
+                      debye_poly=4, keep_traces=False)
   
   Where `mcmc_params` is a python dictionary:
   
@@ -40,6 +42,11 @@
                   "prop_scale" : 1.0,
                   "verbose"    : False
                   }
+  
+  And`sol` is a self-explanatory python dictionary containing the results:
+  
+    In []: sol.keys()
+    Out[]: ['pymc_model', 'params', 'fit', 'data']
   
   (See run_BISIP.py for an example script on how to use the inversion function and plot results)
 
@@ -70,7 +77,7 @@ Scientific or standard notation is OK
 
 **3. Building the standalone GUI executable**
 
-Install pyinstaller `pip install pyinstaller` 
+Install pyinstaller `pip install pyinstaller`  
 Open a terminal to the directory where BISIP_GUI.py is located  
 Enter the following:
 
