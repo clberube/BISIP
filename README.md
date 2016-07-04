@@ -46,40 +46,40 @@ This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
     Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
     73 (6): F247–59. doi:10.1190/1.2976115.
     
-Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
+<sub>Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
     Electrical Polarization of Rocks.” Geophysics 65 (2): 437–51.
     doi:10.1190/1.1444738.
     
-Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
+<sub>Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
     Stochastic Simulation for Bayesian Inference, Second Edition. CRC Press.
     
-Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
+<sub>Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
     “Bayesian Inference of the Cole–Cole Parameters from Time- and Frequency-
     Domain Induced Polarization.” Geophysical Prospecting 55 (4): 589–605.
     doi:10.1111/j.1365-2478.2007.00627.x.
     
-Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
+<sub>Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
     Science & Business Media.
     
-Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
+<sub>Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
     “Markov-Chain Monte Carlo Estimation of Distributed Debye Relaxations in
     Spectral Induced Polarization.” Geophysics 77 (2): E159–70.
     doi:10.1190/geo2011-0244.1.
     
-Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
+<sub>Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
     Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
     
-Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
+<sub>Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
     Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
     
-Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
+<sub>Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
     
-Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
+<sub>Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
     “Mineral Discrimination and Removal of Inductive Coupling with
     Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
     
-Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
+<sub>Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
     Circuit Model for Spectral Induced Polarization Data Analysis of Ore
     Samples.” Environmental Earth Sciences 74 (7): 5711–16.
     doi:10.1007/s12665-015-4588-z.<sub>
