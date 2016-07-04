@@ -66,7 +66,7 @@
 Save data in .csv, .txt, .dat, ... extension file  
 Comma separation between columns is mandatory  
 Column order is very important  
-Frequency, Amplitude, Phase, Error of Amplitude, Error of Phase
+Frequency, Amplitude, Phase, Error of Amplitude, Error of Phase  
 Phase units may be milliradians, radians or degrees  
 Units are specified in main GUI window or as function argument (e.g. `ph_units="mrad"`)  
 Amplitude units may be Ohm-m or Ohm  
