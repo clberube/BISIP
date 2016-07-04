@@ -27,19 +27,12 @@
   
   Where `mcmc_params` is a python dictionary:
   `mcmc_params = {"nb_chain"   : 1,
-                   
                   "nb_iter"    : 50000,
-                  
                   "nb_burn"    : 40000,
-                  
                   "thin"       : 1,
-                  
                   "tune_inter" : 1000,
-                  
                   "prop_scale" : 1.0,
-                  
                   "verbose"    : False,
-                  
                   }`
   
   (See run_BISIP.py for an example script on how to use the function)
