@@ -37,8 +37,6 @@
   
   (See run_BISIP.py for an example script on how to use the inversion function and plot results)
 
-**3. Data file template**
-
 Save data in .csv, .txt, .dat, ... extension file  
 Comma separation between columns is mandatory  
 Column order is very important  
@@ -64,7 +62,21 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
 2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00  
 1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
-**4. References**
+**3. Building the standalone GUI executable**
+
+Install pyinstaller (`pip install pyinstaller`)  
+Open a terminal to the directory where BISIP_GUI.py is located  
+Enter the following:  
+`pyinstaller --hidden-import=scipy.linalg.cython_blas --hidden-import=scipy.linalg.cython_lapack --hidden-import=scipy.special._ufuncs_cxx --onefile BISIP_GUI.py`
+
+**4. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
+
+Install cython (`conda install cython`)  
+Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
+Enter the following:
+`python cython_setup.py build_ext --inplace`
+
+**5. References**
 
 This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
 
