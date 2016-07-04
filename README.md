@@ -20,27 +20,41 @@
 
   Import the inversion function using:
   
-  `from BISIP_models import mcmcSIPinv`
+    from BISIP_models import mcmcSIPinv
   
   And obtain results using all default arguments and MCMC parameters with:
   
-  `sol = mcmcSIPinv("ColeCole", "/Documents/DataFiles/DATA.dat")`
+    sol = mcmcSIPinv("ColeCole", "/Documents/DataFiles/DATA.dat")
   
   The full list of optional arguments is:
   
-  `sol = mcmcSIPinv(model="ColeCole", filename="/Documents/DataFiles/DATA.dat", mcmc=mcmc_params, headers=1, ph_units="mrad", cc_modes=2, debye_poly=4, keep_traces=False)`
+    sol = mcmcSIPinv(model="ColeCole", filename="/Documents/DataFiles/DATA.dat", mcmc=mcmc_params, headers=1, ph_units="mrad", cc_modes=2, debye_poly=4, keep_traces=False)
   
   Where `mcmc_params` is a python dictionary:
-  `mcmc_params = {"nb_chain"   : 1,
+  
+    mcmc_params = {"nb_chain"  : 1,
                   "nb_iter"    : 50000,
                   "nb_burn"    : 40000,
                   "thin"       : 1,
                   "tune_inter" : 1000,
                   "prop_scale" : 1.0,
                   "verbose"    : False
-                  }`
+                  }
   
   (See run_BISIP.py for an example script on how to use the inversion function and plot results)
+
+**Data must be formatted using the following template:**  
+
+    Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)  
+    6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02  
+    3.000e+03, 1.22177e+05, -1.46221e+02, 1.392825e+01, 1.134464e-01  
+    1.500e+03, 1.25553e+05, -9.51099e+01, 2.762214e+01, 2.199114e-01  
+    ........., ..........., ............, ............, ............  
+    ........., ..........., ............, ............, ............  
+    ........., ..........., ............, ............, ............  
+    4.575e-02, 1.66153e+05, -1.21143e+01, 1.947314e+02, 1.171115e+00  
+    2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00  
+    1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
 Save data in .csv, .txt, .dat, ... extension file  
 Comma separation between columns is mandatory  
@@ -53,34 +67,26 @@ A number of header lines may be skipped in the main GUI window or as function ar
 In this example Nb header lines = 1  
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
-**Data must be formatted using the following template:**  
-
-=============================================================================  
-Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)  
-6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02  
-3.000e+03, 1.22177e+05, -1.46221e+02, 1.392825e+01, 1.134464e-01  
-1.500e+03, 1.25553e+05, -9.51099e+01, 2.762214e+01, 2.199114e-01  
-........., ..........., ............, ............, ............  
-........., ..........., ............, ............, ............  
-........., ..........., ............, ............, ............  
-4.575e-02, 1.66153e+05, -1.21143e+01, 1.947314e+02, 1.171115e+00  
-2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00  
-1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
 **3. Building the standalone GUI executable**
 
-Install pyinstaller (`pip install pyinstaller`)  
+Install pyinstaller `pip install pyinstaller` 
 Open a terminal to the directory where BISIP_GUI.py is located  
-Enter the following:  
-`pyinstaller --hidden-import=scipy.linalg.cython_blas --hidden-import=scipy.linalg.cython_lapack --hidden-import=scipy.special._ufuncs_cxx --onefile BISIP_GUI.py`
+Enter the following:
+
+```sh
+pyinstaller --hidden-import=scipy.linalg.cython_blas --hidden-import=scipy.linalg.cython_lapack --hidden-import=scipy.special._ufuncs_cxx --onefile BISIP_GUI.py
+```
 
 **4. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
 
-Install cython (`conda install cython`)  
+Install cython `conda install cython`  
 Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
 Enter the following:
-`python cython_setup.py build_ext --inplace`
 
+```sh
+python cython_setup.py build_ext --inplace
+```
 **5. References**
 
 This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
