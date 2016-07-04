@@ -1,7 +1,7 @@
 # BISIP
-# Bayesian inference of spectral induced polarization parameters (Python 2.7)
+###### Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
-1. Installation
+**1. Installation**
 
   Clone or Download repository to local folder
 
@@ -17,7 +17,7 @@
   
   (See run_BISIP.py for an example script on how to use the function)
 
-2. Usage
+**2. Usage**
 
 This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
 
