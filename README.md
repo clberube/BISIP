@@ -41,11 +41,11 @@
 
 This code uses part of the PyMC package (https://github.com/pymc-devs/pymc)
 
-<sub><sup>
+<sub>
 Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
     Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
-    73 (6): F247–59. doi:10.1190/1.2976115.
+    73 (6): F247–59. doi:10.1190/1.2976115. <sub>
     
 Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
     Electrical Polarization of Rocks.” Geophysics 65 (2): 437–51.
@@ -84,4 +84,4 @@ Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
     Circuit Model for Spectral Induced Polarization Data Analysis of Ore
     Samples.” Environmental Earth Sciences 74 (7): 5711–16.
     doi:10.1007/s12665-015-4588-z.
-<sub><sup>
+
