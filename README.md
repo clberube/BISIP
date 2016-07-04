@@ -7,6 +7,11 @@
 
   Install Python dependencies (Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter)
   
+  **_OR_**
+  
+  Download the executables (OS X and Windows) directly at:  
+  <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>
+  
 **2. Usage**
   
   Run BISIP_GUI.py to start the GUI
