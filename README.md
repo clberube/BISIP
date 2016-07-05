@@ -5,10 +5,7 @@
 
   Clone or Download repository to local folder  
   Install Python dependencies (Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter)  
-  PyMC can be installed using:
-  
-    conda install pymc  
-  
+  PyMC can be installed with: `conda install pymc`  
   Other dependencies are installed with most Python distributions
   
   **_OR_**
@@ -82,7 +79,7 @@ Scientific or standard notation is OK
 
 **3. Building the standalone GUI executable**
 
-Install pyinstaller `pip install pyinstaller`  
+Install pyinstaller with: `pip install pyinstaller`  
 Open a terminal to the directory where BISIP_GUI.py is located  
 Enter the following:
 
@@ -92,7 +89,7 @@ pyinstaller --hidden-import=scipy.linalg.cython_blas --hidden-import=scipy.linal
 
 **4. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
 
-Install cython `conda install cython`  
+Install cython with: `conda install cython`  
 Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
 Enter the following:
 
