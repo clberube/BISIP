@@ -166,8 +166,6 @@ python cython_setup.py build_ext --inplace
 ```
 **5. References**
 
-This code uses part of the PyMC package (<https://github.com/pymc-devs/pymc>)
-
 <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
     Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
