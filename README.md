@@ -48,12 +48,71 @@
                   "verbose"    : False
                   }
   
-  And`sol` is a self-explanatory python dictionary containing the results:
+  And `sol` is a self-explanatory python dictionary containing the results:
   
     In []: sol.keys()
     Out[]: ['pymc_model', 'params', 'fit', 'data']
   
-  (See run_BISIP.py for an example script on how to use the inversion function and plot results)
+  Example for a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
+  
+  To return the optimal parameters:
+  
+    In []: sol['params']
+    Out[]: {'R0': 51467.05483286261,
+            'R0_std': 126.18837609979391,
+            'c': array([2.127E-01, 5.805E-01]),
+            'c_std': array([5.864E-03, 5.611E-03]),
+            'm': array([1.435E-01, 9.887E-01]),
+            'm_std': array([2.895E-03, 9.175E-03]),
+            'tau': array([1.267E+01, 1.692E-06]),
+            'tau_std': array([7.253E-01, 2.692E-08])}
+  
+    In []: sol['params']['c']
+    Out[]: array([2.127E-01, 5.805E-01])
+  
+  To return the most probable fit:
+  
+    In []: sol['fit']['best']
+    Out[]: array([ 74597.52558689-51642.13051532j,   93161.78463202-47966.09987357j,
+                  114306.00769672-40047.86385792j,  130011.45140055-31266.24589905j,
+                  141037.77202291-23556.40715467j,  148726.78729011-17693.58212181j,
+                  154298.97343568-13715.72484526j,  158636.12650627-11383.13733406j,
+                  162542.62504439-10328.76045588j,  166394.88440487-10315.84443450j,
+                  170630.34483685-11057.19749671j,  175545.93354632-12264.58908308j,
+                  181309.50373747-13593.27424061j,  187893.01650757-14645.93643453j,
+                  195018.29894754-15052.77811872j,  202194.30663152-14608.94172405j,
+                  208878.89960888-13367.96063622j,  214673.56872037-11595.75771159j,
+                  219414.69115156 -9622.59282482j,  223136.12001005 -7714.70066947j,
+                  225977.95223702 -6028.20247440j,  228111.44641247 -4623.37088204j])
+
+To return the raw data:
+
+    In []: sol['data']['Z']
+    Out[]: array([ 70409.92224316-59566.43355993j,   92155.36514813-51271.53207947j,
+                  112377.54681250-38393.49877798j,  125216.20900653-28188.83940559j,
+                  134110.39775196-21264.63487700j,  140950.11273197-16854.94020560j,
+                  146799.44963326-13978.74885751j,  152007.69171323-12459.91437639j,
+                  156629.40293082-11484.14222119j,  161202.23795165-11420.09275102j,
+                  171100.34202259-10458.80049734j,  175794.43251825-10979.19172297j,
+                  178848.45995427-12658.91499277j,  183653.19719158-14360.61529841j,
+                  190138.06667213-15416.72216746j,  197532.07600391-15226.31555521j,
+                  204703.73156468-13802.76032524j,  211153.63099728-11636.01274762j,
+                  217279.66579033 -9154.96275503j,  225820.90718799 -6727.65204251j,
+                  232480.53201552 -5313.6790781j ,  242925.22993713 -4502.38295756j])
+  
+  Plotting the comparison
+  
+    import matplotlib.pyplot as plt
+    plt.plot(sol['data']['Z'].real, sol['data']['Z'].imag)
+    plt.plot(sol['fit']['best'].real, sol['fit']['best'].imag)
+
+  The inversion function also returns the full PyMC object:
+  
+    In []: sol['pymc_model']
+    Out[]: <pymc.MCMC.MCMC at 0x11e37a110>
+  
+  See run_BISIP.py for an example script on how to use the inversion function and plot results  
+  See the PyMC documentation (<https://pymc-devs.github.io/pymc/>) to extract information from the PyMC object
 
 **Data must be formatted using the following template:**  
 
