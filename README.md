@@ -55,9 +55,7 @@
     In []: sol.keys()
     Out[]: ['pymc_model', 'params', 'fit', 'data']
   
-  Example for a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
-  
-  To return the optimal parameters:
+  For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
   
     In []: sol['params']
     Out[]: {'R0': 51467.05483286261,
