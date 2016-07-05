@@ -2,7 +2,7 @@
 """
 Created on Tue Apr 21 12:05:22 2015
 
-@author:    clafreniereberube@gmail.com
+@author:    charleslberube@gmail.com
             École Polytechnique Montréal
 
 Copyright (c) 2015-2016 Charles L. Bérubé
