@@ -4,12 +4,18 @@
 **1. Installation**
 
   Clone or Download repository to local folder  
-  Install Python dependencies (Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter)
+  Install Python dependencies (Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter)  
+  PyMC can be installed using:
+  
+    conda install pymc  
+  
+  Other dependencies are installed with most Python distributions
   
   **_OR_**
   
-  Download the executables (OS X and Windows) directly at:  
+  Download the binaries (OS X or Windows) directly at:  
   <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>
+  The binaries are standalone and do not require a Python installation
   
 **2. Usage**
   
