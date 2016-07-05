@@ -5,9 +5,11 @@
 
   Clone or Download repository to local folder  
   Dependencies: Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter  
-  PyMC (<https://github.com/pymc-devs/pymc>) can be installed with:
+  PyMC (<https://github.com/pymc-devs/pymc>) is installed with any of the following:
   
     conda install pymc
+    pip install pymc
+    easy_install pymc
   
   Other dependencies are automatically installed with most Python distributions
   
