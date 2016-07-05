@@ -198,11 +198,10 @@ This code uses part of the PyMC package (<https://github.com/pymc-devs/pymc>)
     
 <sub>Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
     Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
-    
-<sub>Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
-    Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
-    
+
 <sub>Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
     “Mineral Discrimination and Removal of Inductive Coupling with
     Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
-    
+
+<sub>Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
+    Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
