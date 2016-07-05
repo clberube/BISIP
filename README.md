@@ -145,7 +145,7 @@ Install pyinstaller with:
 
     pip install pyinstaller
 
-Open a terminal to the directory where BISIP_GUI.py is located  
+Open a terminal to the directory where BISIP_GUI.py and BISIP_GUI.spec are located  
 Enter the following:
 
 ```sh
