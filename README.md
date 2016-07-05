@@ -7,7 +7,7 @@
   Dependencies: Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter  
   PyMC (<https://github.com/pymc-devs/pymc>) can be installed with:
   
-    conda install pymc`
+    conda install pymc
   
   Other dependencies are automatically installed with most Python distributions
   
