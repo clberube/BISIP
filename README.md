@@ -17,7 +17,12 @@
   
   Download the binaries (OS X or Windows) directly at:  
   <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
-  The binaries are standalone and do not require a Python installation
+  The binaries are standalone and do not require a Python installation  
+  Extract the BISIP Workplace folder to a local directory  
+  Launch the executable in BISIP Workplace  
+  A terminal window will open, allow a few seconds to load Python  
+  Import example data files and launch inversions using the default MCMC parameters  
+  Results are saved in subfolders inside the BISIP Workplace folder
   
 **2. Usage**
   
