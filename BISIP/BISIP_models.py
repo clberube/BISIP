@@ -220,6 +220,8 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         # Initial guesses
         p0 = {'R0'         : 1.00,
               'mp'         : [1/len(tau_10)]*len(tau_10),
+              'TotalM'     : None,
+              'log_MeanTau': None,
              }
         # Stochastics
         R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
@@ -307,7 +309,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
 
     # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc_params}
+    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc}
     # End of inversion
 
 

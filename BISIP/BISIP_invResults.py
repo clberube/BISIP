@@ -237,11 +237,14 @@ def plot_summary(sol, save):
     MDL, model, ch_n = sol["pymc_model"], sol["SIP_model"], sol["mcmc"]["nb_chain"]
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]      
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
+
     keys.remove("zmod")
-    if model == "Debye":
-        adj = -1
+    if model == "PDebye":
+        keys.remove("m")  
+    if model == "DDebye":
+        keys.remove("mp")
         keys.remove("m")
-    else: adj = 0
+    adj = 0
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -254,7 +257,6 @@ def plot_summary(sol, save):
     gs2 = gridspec.GridSpec(3, 3)
     ax1 = plt.subplot(gs2[:, :-1])
     ax2 = plt.subplot(gs2[:, -1], sharey = ax1)
-    ax1.set_title(filename)
     ax2.set_xlabel("R-hat")
     ax2.plot([1,1], [-1,len(keys)], "--b")
     for (i, k) in enumerate(keys):
