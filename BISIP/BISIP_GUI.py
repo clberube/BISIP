@@ -24,6 +24,7 @@ from warnings import filterwarnings
 filterwarnings('ignore') # Ignore some tkinter warnings
 # GUI imports
 import Tkinter as tk
+import FixTk
 import tkFileDialog, tkMessageBox
 import FileDialog, tkFont # These 2 only to avoid pyinstaller error
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
