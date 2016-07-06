@@ -203,10 +203,10 @@ def Inversion():
         if model == "DDebye":
             iR.plot_debye_histo(sol, save=check_vars[1][1].get(), draw=False)
         if check_vars[2][1].get():
-            iR.plot_histo(all_results[f_n]["MDL"], model, f_n, save=True)
-            iR.plot_traces(all_results[f_n]["MDL"], model, f_n, save=True)
-            iR.plot_summary(all_results[f_n]["MDL"], model, f_n, mcmc_vars[0][1].get(), save=True)
-            iR.plot_autocorr(all_results[f_n]["MDL"], model, f_n, save=True)
+            iR.plot_histo(all_results[f_n]["sol"], save=True)
+            iR.plot_traces(all_results[f_n]["sol"], save=True)
+            iR.plot_summary(all_results[f_n]["sol"], save=True)
+            iR.plot_autocorr(all_results[f_n]["sol"], save=True)
         if files.index(f_n)+1 == len(files):
             activity(f_n,files.index(f_n),len(files),done=True)
             diagn_buttons()
@@ -255,7 +255,7 @@ def plot_diagnostic(which):
             geweke_plot = iR.plot_scores(all_results[f_n]["sol"], save=False)
             plot_window(geweke_plot, "Geweke scores: "+filename)
         if which == "summary":
-            summa_plot = iR.plot_summary(all_results[f_n]["sol"], mcmc_vars[0][1].get(), save=False)
+            summa_plot = iR.plot_summary(all_results[f_n]["sol"], save=False)
             plot_window(summa_plot, "Parameter summary: "+f_n)
         stdout.flush()
     except:

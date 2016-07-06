@@ -98,7 +98,7 @@ for i, fn in enumerate(filename):
 
     """Plot parameter summary and Gelman-Rubin convergence test ?"""
     if False:
-        fig_summary = iR.plot_summary(sol["pymc_model"])
+        fig_summary = iR.plot_summary(sol["pymc_model"], )
 
 #==============================================================================
 #===========================DATA FILE TEMPLATE=================================

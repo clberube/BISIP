@@ -307,7 +307,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
 
     # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename}
+    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc_params}
     # End of inversion
 
 

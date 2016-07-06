@@ -233,7 +233,9 @@ def plot_scores(MDL, model, filename, save):
     except: pass
     return fig
 
-def plot_summary(MDL, model, filename, ch_n, save):
+def plot_summary(sol, save):
+    MDL, model, ch_n = sol["pymc_model"], sol["SIP_model"], sol["mcmc"]["nb_chain"]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]      
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
     keys.remove("zmod")
     if model == "Debye":
