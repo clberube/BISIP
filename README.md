@@ -155,7 +155,11 @@ Open a terminal to the directory where BISIP_GUI.py and BISIP_GUI.spec are locat
 Enter the following:
 
 ```sh
-pyinstaller BISIP_GUI.spec
+pyinstaller BISIP_GUI_win.spec
+```  
+Or  
+```sh
+pyinstaller BISIP_GUI_osx.spec
 ```
 
 **5. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
