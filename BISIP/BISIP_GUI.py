@@ -190,18 +190,18 @@ def Inversion():
                          cc_modes=modes_n.get(), debye_poly=poly_n.get(),
                          keep_traces=check_vars[3][1].get())
 
-        all_results[f_n] = {"pm":sol["params"],"MDL":sol["pymc_model"],"data":sol["data"],"fit":sol["fit"]}
+        all_results[f_n] = {"pm":sol["params"],"MDL":sol["pymc_model"],"data":sol["data"],"fit":sol["fit"], "sol":sol}
 #         Impression ou non des résultats, graphiques, histogrammes
-        update_results(sol["params"], sol["pymc_model"], model)
-        iR.print_resul(sol["params"], model, f_n)
-        iR.save_resul(sol["pymc_model"], sol["params"], model, f_n)
+        update_results(sol)
+        iR.print_resul(sol)
+        iR.save_resul(sol)
         fig_fit = iR.plot_fit(sol["data"], sol["fit"], model, f_n, save=check_vars[1][1].get(), draw=check_vars[0][1].get())
         if check_vars[0][1].get():
             plot_window(fig_fit, "Inversion results: "+f_n)
-        if model == "Debye":
-            iR.plot_debye(sol, f_n, save=check_vars[1][1].get(), draw=False)
-        if model == "BDebye":
-            iR.plot_debye_histo(sol, f_n, save=check_vars[1][1].get(), draw=False)
+        if model == "PDebye":
+            iR.plot_debye(sol, save=check_vars[1][1].get(), draw=False)
+        if model == "DDebye":
+            iR.plot_debye_histo(sol, save=check_vars[1][1].get(), draw=False)
         if check_vars[2][1].get():
             iR.plot_histo(all_results[f_n]["MDL"], model, f_n, save=True)
             iR.plot_traces(all_results[f_n]["MDL"], model, f_n, save=True)
@@ -240,23 +240,23 @@ def preview_data():
                                  "Can't draw data\nImport and select at least one data file first", parent=root)
 
 def plot_diagnostic(which):
-    filename = var_review.get()
+    f_n = var_review.get()
     try:
         if which == "traces":
-            trace_plot = iR.plot_traces(all_results[filename]["MDL"], mod.get(), filename, save=False)
-            plot_window(trace_plot, "Parameter traces: "+filename)
+            trace_plot = iR.plot_traces(all_results[f_n]["sol"], save=False)
+            plot_window(trace_plot, "Parameter traces: "+f_n)
         if which == "histo":
-            histo_plot = iR.plot_histo(all_results[filename]["MDL"], mod.get(), filename, save=False)
-            plot_window(histo_plot, "Parameter histograms: "+filename)
+            histo_plot = iR.plot_histo(all_results[f_n]["sol"], save=False)
+            plot_window(histo_plot, "Parameter histograms: "+f_n)
         if which == "autocorr":
-            autocorr_plot = iR.plot_autocorr(all_results[filename]["MDL"], mod.get(), filename, save=False)
-            plot_window(autocorr_plot, "Parameter autocorrelation: "+filename)
+            autocorr_plot = iR.plot_autocorr(all_results[f_n]["sol"], save=False)
+            plot_window(autocorr_plot, "Parameter autocorrelation: "+f_n)
         if which == "geweke":
-            geweke_plot = iR.plot_scores(all_results[filename]["MDL"], mod.get(), filename, save=False)
+            geweke_plot = iR.plot_scores(all_results[f_n]["sol"], save=False)
             plot_window(geweke_plot, "Geweke scores: "+filename)
         if which == "summary":
-            summa_plot = iR.plot_summary(all_results[filename]["MDL"], mod.get(), filename, mcmc_vars[0][1].get(), save=False)
-            plot_window(summa_plot, "Parameter summary: "+filename)
+            summa_plot = iR.plot_summary(all_results[f_n]["sol"], mcmc_vars[0][1].get(), save=False)
+            plot_window(summa_plot, "Parameter summary: "+f_n)
         stdout.flush()
     except:
         tkMessageBox.showwarning("Error analyzing results", "Error\nProblem with inversion results\nTry adding iterations",
@@ -311,18 +311,16 @@ def plot_fit_now():
     data = all_results[f_n]["data"]
     fit = all_results[f_n]["fit"]
     fig_fit = iR.plot_fit(data, fit, mod.get(), f_n, save=False, draw=True)
-    print f_n
     plot_window(fig_fit, "Inversion results: "+f_n)
 
 def plot_rtd_now():
     f_n = var_review.get()
-    pm = all_results[f_n]["pm"]
-    fig_debye = iR.plot_debye(sol, f_n, save=False, draw=True)
+    fig_debye = iR.plot_debye(all_results[f_n]["sol"], save=False, draw=True)
     plot_window(fig_debye, "Debye RTD: "+f_n)
 
 def plot_rtdhisto_now():
     f_n = var_review.get()
-    fig_debye = iR.plot_debye_histo(sol, f_n, save=False, draw=True)
+    fig_debye = iR.plot_debye_histo(all_results[f_n]["sol"], save=False, draw=True)
     plot_window(fig_debye, "Debye RTD: "+f_n)
 
 def plot_window(fig, name):
@@ -409,19 +407,21 @@ def write_output_path():
     text_path.grid(row=1, column=0, columnspan=1, sticky=tk.W+tk.E, padx=0)
     text_path.insert("1.0", "%s" %(working_path))
 
-def update_results(pm, MDL, model):
+def update_results(sol):    
     global all_items, text_res, label_res
     global frame_optimal
+    pm, model = sol["params"], sol["SIP_model"]
     try:    frame_optimal.destroy()
     except: pass
     frame_optimal = tk.Frame(frame_results)
     frame_optimal.grid(row=2, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
     frame_optimal.columnconfigure(0, weight=1)
     keys = sorted([x for x in pm.keys() if "_std" not in x])
-    if model == "Debye":
+    if model in ["PDebye", "DDebye"]:
         adj = -1
         if "m" in keys: keys.remove("m")
-    else:   adj = 0
+    else:   
+        adj = 0
     values = flatten([pm[k] for k in sorted(keys)])
     errors = flatten([pm[k+"_std"] for k in sorted(keys)])
     for (i, k) in enumerate(keys):
@@ -471,12 +471,12 @@ def drop_down(files,val):
     frame_drop.columnconfigure(0,weight=1)
     var_review = tk.StringVar()
     var_review.set(files[val])
-    def change_file(v,mdl,m):
+    def change_file(s):
         clear(menu=False)
-        update_results(v,mdl,m)
+        update_results(s)
         diagn_buttons()
         write_output_path()
-    optionmenu = tk.OptionMenu(frame_drop, var_review, *files, command=lambda x: change_file(all_results[var_review.get()]["pm"],all_results[var_review.get()]["MDL"],mod.get()))
+    optionmenu = tk.OptionMenu(frame_drop, var_review, *files, command=lambda x: change_file(all_results[var_review.get()]["sol"]))
     optionmenu.grid(row=0, column=0, sticky=tk.W+tk.E+tk.S)
     optionmenu.config(bg = "gray97", relief=tk.GROOVE)
 
@@ -520,12 +520,12 @@ def diagn_buttons():
 #    but_gew = tk.Button(frame_results, height=1, text = "Geweke scores", fg='black',
 #                        command = lambda: plot_diagnostic("geweke"))
 #    but_gew.grid(row=4, column=0, sticky=tk.W+tk.E+tk.S, padx=10, pady=0)
-    if mod.get() == "Debye":
+    if mod.get() == "PDebye":
         but_rtd = tk.Button(frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
                             command = plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
         but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
 
-    if mod.get() == "BDebye":
+    if mod.get() == "DDebye":
         but_rtd = tk.Button(frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
                             command = plot_rtdhisto_now, font=fontz["normal_small"], relief=tk.GROOVE)
         but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
@@ -537,8 +537,8 @@ def model_choice():
     # Available models
     models = [("Pelton Cole-Cole","ColeCole"),
               ("Dias model","Dias"),
-              ("Polynomial Debye","Debye"),
-              ("Discrete Debye","BDebye"),]
+              ("Polynomial Debye","PDebye"),
+              ("Discrete Debye","DDebye"),]
     modes_n, poly_n = tk.IntVar(), tk.IntVar()
     modes_n.set(root_ini["Nb modes"]), poly_n.set(root_ini["Polyn order"])    # Initial values for sliders in case None given
     def draw_rtd_check():
@@ -548,7 +548,7 @@ def model_choice():
         mod_opt_frame = tk.Frame(frame_model)
         mod_opt_frame.grid(row=0, column=1, rowspan=4)
         mod_opt_frame.grid_rowconfigure(4, weight=1)
-        if mod.get() == "Debye":
+        if mod.get() == "PDebye":
             poly_lab = tk.Label(mod_opt_frame, text="""Polyn order""", justify = tk.LEFT, font=fontz["normal_small"])
             poly_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
             poly_scale = tk.Scale(mod_opt_frame, variable=poly_n, width=10, length=70, from_=3, to=5, font=fontz["normal_small"], orient=tk.HORIZONTAL)

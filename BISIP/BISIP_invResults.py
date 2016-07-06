@@ -40,9 +40,10 @@ def flatten(x):
             result.append(el)
     return result
 
-def print_resul(pm, model, filename):
+def print_resul(sol):
 #==============================================================================
     # Impression des résultats
+    pm, model, filename = sol["params"], sol["SIP_model"], sol["path"]
     print '\n\nInversion success!'
     print 'Name of file:', filename
     print 'Model used:', model
@@ -53,9 +54,16 @@ def print_resul(pm, model, filename):
     for l, v, e in zip(labels, v_keys, e_keys):
         print l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v]))
 
-def plot_histo(MDL, model, filename, save):
+def plot_histo(sol, save):
+    MDL, model = sol["pymc_model"], sol["SIP_model"]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]    
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
+    if model == "PDebye":
+        keys.remove("m")  
+    if model == "DDebye":
+        keys.remove("mp")
+        keys.remove("m")
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -107,10 +115,16 @@ def plot_histo(MDL, model, filename, save):
     except: pass
     return fig
 
-def plot_traces(MDL, model, filename, save):
+def plot_traces(sol, save):
+    MDL, model = sol["pymc_model"], sol["SIP_model"]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]  
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
-
+    if model == "PDebye":
+        keys.remove("m")  
+    if model == "DDebye":
+        keys.remove("mp")
+        keys.remove("m")
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -290,13 +304,17 @@ def plot_summary(MDL, model, filename, ch_n, save):
 
     return fig
 
-def plot_autocorr(MDL, model, filename, save):
+def plot_autocorr(sol, save):
+    MDL, model = sol["pymc_model"], sol["SIP_model"]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]  
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
     keys.remove("zmod")
-    if model == "Debye":
-        adj = -1
-        keys.remove("m")
-    else: adj = 0
+    if model == "PDebye":
+        keys.remove("m")  
+    if model == "DDebye":
+        keys.remove("mp")
+        keys.remove("m")    
+    adj = 0
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -338,19 +356,21 @@ def plot_autocorr(MDL, model, filename, save):
     except: pass
     return fig
 
-def plot_debye(sol, filename, save, draw):
+def plot_debye(sol, save, draw):
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
-        x = sol["data"]["tau"]
-        y = 100*sol["params"]["m"]
-        plt.errorbar(x[(x>1e-3)&(x<1e1)], y[(x>1e-3)&(x<1e1)], None, None, "-k", linewidth=2, label="Debye RTD")
+        x = np.log10(sol["data"]["tau"])
+        x = np.linspace(min(x), max(x),100)
+        y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol["params"]["a"])], axis=0)
+        plt.errorbar(10**x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], None, None, "-k", linewidth=2, label="Debye RTD")
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         plt.xlabel("Relaxation time (s)", fontsize=14)
         plt.ylabel("Chargeability (%)", fontsize=14)
         plt.yticks(fontsize=14), plt.xticks(fontsize=14)
         plt.xscale("log")
         plt.xlim([1e-3, 1e1])
-        plt.legend(numpoints=1, fontsize=14)
+        plt.legend(numpoints=1, fontsize=14, loc="best")
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'
@@ -365,17 +385,18 @@ def plot_debye(sol, filename, save, draw):
     if draw:    return fig
     else:       return None
 
-def plot_debye_histo(sol, filename, save, draw):
+def plot_debye_histo(sol, save, draw):
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
         x = np.log10(sol["data"]["tau"])
         y = 100*sol["params"]["m"]
-        plt.bar(x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], width=0.2)
+        plt.bar(x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], width=0.2, label="Debye RTD")
         ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
         plt.xlabel("log Relaxation time (s)", fontsize=14)
         plt.ylabel("Chargeability (%)", fontsize=14)
         plt.yticks(fontsize=14), plt.xticks(fontsize=14)
-        plt.legend(numpoints=1, fontsize=14)
+        plt.legend(numpoints=1, fontsize=14, loc="best")
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'
@@ -390,8 +411,11 @@ def plot_debye_histo(sol, filename, save, draw):
     if draw:    return fig
     else:       return None
 
-def save_resul(MDL, pm, model, filepath):
+def save_resul(sol):
     # Fonction pour enregistrer les résultats
+
+    MDL, pm, model, filepath = sol["pymc_model"], sol["params"], sol["SIP_model"], sol["path"]
+
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
 
     save_where = '/Results/'
@@ -414,6 +438,12 @@ def save_resul(MDL, pm, model, filepath):
                 headers.append(key+"%d" %(i+tag))
     headers = ','.join(headers)
     results = np.array(flatten(A))
+    if model in ["DDebye", "PDebye"]:
+        tau_ = sol["data"]["tau"]
+        add = ["tau"+"%d"%(i+1) for i in range(len(tau_))]
+        add = ',' + ','.join(add)
+        headers += add
+        results = np.concatenate((results,tau_))
     np.savetxt(save_path+'INV_%s_%s.csv' %(model,sample_name), results[None],
                header=headers, comments='', delimiter=',')
     vars_ = ["%s"%x for x in MDL.stochastics]+["%s"%x for x in MDL.deterministics]

@@ -17,10 +17,10 @@ import BISIP_invResults as iR
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-model = "ColeCole"
+#model = "ColeCole"
 #model = "Dias"
-#model = "Debye"
-#model = "BDebye"
+model = "PDebye"
+#model = "DDebye"
 #model = "Shin"
 
 #==============================================================================
@@ -51,7 +51,7 @@ filename = [
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-            "/Users/Charles/Documents/SIP dat files/SIP-Reciprocals_K389175_avg.dat",
+            "C:\Users\Charles\Documents\Python Scripts\BISIP\Example data\SIP-K389170_avg.dat",
             ]
 
 #==============================================================================
@@ -78,20 +78,20 @@ for i, fn in enumerate(filename):
         fig_fit = iR.plot_fit(sol["data"], sol["fit"], model, fn, save=True)
 
     """Save results ?"""
-    if False:
-        iR.save_resul(sol["pymc_model"], sol["params"], model, fn)
+    if True:
+        iR.save_resul(sol)
 
     """Plot Debye relaxation time distribution ?"""
     if False:
-        fig_RTD = iR.plot_debye(sol, fn, save=False, draw=True)
+        fig_RTD = iR.plot_debye(sol, save=True, draw=True)
 
     """Print numerical results ?"""
     if True:
-        iR.print_resul(sol["params"], model, fn)
+        iR.print_resul(sol)
 
     """Plot parameter histograms ?"""
     if False:
-        fig_histo = iR.plot_histo(sol["pymc_model"], model, fn, False)
+        fig_histo = iR.plot_histo(sol, save=False)
 
     if False:
         fig_trace = iR.plot_traces(sol["pymc_model"], model, fn, False)
