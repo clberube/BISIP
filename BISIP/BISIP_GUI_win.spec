@@ -28,4 +28,4 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=True, icon='MC.ico')
+          console=True, icon='casino.ico', version='versionfile.txt')
