@@ -1,10 +1,22 @@
 # BISIP
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
-**1. Installation**
+**1. Standalone executables**
+  
+  Download the standalone binaries (OS X or Windows) directly at:  
+  <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
+  a. Extract the BISIP Workplace folder to a local directory  
+  b. Launch the executable in BISIP Workplace  
+  c. A terminal window will open, allow a few seconds to load Python  
+  d. Import example data files and launch inversions using the default MCMC parameters  
+  e. Results are saved in subfolders inside the BISIP Workplace folder
 
-   Clone or Download repository to local folder  
-   Dependencies: Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter  
+**_OR_**
+
+**2. Installing with a Python distribution**
+
+  Clone or Download repository to local folder  
+  Dependencies: Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter  
   PyMC (<https://github.com/pymc-devs/pymc>) is installed with any of the following:
   
     conda install pymc
@@ -13,18 +25,7 @@
   
   Other dependencies are automatically installed with most Python distributions
   
-  **_OR_**
-  
-  Download the standalone binaries (OS X or Windows) directly at:  
-  <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
-  
-  a. Extract the BISIP Workplace folder to a local directory
-  b. Launch the executable in BISIP Workplace
-  c. A terminal window will open, allow a few seconds to load Python
-  d. Import example data files and launch inversions using the default MCMC parameters
-  e. Results are saved in subfolders inside the BISIP Workplace folder
-  
-**2. Usage**
+**3. Usage**
   
   Run BISIP_GUI.py to start the GUI
   
@@ -144,7 +145,7 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**3. Building the standalone GUI executable**
+**4. Building the standalone GUI executable**
 
 Install pyinstaller with:
 
@@ -157,7 +158,7 @@ Enter the following:
 pyinstaller BISIP_GUI.spec
 ```
 
-**4. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
+**5. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
 
 Install cython with:
 
@@ -169,7 +170,7 @@ Enter the following:
 ```sh
 python cython_setup.py build_ext --inplace
 ```
-**5. References**
+**6. References**
 
 <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
