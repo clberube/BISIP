@@ -8,7 +8,7 @@
   PyMC (<https://github.com/pymc-devs/pymc>) is installed with any of the following:
   
     conda install pymc
-    pip install pymc
+    pip install pip install git+git://github.com/pymc-devs/pymc
     easy_install pymc
   
   Other dependencies are automatically installed with most Python distributions
