@@ -561,7 +561,7 @@ def plot_fit(data, fit, model, filepath, save=False, draw=True):
         plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
         plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3, label='95% HPD')
+        plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3)
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['phas'], fontsize=14)
 
@@ -579,7 +579,7 @@ def plot_fit(data, fit, model, filepath, save=False, draw=True):
 #        NRMS_A = 100*np.sqrt(np.mean((Amp_dat-Amp_fit)**2))/abs(max(Amp_dat)-min(Amp_fit))
         plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
         plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
-        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3, label='95% HPD')
+        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['ampl'], fontsize=14)
 
