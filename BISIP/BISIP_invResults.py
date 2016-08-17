@@ -56,11 +56,11 @@ def print_resul(sol):
 
 def plot_histo(sol, save):
     MDL, model = sol["pymc_model"], sol["SIP_model"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]    
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
     if model == "PDebye":
-        keys.remove("m")  
+        keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
         keys.remove("m")
@@ -117,11 +117,11 @@ def plot_histo(sol, save):
 
 def plot_traces(sol, save):
     MDL, model = sol["pymc_model"], sol["SIP_model"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]  
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
     if model == "PDebye":
-        keys.remove("m")  
+        keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
         keys.remove("m")
@@ -235,12 +235,12 @@ def plot_scores(MDL, model, filename, save):
 
 def plot_summary(sol, save):
     MDL, model, ch_n = sol["pymc_model"], sol["SIP_model"], sol["mcmc"]["nb_chain"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]      
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
 
     keys.remove("zmod")
     if model == "PDebye":
-        keys.remove("m")  
+        keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
         keys.remove("m")
@@ -310,14 +310,14 @@ def plot_summary(sol, save):
 
 def plot_autocorr(sol, save):
     MDL, model = sol["pymc_model"], sol["SIP_model"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]  
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
     keys.remove("zmod")
     if model == "PDebye":
-        keys.remove("m")  
+        keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
-        keys.remove("m")    
+        keys.remove("m")
     adj = 0
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
@@ -485,7 +485,7 @@ def plot_data(filename, headers, ph_units):
     Amp_dat = data["amp"]/Zr0
     Amp_err = data["amp_err"]/Zr0
 
-    fig, ax = plt.subplots(3, 1, figsize=(5,8))
+    fig, ax = plt.subplots(3, 1, figsize=(6,8))
     for t in ax:
         t.tick_params(labelsize=12)
     # Real-Imag

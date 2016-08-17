@@ -51,7 +51,7 @@ filename = [
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-            "C:\Users\Charles\Documents\Python Scripts\BISIP\Example data\SIP-K389170_avg.dat",
+            "/Users/Charles/Documents/Github Repositories/BISIP/Example data/SIP-K389170_avg.dat",
             ]
 
 #==============================================================================
