@@ -15,7 +15,7 @@ from BISIP_models import mcmcSIPinv
 # Import PyMC, Numpy, and Cython extension with SIP functions
 import pymc
 import numpy as np
-from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Debye_cyth, Debye_cyth2, m_cyth, Shin_cyth
+from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth, Debye_cyth2, m_cyth, Shin_cyth
 # System imports
 from os import path, makedirs
 from sys import argv
@@ -95,7 +95,7 @@ mcmc_params = {"nb_chain"   : 1,
                "verbose"    : False,
                 }
 def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
-               ph_units="mrad", cc_modes=2, debye_poly=4, keep_traces=False):
+               ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, keep_traces=False):
 
 #==============================================================================
     """Cole-Cole Bayesian Model"""
@@ -178,12 +178,12 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         return locals()
 
 #==============================================================================
-    """Debye Bayesian Model"""
+    """Debye, Warburg, Cole-Cole decomposition Bayesian Model"""
 #==============================================================================
-    def PolyDebyeModel(debye_poly):
+    def PolyDecompModel(decomp_poly, c_exp):
         # Initial guesses
         p0 = {'R0'         : 1.0,
-              'a'          : ([0.01, -0.001, -0.001, 0.001, 0.001]+[0.0]*(debye_poly-4))[:(debye_poly+1)],
+              'a'          : ([0.01, -0.001, -0.001, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
               'log_tau_hi' : -6.0,
               'm_hi'       : 1.0,
               'TotalM'     : None,
@@ -194,7 +194,42 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
         m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
         log_tau_hi = pymc.Uniform('log_tau_hi', lower=-6.0, upper=-3.0, value=p0['log_tau_hi'])
-        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=debye_poly+1)
+        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
+        # Deterministics
+        @pymc.deterministic(plot=False)
+        def zmod(log_tau_hi=log_tau_hi, m_hi=m_hi, R0=R0, a=a):
+            return Decomp_cyth(w, tau_10, log_taus, c_exp, log_tau_hi, m_hi, R0, a)
+        @pymc.deterministic(plot=False)
+        def m(a=a):
+            return np.sum((a*log_taus.T).T, axis=0)
+        @pymc.deterministic(plot=False)
+        def totalM(m=m):
+            return np.sum(m[(log_tau > -3)&(log_tau < 1)])
+        @pymc.deterministic(plot=False)
+        def log_meanTau(m=m, totalM=totalM, a=a):
+            return np.log10(np.exp(np.sum(m[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/totalM))
+        # Likelihood
+        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
+        return locals()
+
+#==============================================================================
+    """Debye Bayesian Model"""
+#==============================================================================
+    def PolyDebyeModel(decomp_poly):
+        # Initial guesses
+        p0 = {'R0'         : 1.0,
+              'a'          : ([0.01, -0.001, -0.001, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
+              'log_tau_hi' : -6.0,
+              'm_hi'       : 1.0,
+              'TotalM'     : None,
+              'log_MeanTau': None,
+              'U'          : None,
+              }
+        # Stochastics
+        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
+        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
+        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-6.0, upper=-3.0, value=p0['log_tau_hi'])
+        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
         # Deterministics
         @pymc.deterministic(plot=False)
         def zmod(log_tau_hi=log_tau_hi, m_hi=m_hi, R0=R0, a=a):
@@ -257,7 +292,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), n_freq)
 
 #    tau_10 = 1.0/w
-    log_taus = np.array([log_tau**i for i in range(0,debye_poly+1,1)]) # Polynomial approximation for the RTD
+    log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
     tau_10 = 10**log_tau # Accelerates sampling
     data["tau"] = tau_10 # Put relaxation times in data dictionary
 
@@ -282,11 +317,12 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     #==========================================================================
     """
     # "ColeCole", "Dias", "Debye" or "Shin"
-    sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [cc_modes]   },
-                "Dias":     {"func": DiasModel,         "args": []           },
-                "PDebye":   {"func": PolyDebyeModel,    "args": [debye_poly] },
-                "DDebye":   {"func": DiscDebyeModel,    "args": []           },
-                "Shin":     {"func": ShinModel,         "args": []           },
+    sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [cc_modes]          },
+                "Dias":     {"func": DiasModel,         "args": []                  },
+                "PDebye":   {"func": PolyDebyeModel,    "args": [decomp_poly]        },
+                "PDecomp":  {"func": PolyDecompModel,   "args": [decomp_poly, c_exp] },
+                "DDebye":   {"func": DiscDebyeModel,    "args": []                  },
+                "Shin":     {"func": ShinModel,         "args": []                  },
 #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
                 }
     simulation = sim_dict[model] # Pick entries for the selected model

@@ -86,6 +86,7 @@ def load_window_parameters():
             "Tuning verbose"    : False,
             "Imported files"    : open_files,
             "Polyn order"       : 4,
+            "Freq dep"          : 1.0,
             "Nb modes"          : 2,
         }
     stdout.flush()
@@ -109,6 +110,7 @@ def save_window_parameters():
         "Tuning verbose"    : check_vars[4][1].get(),
         "Imported files"    : open_files,
         "Polyn order"       : poly_n.get(),
+        "Freq dep"          : c_exp.get(),
         "Nb modes"          : modes_n.get(),
     }
     print "\nSaving root_ini"
@@ -161,6 +163,17 @@ def Inversion():
     print "Starting inversion..."
     print "====================="
     print "Model:", model
+    if model == "ColeCole":
+        print "Cole-Cole modes:", modes_n.get()
+    if model == "PDecomp":
+        print "Polynomial order:", poly_n.get()
+        if c_exp.get() == 1.0:
+            decomp_type = "(Debye)"
+        elif c_exp.get() == 0.5:
+            decomp_type = "(Warburg)"
+        else:
+            decomp_type = "(Cole-Cole)"
+        print "Frequency dependence:", c_exp.get(), decomp_type
     print "Units:", units
     print "Paths:"
     for i in sel_files:
@@ -186,10 +199,10 @@ def Inversion():
         activity(f_n,files.index(f_n),len(files),done=False)
         var_review.set(f_n)
 
-        sol = mcmcSIPinv(model, sel_files[i], mcmc= mcmc_params,
-                         headers=headers, ph_units=units,
-                         cc_modes=modes_n.get(), debye_poly=poly_n.get(),
-                         keep_traces=check_vars[3][1].get())
+        sol = mcmcSIPinv(   model, sel_files[i], mcmc= mcmc_params,
+                            headers=headers, ph_units=units,
+                            cc_modes=modes_n.get(), decomp_poly=poly_n.get(),
+                            c_exp=c_exp.get(), keep_traces=check_vars[3][1].get())
 
         all_results[f_n] = {"pm":sol["params"],"MDL":sol["pymc_model"],"data":sol["data"],"fit":sol["fit"], "sol":sol}
 #         Impression ou non des résultats, graphiques, histogrammes
@@ -199,7 +212,7 @@ def Inversion():
         fig_fit = iR.plot_fit(sol["data"], sol["fit"], model, f_n, save=check_vars[1][1].get(), draw=check_vars[0][1].get())
         if check_vars[0][1].get():
             plot_window(fig_fit, "Inversion results: "+f_n)
-        if model == "PDebye":
+        if model == "PDecomp":
             iR.plot_debye(sol, save=check_vars[1][1].get(), draw=False)
         if model == "DDebye":
             iR.plot_debye_histo(sol, save=check_vars[1][1].get(), draw=False)
@@ -408,7 +421,7 @@ def write_output_path():
     text_path.grid(row=1, column=0, columnspan=1, sticky=tk.W+tk.E, padx=0)
     text_path.insert("1.0", "%s" %(working_path))
 
-def update_results(sol):    
+def update_results(sol):
     global all_items, text_res, label_res
     global frame_optimal
     pm, model = sol["params"], sol["SIP_model"]
@@ -418,10 +431,10 @@ def update_results(sol):
     frame_optimal.grid(row=2, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
     frame_optimal.columnconfigure(0, weight=1)
     keys = sorted([x for x in pm.keys() if "_std" not in x])
-    if model in ["PDebye", "DDebye"]:
+    if model in ["PDecomp", "DDebye"]:
         adj = -1
         if "m" in keys: keys.remove("m")
-    else:   
+    else:
         adj = 0
     values = flatten([pm[k] for k in sorted(keys)])
     errors = flatten([pm[k+"_std"] for k in sorted(keys)])
@@ -521,7 +534,7 @@ def diagn_buttons():
 #    but_gew = tk.Button(frame_results, height=1, text = "Geweke scores", fg='black',
 #                        command = lambda: plot_diagnostic("geweke"))
 #    but_gew.grid(row=4, column=0, sticky=tk.W+tk.E+tk.S, padx=10, pady=0)
-    if mod.get() == "PDebye":
+    if mod.get() == "PDecomp":
         but_rtd = tk.Button(frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
                             command = plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
         but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
@@ -536,36 +549,39 @@ def diagn_buttons():
 # Block for model frame
 def model_choice():
     # Available models
-    models = [("Pelton Cole-Cole","ColeCole"),
-              ("Dias model","Dias"),
-              ("Polynomial Debye","PDebye"),
-              ("Discrete Debye","DDebye"),]
-    modes_n, poly_n = tk.IntVar(), tk.IntVar()
-    modes_n.set(root_ini["Nb modes"]), poly_n.set(root_ini["Polyn order"])    # Initial values for sliders in case None given
+    models = [("Pelton \nCole-Cole","ColeCole"),
+              ("Dias \nmodel","Dias"),
+              ("Debye / Warburg \ndecomposition","PDecomp"),]
+    modes_n, poly_n, c_exp = tk.IntVar(), tk.IntVar(), tk.DoubleVar()
+    modes_n.set(root_ini["Nb modes"]), poly_n.set(root_ini["Polyn order"]), c_exp.set(root_ini["Freq dep"])
     def draw_rtd_check():
         global mod_opt_frame
         try:    mod_opt_frame.destroy()
         except: pass
         mod_opt_frame = tk.Frame(frame_model)
         mod_opt_frame.grid(row=0, column=1, rowspan=4)
-        mod_opt_frame.grid_rowconfigure(4, weight=1)
-        if mod.get() == "PDebye":
+#        mod_opt_frame.grid_rowconfigure(4, weight=1)
+        if mod.get() == "PDecomp":
             poly_lab = tk.Label(mod_opt_frame, text="""Polyn order""", justify = tk.LEFT, font=fontz["normal_small"])
             poly_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
             poly_scale = tk.Scale(mod_opt_frame, variable=poly_n, width=10, length=70, from_=3, to=5, font=fontz["normal_small"], orient=tk.HORIZONTAL)
             poly_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+            exp_lab = tk.Label(mod_opt_frame, text="""c exponent""", justify = tk.LEFT, font=fontz["normal_small"])
+            exp_lab.grid(row=2, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
+            exp_scale = tk.Scale(mod_opt_frame, variable=c_exp, width=10, length=70, from_=0.1, to=1.0, resolution=0.1, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            exp_scale.grid(row=3, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
         if mod.get() == "ColeCole":
             modes_lab = tk.Label(mod_opt_frame, text="""Nb modes""", justify = tk.LEFT, font=fontz["normal_small"])
             modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            modes_scale = tk.Scale(mod_opt_frame, variable=modes_n, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            modes_scale = tk.Scale(mod_opt_frame, variable=c_exp, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
             modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
     ### Model choice
     mod = tk.StringVar()
     mod.set(root_ini["Spectral IP model"])  # set last used values
     for i, (txt, val) in enumerate(models):
-        tk.Radiobutton(frame_model, text=txt, variable = mod, command = draw_rtd_check, value=val).grid(row=i, column=0, sticky=tk.W, padx=(10,0), pady=pad_radio+2)
+        tk.Radiobutton(frame_model, text=txt, justify=tk.LEFT, variable = mod, command = draw_rtd_check, value=val).grid(row=i, column=0, sticky=tk.W+tk.S, padx=(10,0), pady=pad_radio+2)
     draw_rtd_check()
-    return mod, modes_n, poly_n
+    return mod, modes_n, poly_n, c_exp
 
 #==============================================================================
 # Block for entry boxes with MCMC parameters
@@ -832,7 +848,7 @@ Groupe de recherche en géophysique appliquée
 #==============================================================================
 # Window start
 root = tk.Tk()
-root.wm_title("Bayesian inversion of SIP data using MCMC")
+root.wm_title("Bayesian inversion of SIP data")
 root.option_add("*Font", window_font)
 #==============================================================================
 # Build and display menu
@@ -844,7 +860,7 @@ set_plot_par()
 main_frames()
 draw_file_list(root_ini["Imported files"])
 but_browse = browse()
-mod, modes_n, poly_n = model_choice()
+mod, modes_n, poly_n, c_exp = model_choice()
 mcmc_vars = mcmc_parameters()
 head = skip_headers()
 uni = phase_units()

@@ -19,7 +19,8 @@ import BISIP_invResults as iR
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
 #model = "ColeCole"
 #model = "Dias"
-model = "PDebye"
+#model = "PDebye"
+model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 
@@ -67,11 +68,10 @@ ph_units = "mrad"
 
 #==============================================================================
 
-
 # Call to the inversion function for every file
 for i, fn in enumerate(filename):
     print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
-    sol = mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, debye_poly=4, keep_traces=False)
+    sol = mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, c_exp=1.0, keep_traces=False)
 
     """Plot fit and data ?"""
     if True:

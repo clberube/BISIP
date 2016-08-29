@@ -88,7 +88,7 @@ def Dias_cyth(np.ndarray[DTYPE_t, ndim=1] w, DTYPE_t R0, DTYPE_t m, DTYPE_t log_
         Z[1,j] = z_[j].imag
     return Z
 
-def Debye_cyth(np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] tau_10, np.ndarray[DTYPE_t, ndim=2] log_taus, DTYPE_t log_tau_hi, DTYPE_t m_hi, DTYPE_t R0, np.ndarray[DTYPE_t, ndim=1] a):
+def Decomp_cyth(np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] tau_10, np.ndarray[DTYPE_t, ndim=2] log_taus, DTYPE_t c_exp, DTYPE_t log_tau_hi, DTYPE_t m_hi, DTYPE_t R0, np.ndarray[DTYPE_t, ndim=1] a):
     cdef int D = a.shape[0]
     cdef int N = w.shape[0]
     cdef int S = tau_10.shape[0]
@@ -103,7 +103,7 @@ def Debye_cyth(np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] tau_10
             M[k] = M[k] + a[i]*(log_taus[i,k])
     for j in range(N):
         for k in range(S):
-            z_de[j] = z_de[j] + M[k]*(1 - 1.0/(1+1j*w[j]*tau_10[k]))
+            z_de[j] = z_de[j] + M[k]*(1 - 1.0/(1+powc(1j*w[j]*tau_10[k],c_exp)))
         z_hi[j] = m_hi*(1 - 1.0/(1+1j*w[j]*((10**log_tau_hi))))
         z_[j] = R0*(1 - (z_hi[j] + z_de[j]))
         Z[0,j] = z_[j].real
