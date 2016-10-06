@@ -40,7 +40,7 @@
   
   And obtain results using all default arguments and MCMC parameters with:
   
-    sol = mcmcSIPinv("ColeCole", "/Documents/DataFiles/DATA.dat")
+    sol = mcmcSIPinv('ColeCole', '/Documents/DataFiles/DATA.dat')
   
   The full list of optional arguments is:
   
@@ -169,7 +169,7 @@ pyinstaller BISIP_GUI_osx.spec
 
 Install cython with:  
 ```sh
-    conda install cython  
+conda install cython  
 ```
 
 Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
