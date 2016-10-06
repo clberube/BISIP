@@ -33,93 +33,93 @@ from matplotlib.pyplot import rcParams, close as plt_close
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
 # Get directory
-working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
 print "All modules successfully loaded"
 stdout.flush()
 #==============================================================================
 # Fonts
 if "Darwin" in system():
     print "OSX detected"
-    size = 12
+    fontsize = 12
     pad_radio = 3
     but_size = -2
     res_size = -1
 else:
-    size = 10
+    fontsize = 10
     pad_radio = 0
     but_size = -2
     res_size = -2
 
-window_font = "TkDefaultFont %s"%size
-fontz = {"bold": ("TkDefaultFont", size, "bold"),
-         "normal_small": ("TkDefaultFont", size+but_size, "normal"),
-         "italic_small": ("TkDefaultFont", size+but_size, "italic")}
+window_font = "TkDefaultFont %s"%fontsize
+fontz = {"bold": ("TkDefaultFont", fontsize, "bold"),
+         "normal_small": ("TkDefaultFont", fontsize+but_size, "normal"),
+         "italic_small": ("TkDefaultFont", fontsize+but_size, "italic")}
 
 #==============================================================================
 # Import last used window parameters
 # All GUI options and choices saved when closing the main window
 # Parameters are saved in root_ini file in the executable's directory
-# To reset to default parameters, delete root_ini
-def load_window_parameters():
-    print "\nLoading root_ini from:\n", working_path
-    try:
-        with open(working_path+'root_ini') as f:
-            root_ini = jload(f)
-        open_files = root_ini["Imported files"]
-        print "root_ini successfully loaded"
-    except:
-        print "root_ini not found, using default values"
-        open_files = []
-        itera = 10000
-        root_ini = {
-            "Spectral IP model" : "ColeCole",
-            "Nb of chains:"     : 1,
-            "Total iterations:" : itera,
-            "Burn-in period:"   : int(itera*0.80),
-            "Thinning factor:"  : 1,
-            "Tuning interval:"  : 1000,
-            "Proposal scale:"   : 1.0,
-            "Nb header lines"   : 1,
-            "Phase units"       : "mrad",
-            "Keep txt traces"   : False,
-            "Draw data and fit" : False,
-            "Save QC figures "  : False,
-            "Save fit figure"   : False,
-            "Tuning verbose"    : False,
-            "Imported files"    : open_files,
-            "Polyn order"       : 4,
-            "Freq dep"          : 1.0,
-            "Nb modes"          : 2,
-        }
-    stdout.flush()
-    return root_ini, open_files
-
-def save_window_parameters():
-    root_save = {
-        "Spectral IP model" : mod.get(),
-        "Nb of chains:"     : mcmc_vars[0][1].get(),
-        "Total iterations:" : mcmc_vars[1][1].get(),
-        "Burn-in period:"   : mcmc_vars[2][1].get(),
-        "Thinning factor:"  : mcmc_vars[3][1].get(),
-        "Tuning interval:"  : mcmc_vars[4][1].get(),
-        "Proposal scale:"   : mcmc_vars[5][1].get(),
-        "Nb header lines"   : head.get(),
-        "Phase units"       : uni.get(),
-        "Keep txt traces"   : check_vars[3][1].get(),
-        "Draw data and fit" : check_vars[0][1].get(),
-        "Save QC figures "  : check_vars[2][1].get(),
-        "Save fit figure"   : check_vars[1][1].get(),
-        "Tuning verbose"    : check_vars[4][1].get(),
-        "Imported files"    : open_files,
-        "Polyn order"       : poly_n.get(),
-        "Freq dep"          : c_exp.get(),
-        "Nb modes"          : modes_n.get(),
-    }
-    print "\nSaving root_ini"
-    with open(working_path+'root_ini', 'w') as f:
-        jdump(root_save, f)
-    print "root_ini successfully saved in:\n", working_path
-    print "\n=========END========="
+# To reset and use default parameters, delete root_ini in local directory
+class root_state:
+    working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
+    default = {
+                "Spectral IP model" : "ColeCole",
+                "Nb of chains:"     : 1,
+                "Total iterations:" : 10000,
+                "Burn-in period:"   : 8000,
+                "Thinning factor:"  : 1,
+                "Tuning interval:"  : 1000,
+                "Proposal scale:"   : 1.0,
+                "Nb header lines"   : 1,
+                "Phase units"       : "mrad",
+                "Keep txt traces"   : False,
+                "Draw data and fit" : False,
+                "Save QC figures "  : False,
+                "Save fit figure"   : False,
+                "Tuning verbose"    : False,
+                "Imported files"    : [],
+                "Polyn order"       : 4,
+                "Freq dep"          : 1.0,
+                "Nb modes"          : 2,
+            }
+    
+    def load(self):
+        print "\nLoading root_ini from:\n", self.working_path
+        try:
+            with open(self.working_path+'root_ini') as f:
+                root_ini = jload(f)
+            print "root_ini successfully loaded"
+        except:
+            print "root_ini not found, using default values"
+            root_ini = self.default
+        stdout.flush()
+        return root_ini
+        
+    def save(self):
+        root_save = {
+                        "Spectral IP model" : mod.get(),
+                        "Nb of chains:"     : mcmc_vars[0][1].get(),
+                        "Total iterations:" : mcmc_vars[1][1].get(),
+                        "Burn-in period:"   : mcmc_vars[2][1].get(),
+                        "Thinning factor:"  : mcmc_vars[3][1].get(),
+                        "Tuning interval:"  : mcmc_vars[4][1].get(),
+                        "Proposal scale:"   : mcmc_vars[5][1].get(),
+                        "Nb header lines"   : head.get(),
+                        "Phase units"       : uni.get(),
+                        "Keep txt traces"   : check_vars[3][1].get(),
+                        "Draw data and fit" : check_vars[0][1].get(),
+                        "Save QC figures "  : check_vars[2][1].get(),
+                        "Save fit figure"   : check_vars[1][1].get(),
+                        "Tuning verbose"    : check_vars[4][1].get(),
+                        "Imported files"    : open_files,
+                        "Polyn order"       : poly_n.get(),
+                        "Freq dep"          : c_exp.get(),
+                        "Nb modes"          : modes_n.get(),
+                    }
+        print "\nSaving root_ini"
+        with open(self.working_path+'root_ini', 'w') as f:
+            jdump(root_save, f)
+        print "root_ini successfully saved in:\n", self.working_path
+        print "\n=========END========="
 
 # Close the main window
 def close_window():
@@ -678,61 +678,42 @@ def build_helpmenu():
     filemenu.add_separator()
     filemenu.add_command(label="Exit", command=close_window)
     menubar.add_cascade(label="File", menu=filemenu)
-    helpmenu.add_command(label="Data file template", command=lambda: example(size))
-    helpmenu.add_command(label="MCMC parameters", command=lambda:help_mcmc(size))
-    helpmenu.add_command(label="References", command=lambda: references(size))
+    helpmenu.add_command(label="Data file template", command=lambda: TextMessage("Data file template", TextMessage.data_template).popup(size=fontsize))
+    helpmenu.add_command(label="MCMC parameters", command=lambda: TextMessage("Markov-chain Monte Carlo parameters", TextMessage.mcmc_info).popup(size=fontsize)) 
+    helpmenu.add_command(label="References", command=lambda: TextMessage("References", TextMessage.references).popup(size=fontsize))
     helpmenu.add_separator()
-    helpmenu.add_command(label="License", command=lambda: license_window(size))
+    helpmenu.add_command(label="License", command=lambda: TextMessage("License information", TextMessage.license_info).popup(size=fontsize))
     helpmenu.add_command(label="About", command=lambda:about(fontz))
     menubar.add_cascade(label="Help", menu=helpmenu)
     return menubar
 
-def references(size):
+def about(fontz):
     top = tk.Toplevel()
-    top.title("References")
+    top.title("About")
     top.lift()
-    about_message = """Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
-    Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
-    Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
-    73 (6): F247–59. doi:10.1190/1.2976115.
-Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
-    Electrical Polarization of Rocks.” Geophysics 65 (2): 437–51.
-    doi:10.1190/1.1444738.
-Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
-    Stochastic Simulation for Bayesian Inference, Second Edition. CRC Press.
-Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
-    “Bayesian Inference of the Cole–Cole Parameters from Time- and Frequency-
-    Domain Induced Polarization.” Geophysical Prospecting 55 (4): 589–605.
-    doi:10.1111/j.1365-2478.2007.00627.x.
-Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
-    Science & Business Media.
-Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
-    “Markov-Chain Monte Carlo Estimation of Distributed Debye Relaxations in
-    Spectral Induced Polarization.” Geophysics 77 (2): E159–70.
-    doi:10.1190/geo2011-0244.1.
-Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
-    Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
-Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
-    Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
-Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
-    Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
-Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
-    “Mineral Discrimination and Removal of Inductive Coupling with
-    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839."""
-
-    msg = tk.Text(top, height=30, font=('courier', size, 'normal'))
-    msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
+    tk.Label(top,
+              text="""Bayesian inversion of spectral induced polarization data""",
+              justify = tk.CENTER, font=fontz["bold"]).grid(row=0, column=0,columnspan=2,pady=(10,10), padx=(10,10))
+    tk.Label(top,
+              text="""2015-2016
+École Polytechnique de Montréal
+Groupe de recherche en géophysique appliquée
+""",
+              justify = tk.CENTER).grid(row=1, column=0,columnspan=2, pady=(10,10), padx=(10,10))
+    tk.Label(top,
+              text="""Contact:""",
+              justify = tk.CENTER).grid(row=2, column=0,columnspan=1, pady=(10,10), padx=(10,10))
+    about_message = """charleslberube@gmail.com"""
+    msg = tk.Text(top, height=1, width=27)
+    msg.grid(row=2,column=1,padx=(10,10), pady=(10,10))
     msg.insert("1.0", about_message)
-
     button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
-    button.grid(sticky=tk.S, pady=(0,10))
+    button.grid(row=3,column=0,columnspan=2,sticky=tk.S, pady=(0,10))
     top.resizable(width=tk.FALSE, height=tk.FALSE)
 
-def example(size):
-    top = tk.Toplevel()
-    top.title("Data file template")
-    top.lift()
-    about_message = """DATA FILE TEMPLATE
+class TextMessage:
+    
+    data_template = """DATA FILE TEMPLATE
 
 Save data in .csv, .txt, .dat, ... extension file
 Comma separation between columns is mandatory
@@ -760,19 +741,9 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
 1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
 =============================================================================
-"""
-    msg = tk.Text(top, height=31, width=77, font=('courier', size, 'normal'))
-    msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
-    msg.insert("1.0", about_message)
-    button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
-    button.grid(sticky=tk.S, pady=(0,10))
-    top.resizable(width=tk.FALSE, height=tk.FALSE)
-
-def help_mcmc(size):
-    top = tk.Toplevel()
-    top.title("Markov-chain Monte Carlo parameters")
-    top.lift()
-    about_message = """===================================================================================
+"""    
+    
+    mcmc_info = """===================================================================================
 Meaning of MCMC parameters:
 
 |---------------------------# Iterations------------------------------------| = 100
@@ -812,44 +783,38 @@ Dias model:         Fast convergence, weak fits
                     10 000 iterations usually converges
 
 ===================================================================================
-"""
-    msg = tk.Text(top, height=41, width=83, font=('courier', size, 'normal'))
-    msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
-    msg.insert("1.0", about_message)
-    button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
-    button.grid(sticky=tk.S, pady=(0,10))
-    top.resizable(width=tk.FALSE, height=tk.FALSE)
-
-def about(fontz):
-    top = tk.Toplevel()
-    top.title("About")
-    top.lift()
-    tk.Label(top,
-              text="""Bayesian inversion of spectral induced polarization data""",
-              justify = tk.CENTER, font=fontz["bold"]).grid(row=0, column=0,columnspan=2,pady=(10,10), padx=(10,10))
-    tk.Label(top,
-              text="""2015-2016
-École Polytechnique de Montréal
-Groupe de recherche en géophysique appliquée
-""",
-              justify = tk.CENTER).grid(row=1, column=0,columnspan=2, pady=(10,10), padx=(10,10))
-    tk.Label(top,
-              text="""Contact:""",
-              justify = tk.CENTER).grid(row=2, column=0,columnspan=1, pady=(10,10), padx=(10,10))
-    about_message = """charleslberube@gmail.com"""
-    msg = tk.Text(top, height=1, width=27)
-    msg.grid(row=2,column=1,padx=(10,10), pady=(10,10))
-    msg.insert("1.0", about_message)
-    button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
-    button.grid(row=3,column=0,columnspan=2,sticky=tk.S, pady=(0,10))
-    top.resizable(width=tk.FALSE, height=tk.FALSE)
-
-
-def license_window(size):
-    top = tk.Toplevel()
-    top.title("License info")
-    top.lift()
-    about_message = """The MIT License (MIT)
+"""    
+    
+    references = """Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
+    Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
+    Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
+    73 (6): F247–59. doi:10.1190/1.2976115.
+Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
+    Electrical Polarization of Rocks.” Geophysics 65 (2): 437–51.
+    doi:10.1190/1.1444738.
+Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
+    Stochastic Simulation for Bayesian Inference, Second Edition. CRC Press.
+Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
+    “Bayesian Inference of the Cole–Cole Parameters from Time- and Frequency-
+    Domain Induced Polarization.” Geophysical Prospecting 55 (4): 589–605.
+    doi:10.1111/j.1365-2478.2007.00627.x.
+Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
+    Science & Business Media.
+Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
+    “Markov-Chain Monte Carlo Estimation of Distributed Debye Relaxations in
+    Spectral Induced Polarization.” Geophysics 77 (2): E159–70.
+    doi:10.1190/geo2011-0244.1.
+Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
+    Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
+Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
+    Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
+Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
+    Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
+Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
+    “Mineral Discrimination and Removal of Inductive Coupling with
+    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839."""    
+    
+    license_info = """The MIT License (MIT)
 
 Copyright (c) 2016 Charles L. Bérubé
 
@@ -873,13 +838,23 @@ SOFTWARE.
 
 https://opensource.org/licenses/MIT
 https://github.com/clberube/bisip
-"""
-    msg = tk.Text(top, height=41, width=83, font=('courier', size, 'normal'))
-    msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
-    msg.insert("1.0", about_message)
-    button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
-    button.grid(sticky=tk.S, pady=(0,10))
-    top.resizable(width=tk.FALSE, height=tk.FALSE)
+"""    
+    
+    def __init__(self, title, message):
+          self.title = title
+          self.message = message
+    def popup(self, size=10):
+        top = tk.Toplevel()
+        top.title(self.title)
+        about_message = (self.message)
+        top.lift()
+        msg = tk.Text(top, width=83, font=('courier', size, 'normal'))
+        msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
+        msg.insert("1.0", about_message)
+        button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
+        button.grid(sticky=tk.S, pady=(0,10))
+        top.resizable(width=tk.FALSE, height=tk.FALSE)
+
 
 #==============================================================================
 # Window start
@@ -898,7 +873,7 @@ if "Darwin" in system():
 root.config(menu=build_helpmenu())
 #==============================================================================
 # Build GUI by calling the main GUI functions
-root_ini, open_files = load_window_parameters()
+root_ini = root_state().load()
 set_plot_par()
 main_frames()
 draw_file_list(root_ini["Imported files"])
@@ -918,5 +893,5 @@ root.resizable(width=tk.FALSE, height=tk.FALSE)
 #==============================================================================
 # Window loop
 tk.mainloop()
-save_window_parameters()
+root_state().save()
 #==============================================================================
