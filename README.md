@@ -27,7 +27,10 @@
   
 **3. Usage**
     
-  Open a terminal to the local BISIP directory and enter `python BISIP_GUI.py`
+  To start the GUI, open a terminal to the local BISIP directory and enter:
+  
+    python BISIP_GUI.py
+  
   
   **_OR_**
 
