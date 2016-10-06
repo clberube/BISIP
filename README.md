@@ -56,7 +56,7 @@
                   'thin'       : 1,
                   'tune_inter' : 1000,
                   'prop_scale' : 1.0,
-                  'verbose'    : False
+                  'verbose'    : False,
                   }
   
   And `sol` is a self-explanatory python dictionary containing the results:
