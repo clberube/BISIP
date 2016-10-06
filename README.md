@@ -1,7 +1,7 @@
 # BISIP
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
-**1. Standalone executables**
+**1. Using the standalone executables**
   
   Download the executables (OS X or Windows) at:  
   <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
@@ -14,9 +14,7 @@
     d. Import example data files and launch inversions using the default MCMC parameters  
     e. Results are saved in subfolders inside the BISIP Workplace folder
 
-**_OR_**
-
-**2. Installing with a Python distribution**
+**2. Cloning the repository and installing dependencies**
 
   Clone or Download repository to local folder  
   Dependencies: Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter  
@@ -27,15 +25,14 @@
     easy_install pymc
   
   Other dependencies are automatically installed with most Python distributions
-  
-**3. Usage**
-    
-  To start the GUI, open a terminal to the local BISIP directory and enter:
-  
+      
+**3. Starting the GUI from the command prompt**
+   
+  Open a terminal to the local BISIP directory and enter:
+ 
     python BISIP_GUI.py
   
-  
-  **_OR_**
+**4. Using the inversion function from another script**
 
   Import only the inversion function using:
   
@@ -151,15 +148,15 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**4. Building the standalone GUI executable**
+**5. Building the standalone GUI executables**
 
-Install pyinstaller with:
-
-    pip install pyinstaller
+Install pyinstaller with:  
+```sh
+pip install pyinstaller
+```  
 
 Open a terminal to the directory where BISIP_GUI.py and BISIP_GUI.spec are located  
-Enter the following:
-
+Enter the following:  
 ```sh
 pyinstaller BISIP_GUI_win.spec
 ```  
@@ -168,18 +165,19 @@ Or
 pyinstaller BISIP_GUI_osx.spec
 ```
 
-**5. Building the BISIP_cython_funcs.pyd or BISIP_cython_funcs.so file**
+**6. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
-Install cython with:
-
+Install cython with:  
+```sh
     conda install cython  
-    
-Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
-Enter the following:
+```
 
+Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
+Enter the following:  
 ```sh
 python cython_setup.py build_ext --inplace
 ```
+
 **6. References**
 
 <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
