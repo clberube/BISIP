@@ -201,7 +201,7 @@ def Inversion():
         activity(f_n,files.index(f_n),len(files),done=False)
         var_review.set(f_n)
 
-        sol = mcmcSIPinv(   model, sel_files[i], mcmc= mcmc_params,
+        sol = mcmcSIPinv(   model, sel_files[i], mcmc = mcmc_params,
                             headers=headers, ph_units=units,
                             cc_modes=modes_n.get(), decomp_poly=poly_n.get(),
                             c_exp=c_exp.get(), keep_traces=check_vars[3][1].get())
@@ -874,9 +874,10 @@ root.config(menu=build_helpmenu())
 #==============================================================================
 # Build GUI by calling the main GUI functions
 root_ini = root_state().load()
+open_files = root_ini["Imported files"]
 set_plot_par()
 main_frames()
-draw_file_list(root_ini["Imported files"])
+draw_file_list(open_files)
 but_browse = browse()
 mod, modes_n, poly_n, c_exp = model_choice()
 mcmc_vars = mcmc_parameters()
