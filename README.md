@@ -5,8 +5,8 @@
   
   Download the executables (OS X or Windows) at:  
   <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
-  The applications are standalone: no Python installation is needed to run 
-  Compiled on OS X 10.11.6 and Windows 10
+  No Python installation is needed to run, the applications are standalone  
+  Executables compiled on OS X 10.11.6 and Windows 10
   
     a. Extract the BISIP Workplace folder to a local directory  
     b. Launch the executable in BISIP Workplace  
