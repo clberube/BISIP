@@ -3,9 +3,32 @@
 Created on Tue Apr 21 12:05:22 2015
 
 @author:    charleslberube@gmail.com
-            École Polytechnique de Montréal 2016
+            École Polytechnique de Montréal
 
-Copyright (c) 2015-2016 Charles L. Bérubé
+The MIT License (MIT)
+
+Copyright (c) 2016 Charles L. Bérubé
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+https://opensource.org/licenses/MIT
+https://github.com/clberube/bisip
 
 This python module may be used to import SIP data, run MCMC inversion and
 return the results. It may be imported as
@@ -15,7 +38,7 @@ from BISIP_models import mcmcSIPinv
 # Import PyMC, Numpy, and Cython extension with SIP functions
 import pymc
 import numpy as np
-from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth, Debye_cyth2, m_cyth, Shin_cyth
+from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth
 # System imports
 from os import path, makedirs
 from sys import argv
@@ -288,16 +311,13 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     seigle_m = ((data["amp"][-1] - data["amp"][0]) / data["amp"][-1] ) # Estimating Seigel chargeability
     w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
     n_freq = len(w)
+    n_decades = np.ceil(max(np.log10(1.0/w))) - np.floor(min(np.log10(1.0/w)))
+    n_tau = 10*n_decades
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
-    log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), n_freq)
-
-#    tau_10 = 1.0/w
+    log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), 2*n_freq)
     log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
     tau_10 = 10**log_tau # Accelerates sampling
     data["tau"] = tau_10 # Put relaxation times in data dictionary
-
-    # 2D array of ones with length = number of frequencies (Used in the likelihood functions)
-#    complex_ones = np.ones((2,len(w)))
 
     # Time and date (for saving traces)
     sample_name = filename.replace("\\", "/").split("/")[-1].split(".")[0]

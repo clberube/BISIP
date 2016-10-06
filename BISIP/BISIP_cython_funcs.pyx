@@ -33,7 +33,7 @@ cdef double complex C_ColeCole(double w_, double m_, double lt_, double c_):
     cdef double complex jay
     jay.real = 0.0
     jay.imag = 1.0
-    Z_i = m_*(1 - 1.0/(1 + (powc((jay*w_*(10**lt_)),c_))))
+    Z_i = m_*(1 - 1.0/(1 + powc((jay*w_*(10**lt_)),c_)))
     return Z_i
 
 cdef double complex C_Dias(double w_, double R0_, double m_, double log_tau_, double eta_,double delta_):
@@ -52,17 +52,13 @@ cdef double complex C_Shin(double w_, double R_, double log_Q_, double n_):
     Z_i = R_ / (powc(jay*w_,n_)*((10**log_Q_))*R_ + 1)
     return Z_i
 
-cdef double complex C_Debye(double w_, double tau_, double m_):
+cdef double complex C_Debye(double w_, double m_, double tau_, double c_):
     cdef double complex Z_i
-    Z_i = m_*(1 - 1.0/(1+1j*w_*tau_))
+    cdef double complex jay
+    jay.real = 0.0
+    jay.imag = 1.0
+    Z_i = m_*(1 - 1.0/(1 + powc((jay*w_*(tau_)),c_)))
     return Z_i
-
-def m_cyth(np.ndarray[DTYPE_t, ndim=1] mp):
-    cdef int D = mp.shape[0]
-    cdef np.ndarray[DTYPE_t, ndim=1] m = np.zeros(D, dtype=DTYPE)
-    for i in range(D):
-        m[i] = 1.0/( (1.0 / 10**mp[i]) + 1 )
-    return m
 
 def ColeCole_cyth(np.ndarray[DTYPE_t, ndim=1] w, DTYPE_t R0, np.ndarray[DTYPE_t, ndim=1] m, np.ndarray[DTYPE_t, ndim=1] lt, np.ndarray[DTYPE_t, ndim=1] c):
     cdef int N = w.shape[0]
@@ -103,24 +99,9 @@ def Decomp_cyth(np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] tau_1
             M[k] = M[k] + a[i]*(log_taus[i,k])
     for j in range(N):
         for k in range(S):
-            z_de[j] = z_de[j] + M[k]*(1 - 1.0/(1+powc(1j*w[j]*tau_10[k],c_exp)))
-        z_hi[j] = m_hi*(1 - 1.0/(1+1j*w[j]*((10**log_tau_hi))))
+            z_de[j] = z_de[j] + C_Debye(w[j], M[k], tau_10[k], c_exp)
+        z_hi[j] = C_Debye(w[j], m_hi, 10**log_tau_hi, 1.0)
         z_[j] = R0*(1 - (z_hi[j] + z_de[j]))
-        Z[0,j] = z_[j].real
-        Z[1,j] = z_[j].imag
-    return Z
-
-def Debye_cyth2(np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] tau, DTYPE_t R0, np.ndarray[DTYPE_t, ndim=1] m):
-    cdef int N = w.shape[0]
-    cdef int S = tau.shape[0]
-    cdef int i, j
-    cdef np.ndarray[DTYPE2_t, ndim=1] z_de = np.zeros(S, dtype=DTYPE2)
-    cdef np.ndarray[DTYPE2_t, ndim=1] z_ = np.zeros(N, dtype=DTYPE2)
-    cdef np.ndarray[DTYPE_t, ndim=2] Z = np.empty((2,N), dtype=DTYPE)
-    for j in range(N):
-        for i in range(S):
-            z_de[j] = z_de[j] + C_Debye(w[j], tau[i], m[i])
-        z_[j] = R0*(1 - z_de[j])
         Z[0,j] = z_[j].real
         Z[1,j] = z_[j].imag
     return Z

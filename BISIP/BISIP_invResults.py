@@ -59,7 +59,7 @@ def plot_histo(sol, save):
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
-    if model == "PDebye":
+    if model == "PDecomp":
         keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
@@ -120,7 +120,7 @@ def plot_traces(sol, save):
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
-    if model == "PDebye":
+    if model == "Pdecomp":
         keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
@@ -239,7 +239,7 @@ def plot_summary(sol, save):
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
 
     keys.remove("zmod")
-    if model == "PDebye":
+    if model == "PDecomp":
         keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
@@ -313,7 +313,7 @@ def plot_autocorr(sol, save):
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
     keys.remove("zmod")
-    if model == "PDebye":
+    if model == "PDecomp":
         keys.remove("m")
     if model == "DDebye":
         keys.remove("mp")
@@ -442,7 +442,7 @@ def save_resul(sol):
                 headers.append(key+"%d" %(i+tag))
     headers = ','.join(headers)
     results = np.array(flatten(A))
-    if model in ["DDebye", "PDebye"]:
+    if model in ["DDebye", "PDecomp"]:
         tau_ = sol["data"]["tau"]
         add = ["tau"+"%d"%(i+1) for i in range(len(tau_))]
         add = ',' + ','.join(add)

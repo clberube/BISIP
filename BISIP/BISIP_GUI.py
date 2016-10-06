@@ -14,11 +14,11 @@ Bayesian inversion module for SIP models (BISIP_models.py)
 
 #==============================================================================
 # System imports
-from sys import argv, stdout
 print "\nLoading Python modules"
+from sys import argv, stdout
 stdout.flush()
-from os.path import dirname as osp_dirname, realpath as osp_realpath
 from platform import system
+from os.path import dirname as osp_dirname, realpath as osp_realpath
 from json import load as jload, dump as jdump
 from warnings import filterwarnings
 filterwarnings('ignore') # Ignore some tkinter warnings
@@ -39,6 +39,7 @@ stdout.flush()
 #==============================================================================
 # Fonts
 if "Darwin" in system():
+    print "OSX detected"
     size = 12
     pad_radio = 3
     but_size = -2
@@ -48,6 +49,7 @@ else:
     pad_radio = 0
     but_size = -2
     res_size = -2
+
 window_font = "TkDefaultFont %s"%size
 fontz = {"bold": ("TkDefaultFont", size, "bold"),
          "normal_small": ("TkDefaultFont", size+but_size, "normal"),
@@ -568,12 +570,12 @@ def model_choice():
             poly_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
             exp_lab = tk.Label(mod_opt_frame, text="""c exponent""", justify = tk.LEFT, font=fontz["normal_small"])
             exp_lab.grid(row=2, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            exp_scale = tk.Scale(mod_opt_frame, variable=c_exp, width=10, length=70, from_=0.1, to=1.0, resolution=0.1, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            exp_scale = tk.Scale(mod_opt_frame, variable=c_exp, width=10, length=70, from_=0.1, to=1.0, resolution=0.05, font=fontz["normal_small"], orient=tk.HORIZONTAL)
             exp_scale.grid(row=3, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
         if mod.get() == "ColeCole":
             modes_lab = tk.Label(mod_opt_frame, text="""Nb modes""", justify = tk.LEFT, font=fontz["normal_small"])
             modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            modes_scale = tk.Scale(mod_opt_frame, variable=c_exp, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            modes_scale = tk.Scale(mod_opt_frame, variable=modes_n, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
             modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
     ### Model choice
     mod = tk.StringVar()
@@ -680,6 +682,7 @@ def build_helpmenu():
     helpmenu.add_command(label="MCMC parameters", command=lambda:help_mcmc(size))
     helpmenu.add_command(label="References", command=lambda: references(size))
     helpmenu.add_separator()
+    helpmenu.add_command(label="License", command=lambda: license_window(size))
     helpmenu.add_command(label="About", command=lambda:about(fontz))
     menubar.add_cascade(label="Help", menu=helpmenu)
     return menubar
@@ -813,7 +816,6 @@ Dias model:         Fast convergence, weak fits
     msg = tk.Text(top, height=41, width=83, font=('courier', size, 'normal'))
     msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
     msg.insert("1.0", about_message)
-
     button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
     button.grid(sticky=tk.S, pady=(0,10))
     top.resizable(width=tk.FALSE, height=tk.FALSE)
@@ -826,7 +828,7 @@ def about(fontz):
               text="""Bayesian inversion of spectral induced polarization data""",
               justify = tk.CENTER, font=fontz["bold"]).grid(row=0, column=0,columnspan=2,pady=(10,10), padx=(10,10))
     tk.Label(top,
-              text="""Copyright (c) 2015-2016 Charles L. Bérubé
+              text="""2015-2016
 École Polytechnique de Montréal
 Groupe de recherche en géophysique appliquée
 """,
@@ -843,13 +845,54 @@ Groupe de recherche en géophysique appliquée
     top.resizable(width=tk.FALSE, height=tk.FALSE)
 
 
+def license_window(size):
+    top = tk.Toplevel()
+    top.title("License info")
+    top.lift()
+    about_message = """The MIT License (MIT)
 
+Copyright (c) 2016 Charles L. Bérubé
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+https://opensource.org/licenses/MIT
+https://github.com/clberube/bisip
+"""
+    msg = tk.Text(top, height=41, width=83, font=('courier', size, 'normal'))
+    msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
+    msg.insert("1.0", about_message)
+    button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
+    button.grid(sticky=tk.S, pady=(0,10))
+    top.resizable(width=tk.FALSE, height=tk.FALSE)
 
 #==============================================================================
 # Window start
 root = tk.Tk()
 root.wm_title("Bayesian inversion of SIP data")
 root.option_add("*Font", window_font)
+#==============================================================================
+# For MacOS, bring the window to front
+# Without these lines the application will start in background
+root.lift()
+if "Darwin" in system():
+    root.call('wm', 'attributes', '.', '-topmost', True)
+    root.after_idle(root.call, 'wm', 'attributes', '.', '-topmost', False)
 #==============================================================================
 # Build and display menu
 root.config(menu=build_helpmenu())
@@ -872,13 +915,6 @@ activity(None,None,None,None)
 root.maxsize(width=root.winfo_width(), height=root.winfo_height())
 root.minsize(width=root.winfo_width(), height=root.winfo_height())
 root.resizable(width=tk.FALSE, height=tk.FALSE)
-#==============================================================================
-# For MacOS, bring the window to front
-# Without these lines the application will start in background
-root.lift()
-if "Darwin" in system():
-    root.call('wm', 'attributes', '.', '-topmost', True)
-    root.after_idle(root.call, 'wm', 'attributes', '.', '-topmost', False)
 #==============================================================================
 # Window loop
 tk.mainloop()
