@@ -26,12 +26,12 @@
   Other dependencies are automatically installed with most Python distributions
   
 **3. Usage**
-  
-  Run BISIP_GUI.py to start the GUI
+    
+  Open a terminal to the local BISIP directory and enter `python BISIP_GUI.py`
   
   **_OR_**
 
-  Import the inversion function using:
+  Import only the inversion function using:
   
     from BISIP_models import mcmcSIPinv
   
