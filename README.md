@@ -3,7 +3,7 @@
 
 **1. Standalone executables**
   
-  Download the standalone binaries (OS X or Windows) directly at:  
+  Download the executables (OS X or Windows) at:  
   <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
   a. Extract the BISIP Workplace folder to a local directory  
   b. Launch the executable in BISIP Workplace  
