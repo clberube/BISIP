@@ -31,14 +31,27 @@ https://opensource.org/licenses/MIT
 https://github.com/clberube/bisip
 
 This python module may be used to import SIP data, run MCMC inversion and
-return the results. It may be imported as
-from BISIP_models import mcmcSIPinv
+return the results. 
+
+It is imported as:
+                    from BISIP_models import mcmcSIPinv
+                    
+Call with minimal arguments:
+
+sol = mcmcSIPinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+
+Call with all optional arguments:
+
+sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
+                 mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2, 
+                 debye_poly=4, c_exp = 1.0, keep_traces=False)
 """
+
 #==============================================================================
 # Import PyMC, Numpy, and Cython extension with SIP functions
 import pymc
 import numpy as np
-from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth
+from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth, Shin_cyth
 # System imports
 from os import path, makedirs
 from sys import argv
@@ -48,15 +61,20 @@ from shutil import rmtree
 #==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
-def run_MCMC(function, mc_p, save_path):
+def run_MCMC(function, mc_p, save_traces=False, save_where=None):         
     print "\nMCMC parameters:\n", mc_p
-    MDL = pymc.MCMC(function, db="txt",
-                    dbname=save_path)
+    if save_traces:
+        # If path doesn't exist, create it
+        if not path.exists(save_where): makedirs(save_where)   
+        MDL = pymc.MCMC(function, db='txt',
+                        dbname=save_where)
+    else:
+        MDL = pymc.MCMC(function, db='ram',
+                        dbname=save_where)                        
     for stoc in MDL.stochastics:
         MDL.use_step_method(pymc.Metropolis, stoc,
                             proposal_distribution='Normal',
                             scale=mc_p['prop_scale'], verbose=mc_p['verbose'])
-#    dico  = {MDL.R0:0.1, MDL.c:[0.5,0.5], MDL.m:[0.5,0.5], MDL.log_tau:[1.0,1.0]}
     for i in range(1, mc_p['nb_chain']+1):
         print '\n Chain #%d/%d'%(i, mc_p['nb_chain'])
         MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'])
@@ -236,72 +254,6 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         return locals()
 
 #==============================================================================
-    """Debye Bayesian Model"""
-#==============================================================================
-    def PolyDebyeModel(decomp_poly):
-        # Initial guesses
-        p0 = {'R0'         : 1.0,
-              'a'          : ([0.01, -0.001, -0.001, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
-              'log_tau_hi' : -6.0,
-              'm_hi'       : 1.0,
-              'TotalM'     : None,
-              'log_MeanTau': None,
-              'U'          : None,
-              }
-        # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
-        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
-        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-6.0, upper=-3.0, value=p0['log_tau_hi'])
-        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
-        # Deterministics
-        @pymc.deterministic(plot=False)
-        def zmod(log_tau_hi=log_tau_hi, m_hi=m_hi, R0=R0, a=a):
-            return Debye_cyth(w, tau_10, log_taus, log_tau_hi, m_hi, R0, a)
-        @pymc.deterministic(plot=False)
-        def m(a=a):
-            return np.sum((a*log_taus.T).T, axis=0)
-        @pymc.deterministic(plot=False)
-        def totalM(m=m):
-            return np.sum(m[(log_tau > -3)&(log_tau < 1)])
-        @pymc.deterministic(plot=False)
-        def log_meanTau(m=m, totalM=totalM, a=a):
-            return np.log10(np.exp(np.sum(m[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/totalM))
-        # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
-        return locals()
-
-
-##==============================================================================
-#    """Debye Bayesian Model"""
-##==============================================================================
-    def DiscDebyeModel():
-        # Initial guesses
-        p0 = {'R0'         : 1.00,
-              'mp'         : [1/len(tau_10)]*len(tau_10),
-              'TotalM'     : None,
-              'log_MeanTau': None,
-             }
-        # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
-        mp = pymc.Uniform('mp', lower=-4.0, upper=3.0, value=p0['mp'], size=len(tau_10))
-        # Deterministics
-        @pymc.deterministic(plot=False)
-        def m(mp=mp):
-            return m_cyth(mp)
-        @pymc.deterministic(plot=False)
-        def totalM(m=m):
-            return np.sum(m[(log_tau > -3)&(log_tau < 1)])
-        @pymc.deterministic(plot=False)
-        def log_meanTau(m=m, totalM=totalM):
-            return np.log10(np.exp(np.sum(m[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/totalM))
-        @pymc.deterministic(plot=False)
-        def zmod(R0=R0, m=m):
-            return Debye_cyth2(w, tau_10, R0, m)
-        # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2,n_freq), observed=True)
-        return locals()
-
-#==============================================================================
     """
     Main section
     """
@@ -312,7 +264,6 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
     n_freq = len(w)
     n_decades = np.ceil(max(np.log10(1.0/w))) - np.floor(min(np.log10(1.0/w)))
-    n_tau = 10*n_decades
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
     log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), 2*n_freq)
     log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
@@ -325,11 +276,9 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     now = datetime.now()
     save_time = now.strftime('%Y%m%d_%H%M%S')
     save_date = now.strftime('%Y%m%d')
-    save_path = '%s/Txt traces/%s/%s/%s-%s-%s/'%(actual_path, save_date,
+    out_path = '%s/Txt traces/%s/%s/%s-%s-%s/'%(actual_path, save_date,
                                                  sample_name, model,
-                                             sample_name, save_time)
-    # If path doesn't exist, create it
-    if not path.exists(save_path): makedirs(save_path)
+                                                 sample_name, save_time)
 
     """
     #==========================================================================
@@ -339,15 +288,13 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     # "ColeCole", "Dias", "Debye" or "Shin"
     sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [cc_modes]          },
                 "Dias":     {"func": DiasModel,         "args": []                  },
-                "PDebye":   {"func": PolyDebyeModel,    "args": [decomp_poly]        },
-                "PDecomp":  {"func": PolyDecompModel,   "args": [decomp_poly, c_exp] },
-                "DDebye":   {"func": DiscDebyeModel,    "args": []                  },
+                "PDecomp":  {"func": PolyDecompModel,   "args": [decomp_poly, c_exp]},
                 "Shin":     {"func": ShinModel,         "args": []                  },
 #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
                 }
     simulation = sim_dict[model] # Pick entries for the selected model
-    MDL = run_MCMC(simulation["func"](*simulation["args"]), mcmc, save_path) # Run MCMC simulation with selected model and arguments
-    if not keep_traces: rmtree(save_path)   # Deletes the traces if not wanted
+    MDL = run_MCMC(simulation["func"](*simulation["args"]), mcmc, save_traces=keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
+#    if not keep_traces: rmtree(out_path)   # Deletes the traces if not wanted
 
     """
     #==========================================================================
@@ -365,7 +312,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
 
     # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc}
+    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"c_exp": c_exp, "decomp_polyn": decomp_poly, "cc_modes": cc_modes}}
     # End of inversion
 
 

@@ -5,10 +5,32 @@ Created on Sat Apr 25 14:51:26 2015
 @author:    charleslberube@gmail.com
             École Polytechnique de Montréal
 
-Copyright (c) 2015-2016 Charles L. Bérubé
+The MIT License (MIT)
 
-This module contains functions to visualize the bayesian inversion results
+Copyright (c) 2016 Charles L. Bérubé
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+https://opensource.org/licenses/MIT
+https://github.com/clberube/bisip
+
+This Python module contains functions to visualize the Bayesian inversion results
 """
 
 #==============================================================================
@@ -61,9 +83,12 @@ def plot_histo(sol, save):
     keys.remove("zmod")
     if model == "PDecomp":
         keys.remove("m")
-    if model == "DDebye":
-        keys.remove("mp")
-        keys.remove("m")
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -120,11 +145,14 @@ def plot_traces(sol, save):
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     keys.remove("zmod")
-    if model == "Pdecomp":
+    if model == "PDecomp":
         keys.remove("m")
-    if model == "DDebye":
-        keys.remove("mp")
-        keys.remove("m")
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"                
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -172,83 +200,23 @@ def plot_traces(sol, save):
     except: pass
     return fig
 
-def plot_scores(MDL, model, filename, save):
-    keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
-    keys.remove("zmod")
-    if model == "Debye":
-        adj = -1
-        keys.remove("m")
-    else: adj = 0
-    for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
-        if vect > 1:
-         keys[i] = [k+"%d"%n for n in range(1+adj,vect+1+adj)]
-    keys = list(flatten(keys))
-    ncols = 2
-    nrows = int(ceil(len(keys)*1.0 / ncols))
-    plt.ioff()
-    fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
-    for (a, k) in zip(ax.flat, keys):
-        plt.axes(a)
-        plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-        plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-        plt.yticks(fontsize=8)
-        plt.xticks(fontsize=8)
-        plt.ylabel(k, fontsize=8)
-        if k[-1] not in ["%d"%d for d in range(1+adj,8)] or k == "R0":
-            try:
-                scores = geweke(MDL.trace(k)[:].ravel())
-                plt.plot([x[0] for x in scores], [y[1] for y in scores], "bo")
-                plt.plot([0,max([x[0] for x in scores])], [2,2], "--g")
-                plt.plot([0,max([x[0] for x in scores])], [-2,-2], "--g")
-            except:
-                print "Singular matrix, can't compute scores for %s"%k
-        else:
-            try:
-                scores = geweke(MDL.trace(k[:-1])[:][:,int(k[-1])-1-adj].ravel())
-                plt.plot([x[0] for x in scores], [y[1] for y in scores], "bo")
-                plt.plot([0,max([x[0] for x in scores])], [2,2], "--g")
-                plt.plot([0,max([x[0] for x in scores])], [-2,-2], "--g")
-            except:
-                print "Singular matrix, can't compute scores for %s"%k
-
-        plt.grid(None)
-        plt.ylim([-3,3])
-        plt.yticks(range(-2,3))
-        plt.ylabel("$\sigma$ (%s)"%k, fontsize=8)
-        plt.xlabel("First iteration", fontsize=8)
-    fig.tight_layout()
-    for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
-        a.set_visible(False)
-
-    if save:
-        save_where = '/Figures/Scores/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
-        save_path = actual_path+save_where
-        print "\nSaving Geweke scores in:\n", save_path
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'Geweke-%s-%s.pdf'%(model,filename))
-    try:    plt.close(fig)
-    except: pass
-    return fig
-
 def plot_summary(sol, save):
     MDL, model, ch_n = sol["pymc_model"], sol["SIP_model"], sol["mcmc"]["nb_chain"]
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
-
     keys.remove("zmod")
     if model == "PDecomp":
         keys.remove("m")
-    if model == "DDebye":
-        keys.remove("mp")
-        keys.remove("m")
-    adj = 0
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"        
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
-         keys[i] = [k+"%d"%n for n in range(1+adj,vect+1+adj)]
+         keys[i] = [k+"%d"%n for n in range(1,vect+1)]
     keys = list(reversed(sorted(flatten(keys))))
     try:    r_hat = gelman_rubin(MDL)
     except:
@@ -260,7 +228,7 @@ def plot_summary(sol, save):
     ax2.set_xlabel("R-hat")
     ax2.plot([1,1], [-1,len(keys)], "--b")
     for (i, k) in enumerate(keys):
-        test = k[-1] not in ["%d"%d for d in range(1+adj,8)] or k == "R0"
+        test = k[-1] not in ["%d"%d for d in range(1,8)] or k == "R0"
         for c in range(ch_n):
             if test:
                 imp = None
@@ -269,9 +237,9 @@ def plot_summary(sol, save):
                 hpd_l = MDL.stats(k[:imp], chain=c)[k[:imp]]['95% HPD interval'][1]
             else:
                 imp = -1
-                val_m = MDL.stats(k[:imp], chain=c)[k[:imp]]['mean'][int(k[-1])-1-adj]
-                hpd_h = MDL.stats(k[:imp], chain=c)[k[:imp]]['95% HPD interval'][0][int(k[-1])-1-adj]
-                hpd_l = MDL.stats(k[:imp], chain=c)[k[:imp]]['95% HPD interval'][1][int(k[-1])-1-adj]
+                val_m = MDL.stats(k[:imp], chain=c)[k[:imp]]['mean'][int(k[-1])-1]
+                hpd_h = MDL.stats(k[:imp], chain=c)[k[:imp]]['95% HPD interval'][0][int(k[-1])-1]
+                hpd_l = MDL.stats(k[:imp], chain=c)[k[:imp]]['95% HPD interval'][1][int(k[-1])-1]
             val = val_m
             err = [[abs(hpd_h-val_m)],
                     [abs(hpd_l-val_m)]]
@@ -314,24 +282,26 @@ def plot_autocorr(sol, save):
     keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
     keys.remove("zmod")
     if model == "PDecomp":
-        keys.remove("m")
-    if model == "DDebye":
-        keys.remove("mp")
-        keys.remove("m")
-    adj = 0
+        keys.remove("m")              
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
-         keys[i] = [k+"%d"%n for n in range(1+adj,vect+1+adj)]
+         keys[i] = [k+"%d"%n for n in range(1,vect+1)]
     keys = list(flatten(keys))
     ncols = 2
     nrows = int(ceil(len(keys)*1.0 / ncols))
     fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
     for (a, k) in zip(ax.flat, keys):
-        if k[-1] not in ["%d"%d for d in range(1+adj,8)] or k =="R0":
+        if k[-1] not in ["%d"%d for d in range(1,8)] or k =="R0":
             data = sorted(MDL.trace(k)[:].ravel())
         else:
-            data = sorted(MDL.trace(k[:-1])[:][:,int(k[-1])-1-adj].ravel())
+            data = sorted(MDL.trace(k[:-1])[:][:,int(k[-1])-1].ravel())
         plt.axes(a)
         plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
         plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
@@ -339,7 +309,7 @@ def plot_autocorr(sol, save):
         plt.xticks(fontsize=12)
         plt.ylabel(k, fontsize=12)
         to_thin = len(data)/50
-        if to_thin != 0: plt.xlabel("Lags / %d"%to_thin, fontsize=8)
+        if to_thin != 0: plt.xlabel("Lags / %d"%to_thin, fontsize=12)
         else: plt.xlabel("Lags", fontsize=12)
         max_lags = None
         if len(data) > 50: data= data[::to_thin]
@@ -362,6 +332,12 @@ def plot_autocorr(sol, save):
 
 def plot_debye(sol, save, draw):
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    if sol["model_type"]["c_exp"] == 0.5:
+        model = "WarburgDecomp"
+    elif sol["model_type"]["c_exp"] == 1.0:
+        model = "DebyeDecomp"
+    else:
+        model = "ColeColeDecomp"    
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
         x = np.log10(sol["data"]["tau"])
@@ -383,7 +359,7 @@ def plot_debye(sol, save, draw):
         print "\nSaving relaxation time distribution figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Polynomial-RTD-%s.pdf'%(filename))
+        fig.savefig(save_path+'Polynomial-RTD-%s-%s.pdf'%(model, filename))
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
@@ -417,11 +393,15 @@ def plot_debye_histo(sol, save, draw):
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
-
     MDL, pm, model, filepath = sol["pymc_model"], sol["params"], sol["SIP_model"], sol["path"]
-
+    if model == "PDecomp":
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"      
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
-
     save_where = '/Results/'
     actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
     save_path = actual_path+save_where+"%s/"%sample_name
@@ -454,7 +434,15 @@ def save_resul(sol):
     if "zmod" in vars_: vars_.remove("zmod")
     MDL.write_csv(save_path+'STATS_%s_%s.csv' %(model,sample_name), variables=(vars_))
 
-def merge_results(model,files):
+def merge_results(sol,files):
+    model = sol["SIP_model"]    
+    if model == "PDecomp":
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"     
     save_where = '/Batch results/'
     actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
     save_path = actual_path+save_where
@@ -520,8 +508,19 @@ def plot_data(filename, headers, ph_units):
     plt.close(fig)
     return fig
 
-def plot_fit(data, fit, model, filepath, save=False, draw=True):
+def plot_fit(sol, save=False, draw=True):
+    filepath = sol["path"]
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
+    model = sol["SIP_model"]
+    data = sol["data"]
+    fit = sol["fit"]
+    if model == "PDecomp":
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"    
     # Graphiques du fit
     f = data["freq"]
     Zr0 = max(abs(data["Z"]))
@@ -557,41 +556,25 @@ def plot_fit(data, fit, model, filepath, save=False, draw=True):
 #        plt.title(sample_name, fontsize=10)
         # Freq-Phas
         plt.axes(ax[0])
-#        NRMS_P = 100*np.sqrt(np.mean((Pha_dat-Pha_fit)**2))/abs(max(Pha_dat)-min(Pha_fit))
         plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
         plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
         ax[0].set_yscale("log", nonposy='clip')
         plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3)
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['phas'], fontsize=14)
-
-#        handles, labels = ax[0].get_legend_handles_labels()
-        # sort both labels and handles by labels
-#        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
-#        ax[0].legend(handles, labels, loc=2, numpoints=1, fontsize=14)
-
         ax[0].legend(loc=2, numpoints=1, fontsize=12)
         plt.ylim([1,1000])
-#        plt.title(sample_name, fontsize=10)
-
         # Freq-Ampl
         plt.axes(ax[1])
-#        NRMS_A = 100*np.sqrt(np.mean((Amp_dat-Amp_fit)**2))/abs(max(Amp_dat)-min(Amp_fit))
         plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
         plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
         plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['ampl'], fontsize=14)
-
-#        handles, labels = ax[1].get_legend_handles_labels()
-        # sort both labels and handles by labels
-#        labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
-#        ax[1].legend(handles, labels, loc=1, numpoints=1, fontsize=14)
         ax[1].legend(loc=1, numpoints=1, fontsize=12)
         plt.ylim([None,1.0])
 #        plt.title(sample_name, fontsize=12)
         fig.tight_layout()
-
     if save:
         save_where = '/Figures/Fit figures/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -604,18 +587,6 @@ def plot_fit(data, fit, model, filepath, save=False, draw=True):
     except: pass
     if draw:    return fig
     else:       return None
-
-def plot_pymc_histo(M, model, filename):
-    from pymc.Matplot import plot
-    save_where = '/Histograms/'
-    actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
-    save_path = actual_path+save_where+"%s/"%filename
-    print "\nSaving histograms in:\n", save_path
-    if not path.exists(save_path):
-        makedirs(save_path)
-    # Histogrammes, trace et autocorrélation
-    plot(M, path=save_path+'HIS-%s-%s'%(model,filename), verbose=0)
-    plt.close("all")
 
 def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
