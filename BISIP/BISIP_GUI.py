@@ -6,10 +6,33 @@ Created on Tue Apr 21 12:05:22 2015
 @author:    charleslberube@gmail.com
             École Polytechnique de Montréal
 
+The MIT License (MIT)
+
 Copyright (c) 2015-2016 Charles L. Bérubé
 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+https://opensource.org/licenses/MIT
+https://github.com/clberube/bisip
+
 This python script builds the graphical user interface may be used to call the
-Bayesian inversion module for SIP models (BISIP_models.py)
+Bayesian inversion module of all SIP models (BISIP_models.py)
 """
 
 #==============================================================================
@@ -28,7 +51,7 @@ import FixTk
 import tkFileDialog, tkMessageBox
 import FileDialog, tkFont # These 2 only to avoid pyinstaller error
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-from matplotlib.pyplot import rcParams, close as plt_close
+from matplotlib.pyplot import rcParams
 # SIP imports
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
@@ -38,12 +61,13 @@ stdout.flush()
 #==============================================================================
 # Fonts
 if "Darwin" in system():
-    print "OSX detected"
+    print "OS X detected"
     fontsize = 12
     pad_radio = 3
     but_size = -2
     res_size = -1
 else:
+    print "Windows detected"
     fontsize = 10
     pad_radio = 0
     but_size = -2
@@ -54,79 +78,7 @@ fontz = {"bold": ("TkDefaultFont", fontsize, "bold"),
          "normal_small": ("TkDefaultFont", fontsize+but_size, "normal"),
          "italic_small": ("TkDefaultFont", fontsize+but_size, "italic")}
 
-#==============================================================================
-# Import last used window parameters
-# All GUI options and choices saved when closing the main window
-# Parameters are saved in root_ini file in the executable's directory
-# To reset and use default parameters, delete root_ini in local directory
-class root_state:
-    working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
-    default = {
-                "Spectral IP model" : "ColeCole",
-                "Nb of chains:"     : 1,
-                "Total iterations:" : 10000,
-                "Burn-in period:"   : 8000,
-                "Thinning factor:"  : 1,
-                "Tuning interval:"  : 1000,
-                "Proposal scale:"   : 1.0,
-                "Nb header lines"   : 1,
-                "Phase units"       : "mrad",
-                "Keep txt traces"   : False,
-                "Draw data and fit" : False,
-                "Save QC figures "  : False,
-                "Save fit figure"   : False,
-                "Tuning verbose"    : False,
-                "Imported files"    : [],
-                "Polyn order"       : 4,
-                "Freq dep"          : 1.0,
-                "Nb modes"          : 2,
-            }
-    
-    def load(self):
-        print "\nLoading root_ini from:\n", self.working_path
-        try:
-            with open(self.working_path+'root_ini') as f:
-                root_ini = jload(f)
-            print "root_ini successfully loaded"
-        except:
-            print "root_ini not found, using default values"
-            root_ini = self.default
-        stdout.flush()
-        return root_ini
-        
-    def save(self):
-        root_save = {
-                        "Spectral IP model" : mod.get(),
-                        "Nb of chains:"     : mcmc_vars[0][1].get(),
-                        "Total iterations:" : mcmc_vars[1][1].get(),
-                        "Burn-in period:"   : mcmc_vars[2][1].get(),
-                        "Thinning factor:"  : mcmc_vars[3][1].get(),
-                        "Tuning interval:"  : mcmc_vars[4][1].get(),
-                        "Proposal scale:"   : mcmc_vars[5][1].get(),
-                        "Nb header lines"   : head.get(),
-                        "Phase units"       : uni.get(),
-                        "Keep txt traces"   : check_vars[3][1].get(),
-                        "Draw data and fit" : check_vars[0][1].get(),
-                        "Save QC figures "  : check_vars[2][1].get(),
-                        "Save fit figure"   : check_vars[1][1].get(),
-                        "Tuning verbose"    : check_vars[4][1].get(),
-                        "Imported files"    : open_files,
-                        "Polyn order"       : poly_n.get(),
-                        "Freq dep"          : c_exp.get(),
-                        "Nb modes"          : modes_n.get(),
-                    }
-        print "\nSaving root_ini"
-        with open(self.working_path+'root_ini', 'w') as f:
-            jdump(root_save, f)
-        print "root_ini successfully saved in:\n", self.working_path
-        print "\n=========END========="
-
-# Close the main window
-def close_window():
-    plt_close("all")
-    root.destroy()
-
-# To flatten ND
+# To flatten ND lists
 def flatten(x):
     result = []
     for el in x:
@@ -137,580 +89,642 @@ def flatten(x):
     return result
 
 #==============================================================================
-# Block for main inversion function call
-def run_inversion():
-    global sel_files
-    try:    clear(menu=False)
-    except: pass
-    def all_same(items):
-        return all(x == items[0] for x in items)
-    sel_files = [str(open_files[i]) for i in text_files.curselection()]
-    if len(sel_files) == 0:
-        tkMessageBox.showwarning("Inversion error",
-                                 "No data selected for inversion \nSelect at least one data file in the left panel", parent=root)
-    if len(sel_files) >= 1:
+# Import last used window parameters
+# All GUI options and choices saved when closing the main window
+# Parameters are saved in root_ini file in the executable's directory
+# To reset and use default parameters, delete root_ini in local directory
+#class root_state:
+    
+class MainApplication:
+    working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
+    default_root = {
+                    "Spectral IP model" : "ColeCole",
+                    "Nb of chains:"     : 1,
+                    "Total iterations:" : 10000,
+                    "Burn-in period:"   : 8000,
+                    "Thinning factor:"  : 1,
+                    "Tuning interval:"  : 1000,
+                    "Proposal scale:"   : 1.0,
+                    "Nb header lines"   : 1,
+                    "Phase units"       : "mrad",
+                    "Keep txt traces"   : False,
+                    "Draw data and fit" : False,
+                    "Save QC figures "  : False,
+                    "Save fit figure"   : False,
+                    "Tuning verbose"    : False,
+                    "Imported files"    : [],
+                    "Polyn order"       : 4,
+                    "Freq dep"          : 1.0,
+                    "Nb modes"          : 2,
+                    }
+
+    def __init__(self, master, fontz):
+        self.master = master
+        self.master.resizable(width=tk.FALSE, height=tk.FALSE)
+        self.load()     
+        self.set_plot_par()
+        self.build_helpmenu()        
+        self.make_main_frames()
+        self.make_browse_button()
+        self.headers_input()
+        self.open_files = self.root_ini["Imported files"]
+        self.draw_file_list()
+        self.phase_units()
+        self.mcmc_parameters()
+        self.run_exit()
+        self.make_options()
+        self.model_choice()
+        self.activity(idle=True)   
+             
+#==============================================================================
+# Main frames          
+#==============================================================================
+    def make_main_frames(self):
+        # Frame for importing files
+        self.frame_import = tk.LabelFrame(self.master, text="1. Import data", width=200, height=5, font=fontz["bold"])
+        self.frame_import.grid(row = 0, column=1, columnspan=1, rowspan=5, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))     
+        self.frame_import.grid_columnconfigure(0, weight=1), self.frame_import.grid_rowconfigure(0, weight=1)
+        # Frame for choosing the model
+        self.frame_model = tk.LabelFrame(self.master, text="2. SIP model", width=200, height=4, font=fontz["bold"])
+        self.frame_model.grid(row = 6, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))        
+        self.frame_model.grid_columnconfigure(0, weight=1), self.frame_model.grid_rowconfigure(0, weight=1)
+        # Frame to enter mcmc parameters
+        self.frame_mcmc = tk.LabelFrame(self.master, text="3. MCMC settings", width=200, height=4, font=fontz["bold"])
+        self.frame_mcmc.grid(row = 7, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15), ipady=3)        
+        self.frame_mcmc.grid_columnconfigure(0, weight=1)
+        # Frame to run and exit
+        self.frame_ruex = tk.LabelFrame(self.master, text="4. Options", width=200, height=4, font=fontz["bold"])
+        self.frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=(5,10))            
+        self.frame_ruex.columnconfigure(0, weight=1)
+        # Frame to list the imported files and preview
+        self.frame_list = tk.LabelFrame(self.master, text="List of imported files", font=fontz["bold"])
+        self.frame_list.grid(row = 0, column=0, columnspan=1, rowspan=15, sticky=tk.W+tk.E+tk.N+tk.S, padx=10, pady=(5,10))
+        self.frame_list.grid_rowconfigure(1, weight=1), self.frame_list.columnconfigure(0, weight=1)
+        # Frame to visualize results
+        self.frame_results = tk.LabelFrame(self.master, text="Results", font=fontz["bold"])
+        self.frame_results.grid(row = 0, column=2, columnspan=1, rowspan=15, sticky=tk.W+tk.E+tk.N+tk.S, padx=10, pady=(5,10))
+        self.frame_results.grid_rowconfigure(14, weight=1)
+             
+#==============================================================================
+# Running inversion             
+#==============================================================================
+    def run_inversion(self):
+        try:    self.clear(menu=False)
+        except: pass
+        self.sel_files = [str(self.open_files[i]) for i in self.text_files.curselection()]
+        if len(self.sel_files) == 0:
+            tkMessageBox.showwarning("Inversion error",
+                                     "No data selected for inversion \nSelect at least one data file in the left panel", parent=self.master)
+        if len(self.sel_files) >= 1:
+            try:
+                self.Inversion()
+                stdout.flush()
+            except:
+                tkMessageBox.showerror("Inversion error", "Error\nMake sure all fields are OK\nMake sure data file is correctly formatted",
+                                             parent=self.master)
+        return
+
+    def Inversion(self):
+        print "\n"
+        print "====================="
+        print "Starting inversion..."
+        print "====================="
+        
+        print "Model:", self.model.get()
+        if self.model.get() == "ColeCole":
+            print "Cole-Cole modes:", self.modes_n.get()
+        if self.model.get() == "PDecomp":
+            print "Polynomial order:", self.poly_n.get()
+            if self.c_exp.get() == 1.0:
+                decomp_type = "(Debye)"
+            elif self.c_exp.get() == 0.5:
+                decomp_type = "(Warburg)"
+            else:
+                decomp_type = "(Cole-Cole)"
+            print "Frequency dependence:", self.c_exp.get(), decomp_type
+        print "Units:", self.units.get()
+        print "Paths:"
+        for i in self.sel_files: 
+            print i
+        print "Skipping", self.head.get(), "header lines"
+        self.files = [self.sel_files[i].split("/")[-1].split(".")[0] for i in range(len((self.sel_files)))]
+        self.mcmc_params = {"nb_chain"   : self.mcmc_vars[0][1].get(),
+                       "nb_iter"    : self.mcmc_vars[1][1].get(),
+                       "nb_burn"    : self.mcmc_vars[2][1].get(),
+                       "thin"       : self.mcmc_vars[3][1].get(),
+                       "tune_inter" : self.mcmc_vars[4][1].get(),
+                       "prop_scale" : self.mcmc_vars[5][1].get(),
+                       "verbose"    : self.check_vars[4][1].get(),
+                        }
+        # Appel de la fonction d'inversion avec les paramètres sélectionnés
+        try:    del(self.all_results)
+        except: pass
+        self.all_results = {}
+        self.draw_drop_down()
+        self.var_review.set("Working...")
+        for (i, self.f_n) in enumerate(self.files):
+            print "====================="
+            self.activity()
+            self.var_review.set(self.f_n)
+            
+            self.sol = mcmcSIPinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
+                                headers=self.head.get(), ph_units=self.units.get(),
+                                cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
+                                c_exp=self.c_exp.get(), keep_traces=self.check_vars[3][1].get())
+
+            self.all_results[self.f_n] = {"pm":self.sol["params"],"MDL":self.sol["pymc_model"],"data":self.sol["data"],"fit":self.sol["fit"], "sol":self.sol}
+#           Impression ou non des résultats, graphiques, histogrammes
+            self.update_results()
+            iR.print_resul(self.sol)
+            iR.save_resul(self.sol)
+            fig_fit = iR.plot_fit(self.sol, save=self.check_vars[1][1].get(), draw=self.check_vars[0][1].get())
+            if self.check_vars[0][1].get():
+                self.plot_window(fig_fit, "Inversion results: "+self.f_n)
+            if self.model.get() == "PDecomp":
+                iR.plot_debye(self.sol, save=self.check_vars[1][1].get(), draw=False)
+                
+            if self.check_vars[2][1].get():
+                iR.plot_histo(self.all_results[self.f_n]["sol"], save=True)
+                iR.plot_traces(self.all_results[self.f_n]["sol"], save=True)
+                iR.plot_summary(self.all_results[self.f_n]["sol"], save=True)
+                iR.plot_autocorr(self.all_results[self.f_n]["sol"], save=True)
+            if self.files.index(self.f_n)+1 == len(self.files):
+                self.activity(done=True)
+                self.diagn_buttons()
+                self.write_output_path()
+                print "====================="
+
+#==============================================================================
+# Result frame
+#==============================================================================
+    # Batch progress
+    def activity(self, idle=False, done=False):
+        try:    self.frame_activ.destroy()
+        except: pass
+        self.frame_activ = tk.Frame(self.frame_results)
+        self.frame_activ.grid(row=0, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
+        if idle:
+            display = """ \n """
+            text_act = tk.Label(self.frame_activ, text=display, anchor=tk.W, justify=tk.LEFT, width=40)
+        else:
+            display = """Working on:\n%s (#%d/%d)..."""%(self.f_n, self.files.index(self.f_n)+1, len(self.files))
+            text_act = tk.Label(self.frame_activ, text=display, anchor=tk.W, justify=tk.LEFT, width=40)
+        text_act.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
+        text_act.update()
+        if done:
+            text_act.destroy()
+            text_done = tk.Label(self.frame_activ, text="""Done\n""", width=40, anchor=tk.W)
+            text_done.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
+
+    def clear(self, menu): # self expl
+        self.frame_optimal.destroy()
+        self.frame_saved_in.destroy()
+        self.frame_diagn_but.destroy()
+        if menu:
+            self.frame_drop.destroy(), self.frame_activ.destroy()
+
+    def change_file(self):
+        self.clear(menu=False)
+        self.update_results()
+        self.diagn_buttons()
+        self.write_output_path()    
+
+    def draw_drop_down(self):
+        try:    self.frame_drop.destroy()
+        except: pass
+        self.frame_drop = tk.Frame(self.frame_results)
+        self.frame_drop.grid(row=1, column=0, sticky=tk.E+tk.W, padx=10, pady=3)
+        self.frame_drop.columnconfigure(0,weight=1)
+        self.var_review = tk.StringVar()
+        self.var_review.set(self.files[0])
+        optionmenu = tk.OptionMenu(self.frame_drop, self.var_review, *self.files, command = lambda x: self.change_file())
+        optionmenu.grid(row=0, column=0, sticky=tk.W+tk.E+tk.S)
+        optionmenu.config(bg = "gray97", relief=tk.GROOVE)
+
+    def merge_csv_files(self):
+        if len(self.files) > 1:
+            iR.merge_results(self.sol, self.files)
+            print "====================="
+        else:
+            print "Can't merge csv files: Only 1 file inverted in last batch"
+            print "====================="
+        stdout.flush()
+
+    def RLD_diagnostic(self):
+        MDL = self.all_results[self.var_review.get()]["MDL"]
+        if self.model.get() == "Debye": adj = -1
+        else: adj = 0
         try:
-            Inversion()
+            keys = [x.__name__ for x in MDL.stochastics]
+            for (i, k) in enumerate(keys):
+                vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+                if vect > 1:
+                 keys[i] = [k+"%d"%n for n in range(1+adj,vect+1+adj)]
+            keys = list(reversed(sorted(flatten(keys))))
+            top_RLD = tk.Toplevel()
+            top_RLD.title("Raftery-Lewis diagnostic")
+            text_RLD = tk.Text(top_RLD, width=110, font=('courier', fontsize, 'normal'))
+            text_RLD.grid(stick=tk.N, padx=(20,0), pady=(10,10))
+            q=0.025
+            r=0.01
+            s=0.95
+            for k in keys:
+                if k[-1] not in ["%d"%d for d in range(1+adj,8)] or k == "R0":
+                    data = MDL.trace(k)[:].ravel()
+                else:
+                    data = MDL.trace(k[:-1])[:][:,int(k[-1])-1-adj].ravel()
+                F="%s:\n"%k
+                nmin, kthin, nburn, nprec, kmind = iR.print_diagn(data, q, r, s)
+                A="%s iterations required (assuming independence) to achieve %s accuracy with %i percent probability.\n" %(nmin, r, 100 * s)
+                B="Thinning factor of %i required to produce a first-order Markov chain.\n" %kthin
+                C="%i iterations to be discarded at the beginning of the simulation (burn-in).\n" %nburn
+                D="%s subsequent iterations required.\n" %nprec
+                E="Thinning factor of %i required to produce an independence chain.\n\n" %kmind
+                text_RLD.insert("1.0", F+A+B+C+D+E)
+            text_RLD.insert("1.0", "(From PYMC)"+"\n\n")
+            text_RLD.insert("1.0", self.var_review.get()+"\n\n")
+            button = tk.Button(top_RLD, height=1, width=20, text="Dismiss", command=top_RLD.destroy, bg='gray97', relief=tk.GROOVE)
+            button.grid(row=1, column=0, sticky=tk.S, pady=(0,10))
+    
+            s = tk.Scrollbar(top_RLD, width=20)
+            s.grid(row=0, column=1, sticky=tk.E+tk.N+tk.S, padx=(0,0),pady=(10,10))
+            s['command'] = text_RLD.yview
+            text_RLD['yscrollcommand'] = s.set
+            top_RLD.resizable(width=tk.FALSE, height=tk.FALSE)
+        except:
+            tkMessageBox.showwarning("Diagnostic error",
+                                     "Error\nRun inversion first", parent=self.master)
+
+    # Diagnostics buttons
+    def diagn_buttons(self):
+        try:    self.frame_diagn_but.destroy()
+        except: pass
+        self.frame_diagn_but = tk.Frame(self.frame_results)
+        self.frame_diagn_but.grid(row=14, column=0, sticky=tk.E+tk.W+tk.S, padx=10, pady=10)
+        self.frame_diagn_but.columnconfigure((0,1,2), weight=1)
+        but_cle = tk.Button(self.frame_diagn_but, height=1, width=10, text = "Clear", fg='black', bg='gray97', font=fontz["normal_small"],
+                            command = lambda: self.clear(menu=True), relief=tk.GROOVE)
+        but_cle.grid(row=7, column=0, columnspan=3, sticky=tk.E+tk.S, pady=(5,0))
+        but_mer = tk.Button(self.frame_diagn_but, height=1, text = "Merge csv result files", fg='black', bg='gray97',
+                            command = self.merge_csv_files, font=fontz["normal_small"], relief=tk.GROOVE)
+        but_mer.grid(row=1, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_fit = tk.Button(self.frame_diagn_but, height=1, text = "Draw data and fit", fg='black', bg='gray97',
+                            command = self.plot_fit_now, font=fontz["normal_small"], relief=tk.GROOVE)
+        but_fit.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_sum = tk.Button(self.frame_diagn_but, height=1, text = "Summary and Gelman-Rubin convergence", fg='black', bg='gray97',
+                            command = lambda: self.plot_diagnostic("summary"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_sum.grid(row=5, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_rld = tk.Button(self.frame_diagn_but, height=1, text = "Raftery-Lewis diagnostic", fg='black', bg='gray97',
+                            command = self.RLD_diagnostic, font=fontz["normal_small"], relief=tk.GROOVE)
+        but_rld.grid(row=6, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,5))
+        but_tra = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Traces", fg='black', bg='gray97',
+                            command = lambda: self.plot_diagnostic("traces"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_tra.grid(row=4, column=0, sticky=tk.W+tk.E+tk.S, padx=(0,0), pady=(5,0))
+        but_his = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Histograms", fg='black', bg='gray97',
+                            command = lambda: self.plot_diagnostic("histo"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_his.grid(row=4, column=1, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
+        but_aut = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Autocorrelation", fg='black', bg='gray97',
+                            command = lambda: self.plot_diagnostic("autocorr"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_aut.grid(row=4, column=2, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
+        if self.model.get() == "PDecomp":
+            but_rtd = tk.Button(self.frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
+                                command = self.plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
+            but_rtd.grid(row=3, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+
+    def write_output_path(self):
+        try:    self.frame_saved_in.destroy()
+        except: pass
+        self.frame_saved_in = tk.Frame(self.frame_results)
+        self.frame_saved_in.grid(row=8, column=0, sticky=tk.E+tk.W, padx=10, pady=0)
+        self.frame_saved_in.columnconfigure(0, weight=1)
+        label_done = tk.Label(self.frame_saved_in, text="""Results saved in:""", anchor=tk.W)
+        label_done.grid(row=0, column=0, columnspan=1, sticky=tk.W+tk.E)
+        text_path = tk.Text(self.frame_saved_in, height=3, width=35, font=fontz["normal_small"])
+        text_path.grid(row=1, column=0, columnspan=1, sticky=tk.W+tk.E, padx=0)
+        text_path.insert("1.0", "%s" %(self.working_path))
+
+    def update_results(self):
+        pm = self.all_results[self.var_review.get()]["pm"]
+        model = self.model.get()
+        try:    self.frame_optimal.destroy()
+        except: pass
+        self.frame_optimal = tk.Frame(self.frame_results)
+        self.frame_optimal.grid(row=2, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
+        self.frame_optimal.columnconfigure(0, weight=1)
+        keys = sorted([x for x in pm.keys() if "_std" not in x])
+        if model in ["PDecomp", "DDebye"]:
+            adj = -1
+            if "m" in keys: keys.remove("m")
+        else:
+            adj = 0
+        values = flatten([pm[k] for k in sorted(keys)])
+        errors = flatten([pm[k+"_std"] for k in sorted(keys)])
+        for (i, k) in enumerate(keys):
+            if len(pm[k].shape) > 0:
+                keys[i] = [keys[i]+"%d"%n for n in range(1+adj,pm[k].shape[0]+1+adj)]
+        keys = list(flatten(keys))
+        label_res = tk.Label(self.frame_optimal, text="""Optimal parameters:""", anchor=tk.W)
+        label_res.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
+        text_res = tk.Text(self.frame_optimal, height=len(values), width=40, font=("Courier new", fontsize+res_size, "bold"))
+        text_res.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N)
+        items = ["{:<10}".format(x+":") for x in keys]
+        items2 = [" %.3e " %x for x in values]
+        items3 = ["+/- %.0e" %x for x in errors]
+        items4 = [" (%.2f%%)" %(abs(100*e/v)) for v,e in zip(values,errors)]
+        all_items = map(str.__add__,map(str.__add__,map(str.__add__,items,items2),items3),items4)
+        items = '\n'.join(all_items)
+        text_res.insert("1.0", items)
+        
+#==============================================================================
+# MCMC parameters        
+#==============================================================================
+    def mcmc_parameters(self):
+        # McMC parameters
+        self.mcmc_vars = [("Nb of chains:"    , tk.IntVar()),
+                          ("Total iterations:", tk.IntVar()),
+                          ("Burn-in period:"  , tk.IntVar()),
+                          ("Thinning factor:" , tk.IntVar()),
+                          ("Tuning interval:" , tk.IntVar()),
+                          ("Proposal scale:"  , tk.DoubleVar()),]
+        for i, (k, v) in enumerate(self.mcmc_vars):
+            v.set(self.root_ini[k])
+            tk.Label(self.frame_mcmc, text=k, justify = tk.LEFT).grid(row=i, column=0, sticky=tk.W, padx=(10,0))
+            tk.Entry(self.frame_mcmc ,textvariable=v, width=12).grid(row=i, column=1, sticky=tk.E,padx=(0,10))
+
+#==============================================================================
+# SIP model
+#==============================================================================
+    def model_choice(self):
+        # Available models
+        models = [("Pelton \nCole-Cole","ColeCole"),
+                  ("Dias \nmodel","Dias"),
+                  ("Debye / Warburg \ndecomposition","PDecomp"),]
+        self.modes_n, self.poly_n, self.c_exp = tk.IntVar(), tk.IntVar(), tk.DoubleVar()
+        self.modes_n.set(self.root_ini["Nb modes"]), self.poly_n.set(self.root_ini["Polyn order"]), self.c_exp.set(self.root_ini["Freq dep"])
+
+        ### Model choice
+        self.model = tk.StringVar()
+        self.model.set(self.root_ini["Spectral IP model"])  # set last used values
+        for i, (txt, val) in enumerate(models):
+            tk.Radiobutton(self.frame_model, text=txt, justify=tk.LEFT, variable = self.model, command = self.draw_rtd_check, value=val).grid(row=i, column=0, sticky=tk.W+tk.S, padx=(10,0), pady=pad_radio+2)
+        self.draw_rtd_check()
+        
+    def draw_rtd_check(self):
+        try:    self.model_opt_frame.destroy()
+        except: pass
+        self.mod_opt_frame = tk.Frame(self.frame_model)
+        self.mod_opt_frame.grid(row=0, column=1, rowspan=4)
+        self.mod_opt_frame.grid_rowconfigure(4, weight=1)
+        if self.model.get() == "PDecomp":
+            poly_lab = tk.Label(self.mod_opt_frame, text="""Polyn order""", justify = tk.LEFT, font=fontz["normal_small"])
+            poly_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
+            poly_scale = tk.Scale(self.mod_opt_frame, variable=self.poly_n, width=10, length=70, from_=3, to=5, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            poly_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+            exp_lab = tk.Label(self.mod_opt_frame, text="""c exponent""", justify = tk.LEFT, font=fontz["normal_small"])
+            exp_lab.grid(row=2, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
+            exp_scale = tk.Scale(self.mod_opt_frame, variable=self.c_exp, width=10, length=70, from_=0.1, to=1.0, resolution=0.05, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            exp_scale.grid(row=3, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+        if self.model.get() == "ColeCole":
+            modes_lab = tk.Label(self.mod_opt_frame, text="""Nb modes""", justify = tk.LEFT, font=fontz["normal_small"])
+            modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
+            modes_scale = tk.Scale(self.mod_opt_frame, variable=self.modes_n, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+
+#==============================================================================
+# Run Exit Options
+#==============================================================================
+
+    def run_exit(self): # self expl
+        tk.Button(self.frame_ruex, width=14, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+                            command = self.run_inversion).grid(row=0, column=1, sticky=tk.N+tk.E+tk.S, padx=(0,10), pady=(5,0))
+    
+        tk.Button(self.frame_ruex, width=14, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+                            command = self.master.destroy).grid(row=1, column=1, sticky=tk.S+tk.E+tk.N, padx=(0,10), pady=(0,10))
+
+    def make_options(self):
+        self.check_vars = [("Draw data and fit", tk.BooleanVar()),
+                           ("Save fit figure"  , tk.BooleanVar()),
+                          ("Save QC figures " , tk.BooleanVar()),
+                          ("Keep txt traces"  , tk.BooleanVar()),
+                          ("Tuning verbose"   , tk.BooleanVar()),]
+        self.frame_checkbox = tk.Frame(self.frame_ruex)
+        self.frame_checkbox.grid(row=0, column=0, rowspan=2, pady=(5,10), padx=10)
+        for i, (k, v) in enumerate(self.check_vars):
+            tk.Checkbutton(self.frame_checkbox, text=k, variable=v).grid(row=i, column=0, sticky=tk.W+tk.N+tk.S)
+            self.check_vars[i][1].set(self.root_ini[k]) # set last used values
+
+#==============================================================================
+# Plotting
+#==============================================================================
+    def set_plot_par(self): # Setting up plotting parameters
+        try:
+            print "\nLoading plot parameters"
+            rcParams.update(iR.plot_par())
+            print "Plot parameters successfully loaded"
+        except:
+            print "Plot parameters not found, using default values"
+        stdout.flush()
+
+    def preview_data(self):
+        try:
+            for i in self.text_files.curselection():
+                sel = str(self.open_files[i])
+                fn = sel.split("/")[-1].split(".")[0]
+                fig_data = iR.plot_data(sel, self.head.get(), self.units.get())
+                self.plot_window(fig_data, "Data preview: "+fn)
+        except:
+            tkMessageBox.showwarning("Preview error",
+                                     "Can't draw data\nImport and select at least one data file first", parent=self.master)
+
+    def plot_diagnostic(self, which):
+        f_n = self.var_review.get()
+        sol = self.all_results[f_n]["sol"]
+        try:
+            if which == "traces":
+                trace_plot = iR.plot_traces(sol, save=False)
+                self.plot_window(trace_plot, "Parameter traces: "+f_n)
+            if which == "histo":
+                histo_plot = iR.plot_histo(sol, save=False)
+                self.plot_window(histo_plot, "Parameter histograms: "+f_n)
+            if which == "autocorr":
+                autocorr_plot = iR.plot_autocorr(sol, save=False)
+                self.plot_window(autocorr_plot, "Parameter autocorrelation: "+f_n)
+            if which == "geweke":
+                geweke_plot = iR.plot_scores(sol, save=False)
+                self.plot_window(geweke_plot, "Geweke scores: "+f_n)
+            if which == "summary":
+                summa_plot = iR.plot_summary(sol, save=False)
+                self.plot_window(summa_plot, "Parameter summary: "+f_n)
             stdout.flush()
         except:
-            tkMessageBox.showerror("Inversion error", "Error\nMake sure all fields are OK\nMake sure data file is correctly formatted",
-                                         parent=root)
-    return
+            tkMessageBox.showwarning("Error analyzing results", "Error\nProblem with inversion results\nTry adding iterations",
+                                     parent=self.master)
 
-def Inversion():
-    global sol, all_results
-    model, units, headers = mod.get(), uni.get(), head.get()
-    print "\n"
-    print "====================="
-    print "Starting inversion..."
-    print "====================="
-    print "Model:", model
-    if model == "ColeCole":
-        print "Cole-Cole modes:", modes_n.get()
-    if model == "PDecomp":
-        print "Polynomial order:", poly_n.get()
-        if c_exp.get() == 1.0:
-            decomp_type = "(Debye)"
-        elif c_exp.get() == 0.5:
-            decomp_type = "(Warburg)"
+    def plot_window(self, fig, name=""):
+        top_fig = tk.Toplevel()
+        top_fig.lift()
+        top_fig.title(name)
+        top_fig.rowconfigure(1, weight=1)
+        def _quit():
+            top_fig.destroy()
+        canvas = FigureCanvasTkAgg(fig, master=top_fig)
+        canvas.show()
+        canvas.get_tk_widget().grid(row=1, column=0, columnspan = 3, sticky=tk.N+tk.S+tk.E+tk.W)
+        button = tk.Button(top_fig, height=1, width=20, text="Dismiss", bg='gray97', command=_quit, relief=tk.GROOVE)
+        button.grid(row=2, column=0, columnspan=1, sticky=tk.W, pady=(10,10), padx=(20,20))
+        toolbar_frame = tk.Frame(top_fig)
+        toolbar_frame.grid(row=0,column=0,columnspan=2, sticky=tk.W)
+        NavigationToolbar2TkAgg( canvas, toolbar_frame )
+        top_fig.resizable(width=tk.FALSE, height=tk.FALSE)
+
+    def plot_fit_now(self):
+        f_n = self.var_review.get()
+        data = self.all_results[f_n]["data"]
+        fit = self.all_results[f_n]["fit"]
+        fig_fit = iR.plot_fit(data, fit, self.model.get(), f_n, save=False, draw=True)
+        self.plot_window(fig_fit, "Inversion results: "+f_n)
+    
+    def plot_rtd_now(self):
+        f_n = self.var_review.get()
+        fig_debye = iR.plot_debye(self.all_results[f_n]["sol"], save=False, draw=True)
+        self.plot_window(fig_debye, "Debye RTD: "+f_n)
+
+#==============================================================================
+# Importing data
+#==============================================================================
+
+    def make_browse_button(self):
+        self.but_browse = tk.Button(self.frame_import, height=1, text = "Open file browser", bg='gray97',
+                            command = self.get_file_list, relief=tk.GROOVE)
+        self.but_browse.grid(row=0, column=0, columnspan=2, pady=(10,10), padx=(10,10), sticky=tk.E+tk.W)
+
+    def headers_input(self):
+        self.head = tk.IntVar()
+        self.head.set(self.root_ini["Nb header lines"])  # set last used value
+        tk.Label(self.frame_import, text="""Nb header lines:""", justify = tk.LEFT).grid(row=1, column=0, columnspan=1,sticky=tk.W, padx=(10,0))
+        tk.Entry(self.frame_import, textvariable=self.head, width=12).grid(row=1, column=1, columnspan=1,sticky=tk.E+tk.W,padx=(10,10))
+
+    def phase_units(self):        
+        # Phase units
+        unites = ["mrad", "rad" ,"deg"]
+        self.units = tk.StringVar()
+        self.units.set(self.root_ini["Phase units"])  # set last used value
+        tk.Label(self.frame_import, text="""Phase units:""", justify = tk.LEFT).grid(row=2, column=0, sticky=tk.W, padx=(10,0))
+        for i, u in enumerate(unites):
+            tk.Radiobutton(self.frame_import, text=u, variable=self.units, command=None, value=u).grid(row=i+2, column=1, sticky=tk.W, padx=(10,10), pady=pad_radio)
+
+    def get_file_list(self):
+        files = tkFileDialog.askopenfilenames(parent=self.master,title='Choose a file')
+        self.open_files = sorted(list(files))
+        self.draw_file_list()
+
+    def draw_file_list(self):
+
+        self.frame_path = tk.Frame(self.frame_list)
+        self.frame_path.grid(row=0, column=0, padx=20, pady=10, sticky=tk.E+tk.W)
+        self.frame_path.columnconfigure(2, weight=1)
+    
+        self.frame_select = tk.Frame(self.frame_list)
+        self.frame_select.grid(row=1, column=0, padx=(20,0), pady=10, sticky=tk.E+tk.W+tk.S+tk.N)
+        self.frame_select.columnconfigure(0, weight=1)
+        self.frame_select.rowconfigure(1, weight=1)
+    
+        text_loc = tk.Text(self.frame_path, width=40, height=3, font=fontz["normal_small"])
+        text_loc.grid(row=0, column=0, rowspan=1, sticky=tk.N+tk.W+tk.E)
+        s = tk.Scrollbar(self.frame_select, width=20)
+        s.grid(row=1, column=2, sticky=tk.E+tk.N+tk.S, pady=(0,10))
+        self.text_files = tk.Listbox(self.frame_select, selectmode='extended', font=fontz["italic_small"])
+        self.text_files.grid(row=1, column=0, columnspan=2, sticky=tk.S+tk.W+tk.E+tk.N, pady=(0,0))
+        s['command'] = self.text_files.yview
+        self.text_files['yscrollcommand'] = s.set
+
+        tk.Button(self.frame_select, height=1, text="Preview selected data files", command=self.preview_data, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=2, column=0, columnspan=2, sticky=tk.W+tk.E)
+        # Select all or none functions
+        def select_all(): # self expl
+            self.text_files.select_set(0, tk.END)
+        def select_none(): # self expl
+            self.text_files.select_clear(0, tk.END)
+        tk.Button(self.frame_select, height=1, width=15, text="Select all", command=select_all, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=0, column=0, sticky=tk.W+tk.N, pady=(0,0))
+        tk.Button(self.frame_select, height=1, width=15, text="Select none", command=select_none, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=0, column=1, sticky=tk.E+tk.N, pady=(0,0))
+
+        # Fill list box
+        if len(self.open_files) >= 1: # Only draw this listbox if files were selected in browser
+            for (i, o) in enumerate(self.open_files):
+                fil = o.split("/")[-1] # Split full path to keep only name and extension
+                self.text_files.insert(i, fil) # Insert items 1 by 1 in loop
+            locs = "/".join(self.open_files[0].split("/")[:-1])+"/" # Path to imported files in string format
+            text_loc.insert("1.0", locs) # Insert path to empty text box
+            self.text_files.select_set(0) # Select first item in list after populating
         else:
-            decomp_type = "(Cole-Cole)"
-        print "Frequency dependence:", c_exp.get(), decomp_type
-    print "Units:", units
-    print "Paths:"
-    for i in sel_files:
-        print i
-    print "Skipping", headers, "header lines"
-    files = [sel_files[i].split("/")[-1].split(".")[0] for i in range(len((sel_files)))]
-    mcmc_params = {"nb_chain"   : mcmc_vars[0][1].get(),
-                   "nb_iter"    : mcmc_vars[1][1].get(),
-                   "nb_burn"    : mcmc_vars[2][1].get(),
-                   "thin"       : mcmc_vars[3][1].get(),
-                   "tune_inter" : mcmc_vars[4][1].get(),
-                   "prop_scale" : mcmc_vars[5][1].get(),
-                   "verbose"    : check_vars[4][1].get(),
-                    }
-    # Appel de la fonction d'inversion avec les paramètres sélectionnés
-    try:    del(all_results)
-    except: pass
-    all_results = {}
-    drop_down(files, 0)
-    var_review.set("Working...")
-    for (i, f_n) in enumerate(files):
-        print "====================="
-        activity(f_n,files.index(f_n),len(files),done=False)
-        var_review.set(f_n)
-
-        sol = mcmcSIPinv(   model, sel_files[i], mcmc = mcmc_params,
-                            headers=headers, ph_units=units,
-                            cc_modes=modes_n.get(), decomp_poly=poly_n.get(),
-                            c_exp=c_exp.get(), keep_traces=check_vars[3][1].get())
-
-        all_results[f_n] = {"pm":sol["params"],"MDL":sol["pymc_model"],"data":sol["data"],"fit":sol["fit"], "sol":sol}
-#         Impression ou non des résultats, graphiques, histogrammes
-        update_results(sol)
-        iR.print_resul(sol)
-        iR.save_resul(sol)
-        fig_fit = iR.plot_fit(sol["data"], sol["fit"], model, f_n, save=check_vars[1][1].get(), draw=check_vars[0][1].get())
-        if check_vars[0][1].get():
-            plot_window(fig_fit, "Inversion results: "+f_n)
-        if model == "PDecomp":
-            iR.plot_debye(sol, save=check_vars[1][1].get(), draw=False)
-        if model == "DDebye":
-            iR.plot_debye_histo(sol, save=check_vars[1][1].get(), draw=False)
-        if check_vars[2][1].get():
-            iR.plot_histo(all_results[f_n]["sol"], save=True)
-            iR.plot_traces(all_results[f_n]["sol"], save=True)
-            iR.plot_summary(all_results[f_n]["sol"], save=True)
-            iR.plot_autocorr(all_results[f_n]["sol"], save=True)
-        if files.index(f_n)+1 == len(files):
-            activity(f_n,files.index(f_n),len(files),done=True)
-            diagn_buttons()
-            write_output_path()
-            print "====================="
-            if len(files) > 1:
-                iR.merge_results(model,files)
-                print "====================="
-    return all_results
+            text_loc.insert("1.0", "None imported") # Empty list box if no files selected
 
 #==============================================================================
-# Block for various plotting functions
-def set_plot_par(): # Setting up plotting parameters
-    try:
-        print "\nLoading plot parameters"
-        rcParams.update(iR.plot_par())
-        print "Plot parameters successfully loaded"
-    except:
-        print "Plot parameters not found, using default values"
-    stdout.flush()
-
-def preview_data():
-    try:
-        for i in text_files.curselection():
-            sel = str(open_files[i])
-            fn = sel.split("/")[-1].split(".")[0]
-            fig_data = iR.plot_data(sel, head.get(), uni.get())
-            plot_window(fig_data, "Data preview: "+fn)
-    except:
-        tkMessageBox.showwarning("Preview error",
-                                 "Can't draw data\nImport and select at least one data file first", parent=root)
-
-def plot_diagnostic(which):
-    f_n = var_review.get()
-    try:
-        if which == "traces":
-            trace_plot = iR.plot_traces(all_results[f_n]["sol"], save=False)
-            plot_window(trace_plot, "Parameter traces: "+f_n)
-        if which == "histo":
-            histo_plot = iR.plot_histo(all_results[f_n]["sol"], save=False)
-            plot_window(histo_plot, "Parameter histograms: "+f_n)
-        if which == "autocorr":
-            autocorr_plot = iR.plot_autocorr(all_results[f_n]["sol"], save=False)
-            plot_window(autocorr_plot, "Parameter autocorrelation: "+f_n)
-        if which == "geweke":
-            geweke_plot = iR.plot_scores(all_results[f_n]["sol"], save=False)
-            plot_window(geweke_plot, "Geweke scores: "+filename)
-        if which == "summary":
-            summa_plot = iR.plot_summary(all_results[f_n]["sol"], save=False)
-            plot_window(summa_plot, "Parameter summary: "+f_n)
+# Save and load GUI state
+#==============================================================================
+    
+    def load(self):
+        print "\nLoading root_ini from:\n", self.working_path
+        try:
+            with open(self.working_path+'root_ini') as f:
+                self.root_ini = jload(f)
+            print "root_ini successfully loaded"
+        except:
+            print "root_ini not found, using default values"
+            self.root_ini = self.default_root
         stdout.flush()
-    except:
-        tkMessageBox.showwarning("Error analyzing results", "Error\nProblem with inversion results\nTry adding iterations",
-                                 parent=root)
-
-def diagnostic():
-    MDL = all_results[var_review.get()]["MDL"]
-    if mod.get() == "Debye": adj = -1
-    else: adj = 0
-    try:
-        keys = [x.__name__ for x in MDL.stochastics]
-        for (i, k) in enumerate(keys):
-            vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
-            if vect > 1:
-             keys[i] = [k+"%d"%n for n in range(1+adj,vect+1+adj)]
-        keys = list(reversed(sorted(flatten(keys))))
-        top_RLD = tk.Toplevel()
-        top_RLD.title("Raftery-Lewis diagnostic")
-        text_RLD = tk.Text(top_RLD, width=110, font=('courier', size, 'normal'))
-        text_RLD.grid(stick=tk.N, padx=(20,0), pady=(10,10))
-        q=0.025
-        r=0.01
-        s=0.95
-        for k in keys:
-            if k[-1] not in ["%d"%d for d in range(1+adj,8)] or k == "R0":
-                data = MDL.trace(k)[:].ravel()
-            else:
-                data = MDL.trace(k[:-1])[:][:,int(k[-1])-1-adj].ravel()
-            F="%s:\n"%k
-            nmin, kthin, nburn, nprec, kmind = iR.print_diagn(data, q, r, s)
-            A="%s iterations required (assuming independence) to achieve %s accuracy with %i percent probability.\n" %(nmin, r, 100 * s)
-            B="Thinning factor of %i required to produce a first-order Markov chain.\n" %kthin
-            C="%i iterations to be discarded at the beginning of the simulation (burn-in).\n" %nburn
-            D="%s subsequent iterations required.\n" %nprec
-            E="Thinning factor of %i required to produce an independence chain.\n\n" %kmind
-            text_RLD.insert("1.0", F+A+B+C+D+E)
-        text_RLD.insert("1.0", var_review.get()+"\n\n")
-        button = tk.Button(top_RLD, height=1, width=20, text="Dismiss", command=top_RLD.destroy, bg='gray97', relief=tk.GROOVE)
-        button.grid(row=1, column=0, sticky=tk.S, pady=(0,10))
-
-        s = tk.Scrollbar(top_RLD, width=20)
-        s.grid(row=0, column=1, sticky=tk.E+tk.N+tk.S, padx=(0,0),pady=(10,10))
-        s['command'] = text_RLD.yview
-        text_RLD['yscrollcommand'] = s.set
-        top_RLD.resizable(width=tk.FALSE, height=tk.FALSE)
-    except:
-        tkMessageBox.showwarning("Diagnostic error",
-                                 "Error\nRun inversion first", parent=root)
-
-def plot_fit_now():
-    f_n = var_review.get()
-    data = all_results[f_n]["data"]
-    fit = all_results[f_n]["fit"]
-    fig_fit = iR.plot_fit(data, fit, mod.get(), f_n, save=False, draw=True)
-    plot_window(fig_fit, "Inversion results: "+f_n)
-
-def plot_rtd_now():
-    f_n = var_review.get()
-    fig_debye = iR.plot_debye(all_results[f_n]["sol"], save=False, draw=True)
-    plot_window(fig_debye, "Debye RTD: "+f_n)
-
-def plot_rtdhisto_now():
-    f_n = var_review.get()
-    fig_debye = iR.plot_debye_histo(all_results[f_n]["sol"], save=False, draw=True)
-    plot_window(fig_debye, "Debye RTD: "+f_n)
-
-def plot_window(fig, name):
-    top_fig = tk.Toplevel()
-    top_fig.lift()
-    top_fig.title(name)
-    top_fig.rowconfigure(1, weight=1)
-    def _quit():
-        top_fig.destroy()
-    canvas = FigureCanvasTkAgg(fig, master=top_fig)
-    canvas.show()
-    canvas.get_tk_widget().grid(row=1, column=0, columnspan = 3, sticky=tk.N+tk.S+tk.E+tk.W)
-    button = tk.Button(top_fig, height=1, width=20, text="Dismiss", bg='gray97', command=_quit, relief=tk.GROOVE)
-    button.grid(row=2, column=0, columnspan=1, sticky=tk.W, pady=(10,10), padx=(20,20))
-    toolbar_frame = tk.Frame(top_fig)
-    toolbar_frame.grid(row=0,column=0,columnspan=2, sticky=tk.W)
-    NavigationToolbar2TkAgg( canvas, toolbar_frame )
-    top_fig.resizable(width=tk.FALSE, height=tk.FALSE)
-
-#==============================================================================
-# Block for browsing, importing, selecting data files
-def browse():
-    but_browse = tk.Button(frame_import, height=1, text = "Open file browser", bg='gray97',
-                        command = get_file_list, relief=tk.GROOVE)
-    but_browse.grid(row=0, column=0, columnspan=2, pady=(10,10), padx=(10,10), sticky=tk.E+tk.W)
-    return but_browse
-
-def get_file_list():
-    global open_files
-    files = tkFileDialog.askopenfilenames(parent=root,title='Choose a file')
-    open_files = sorted(list(files))
-    draw_file_list(open_files)
-
-def draw_file_list(open_files):
-    global text_files, text_loc
-    try: text_files.destroy()
-    except: pass
-    frame_path = tk.Frame(frame_list)
-    frame_path.grid(row=0, column=0, padx=20, pady=10, sticky=tk.E+tk.W)
-    frame_path.columnconfigure(2, weight=1)
-
-    frame_select = tk.Frame(frame_list)
-    frame_select.grid(row=1, column=0, padx=(20,0), pady=10, sticky=tk.E+tk.W+tk.S+tk.N)
-    frame_select.columnconfigure(0, weight=1)
-    frame_select.rowconfigure(1, weight=1)
-
-    text_loc = tk.Text(frame_path, width=40, height=3, font=fontz["normal_small"])
-    text_loc.grid(row=0, column=0, rowspan=1, sticky=tk.N+tk.W+tk.E)
-    s = tk.Scrollbar(frame_select, width=20)
-    s.grid(row=1, column=2, sticky=tk.E+tk.N+tk.S, pady=(0,10))
-    text_files = tk.Listbox(frame_select, selectmode='extended', font=fontz["italic_small"])
-    text_files.grid(row=1, column=0, columnspan=2, sticky=tk.S+tk.W+tk.E+tk.N, pady=(0,0))
-    s['command'] = text_files.yview
-    text_files['yscrollcommand'] = s.set
-    tk.Button(frame_select, height=1, text="Preview selected data files", command=preview_data, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=2, column=0, columnspan=2, sticky=tk.W+tk.E)
-    # Select all or none functions
-    def select_all(): # self expl
-        text_files.select_set(0, tk.END)
-    def select_none(): # self expl
-        text_files.select_clear(0, tk.END)
-    tk.Button(frame_select, height=1, width=15, text="Select all", command=select_all, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=0, column=0, sticky=tk.W+tk.N, pady=(0,0))
-    tk.Button(frame_select, height=1, width=15, text="Select none", command=select_none, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=0, column=1, sticky=tk.E+tk.N, pady=(0,0))
-    # Fill list box
-    if len(open_files) >= 1: # Only draw this listbox if files were selected in browser
-        for (i, o) in enumerate(open_files):
-            fil = o.split("/")[-1] # Split full path to keep only name and extension
-            text_files.insert(i, fil) # Insert items 1 by 1 in loop
-        locs = "/".join(open_files[0].split("/")[:-1])+"/" # Path to imported files in string format
-        text_loc.insert("1.0", locs) # Insert path to empty text box
-        text_files.select_set(0) # Select first item in list after populating
-    else:
-        text_loc.insert("1.0", "None imported") # Empty list box if no files selected
-
-#==============================================================================
-# Block for results frames
-def write_output_path():
-    global frame_saved_in
-    frame_saved_in = tk.Frame(frame_results)
-    frame_saved_in.grid(row=8, column=0, sticky=tk.E+tk.W, padx=10, pady=0)
-    frame_saved_in.columnconfigure(0, weight=1)
-    label_done = tk.Label(frame_saved_in, text="""Results saved in:""", anchor=tk.W)
-    label_done.grid(row=0, column=0, columnspan=1, sticky=tk.W+tk.E)
-    text_path = tk.Text(frame_saved_in, height=3, width=35, font=fontz["normal_small"])
-    text_path.grid(row=1, column=0, columnspan=1, sticky=tk.W+tk.E, padx=0)
-    text_path.insert("1.0", "%s" %(working_path))
-
-def update_results(sol):
-    global all_items, text_res, label_res
-    global frame_optimal
-    pm, model = sol["params"], sol["SIP_model"]
-    try:    frame_optimal.destroy()
-    except: pass
-    frame_optimal = tk.Frame(frame_results)
-    frame_optimal.grid(row=2, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
-    frame_optimal.columnconfigure(0, weight=1)
-    keys = sorted([x for x in pm.keys() if "_std" not in x])
-    if model in ["PDecomp", "DDebye"]:
-        adj = -1
-        if "m" in keys: keys.remove("m")
-    else:
-        adj = 0
-    values = flatten([pm[k] for k in sorted(keys)])
-    errors = flatten([pm[k+"_std"] for k in sorted(keys)])
-    for (i, k) in enumerate(keys):
-        if len(pm[k].shape) > 0:
-            keys[i] = [keys[i]+"%d"%n for n in range(1+adj,pm[k].shape[0]+1+adj)]
-    keys = list(flatten(keys))
-    label_res = tk.Label(frame_optimal, text="""Optimal parameters:""", anchor=tk.W)
-    label_res.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
-    text_res = tk.Text(frame_optimal, height=len(values), width=40, font=("Courier new", size+res_size, "bold"))
-    text_res.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N)
-    items = ["{:<13}".format(x+":") for x in keys]
-    items2 = [" %.3e " %x for x in values]
-    items3 = ["+/- %.0e" %x for x in errors]
-    items4 = [" (%.2f%%)" %(abs(100*e/v)) for v,e in zip(values,errors)]
-    all_items = map(str.__add__,map(str.__add__,map(str.__add__,items,items2),items3),items4)
-    items = '\n'.join(all_items)
-    text_res.insert("1.0", items)
-
-# Batch progress
-def activity(fn,f,nf,done):
-    global frame_activ
-    try:    frame_activ.destroy()
-    except: pass
-    frame_activ = tk.Frame(frame_results)
-    frame_activ.grid(row=0, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
-    if (fn, f, nf) == (None,None,None):
-        display = """ \n """
-        text_act = tk.Label(frame_activ, text=display, anchor=tk.W, justify=tk.LEFT, width=40)
-    else:
-        display = """Working on:\n%s (#%d/%d)..."""%(fn,f+1,nf)
-        text_act = tk.Label(frame_activ, text=display, anchor=tk.W, justify=tk.LEFT, width=40)
-    text_act.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
-    text_act.update()
-
-    if done:
-        text_act.destroy()
-        text_done = tk.Label(frame_activ, text="""Done\n""", width=40, anchor=tk.W)
-        text_done.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
-
-# Drop down menu
-def drop_down(files,val):
-    global var_review, frame_drop
-    try:    frame_drop.destroy()
-    except: pass
-    frame_drop = tk.Frame(frame_results)
-    frame_drop.grid(row=1, column=0, sticky=tk.E+tk.W, padx=10, pady=3)
-    frame_drop.columnconfigure(0,weight=1)
-    var_review = tk.StringVar()
-    var_review.set(files[val])
-    def change_file(s):
-        clear(menu=False)
-        update_results(s)
-        diagn_buttons()
-        write_output_path()
-    optionmenu = tk.OptionMenu(frame_drop, var_review, *files, command=lambda x: change_file(all_results[var_review.get()]["sol"]))
-    optionmenu.grid(row=0, column=0, sticky=tk.W+tk.E+tk.S)
-    optionmenu.config(bg = "gray97", relief=tk.GROOVE)
-
-# Clear button
-def clear(menu): # self expl
-    frame_optimal.destroy()
-    frame_saved_in.destroy()
-    frame_diagn_but.destroy()
-    if menu:
-        frame_drop.destroy(), frame_activ.destroy()
-
-# Diagnostics buttons
-def diagn_buttons():
-    global frame_diagn_but
-    try:    frame_diagn_but.destroy()
-    except: pass
-    frame_diagn_but = tk.Frame(frame_results)
-    frame_diagn_but.grid(row=14, column=0, sticky=tk.E+tk.W+tk.S, padx=10, pady=10)
-    frame_diagn_but.columnconfigure((0,1,2), weight=1)
-    but_cle = tk.Button(frame_diagn_but, height=1, width=10, text = "Clear", fg='black', bg='gray97', font=fontz["normal_small"],
-                        command = lambda: clear(menu=True), relief=tk.GROOVE)
-    but_cle.grid(row=6, column=0, columnspan=3, sticky=tk.E+tk.S, pady=(5,0))
-    but_fit = tk.Button(frame_diagn_but, height=1, text = "Draw data and fit", fg='black', bg='gray97',
-                        command = plot_fit_now, font=fontz["normal_small"], relief=tk.GROOVE)
-    but_fit.grid(row=1, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
-    but_sum = tk.Button(frame_diagn_but, height=1, text = "Summary and Gelman-Rubin convergence", fg='black', bg='gray97',
-                        command = lambda: plot_diagnostic("summary"), font=fontz["normal_small"], relief=tk.GROOVE)
-    but_sum.grid(row=4, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
-    but_rld = tk.Button(frame_diagn_but, height=1, text = "Raftery-Lewis diagnostic", fg='black', bg='gray97',
-                        command = diagnostic, font=fontz["normal_small"], relief=tk.GROOVE)
-    but_rld.grid(row=5, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,5))
-    but_tra = tk.Button(frame_diagn_but, height=1, width=1, text = "Traces", fg='black', bg='gray97',
-                        command = lambda: plot_diagnostic("traces"), font=fontz["normal_small"], relief=tk.GROOVE)
-    but_tra.grid(row=3, column=0, sticky=tk.W+tk.E+tk.S, padx=(0,0), pady=(5,0))
-    but_his = tk.Button(frame_diagn_but, height=1, width=1, text = "Histograms", fg='black', bg='gray97',
-                        command = lambda: plot_diagnostic("histo"), font=fontz["normal_small"], relief=tk.GROOVE)
-    but_his.grid(row=3, column=1, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
-    but_aut = tk.Button(frame_diagn_but, height=1, width=1, text = "Autocorrelation", fg='black', bg='gray97',
-                        command = lambda: plot_diagnostic("autocorr"), font=fontz["normal_small"], relief=tk.GROOVE)
-    but_aut.grid(row=3, column=2, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
-#    but_gew = tk.Button(frame_results, height=1, text = "Geweke scores", fg='black',
-#                        command = lambda: plot_diagnostic("geweke"))
-#    but_gew.grid(row=4, column=0, sticky=tk.W+tk.E+tk.S, padx=10, pady=0)
-    if mod.get() == "PDecomp":
-        but_rtd = tk.Button(frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
-                            command = plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
-        but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
-
-    if mod.get() == "DDebye":
-        but_rtd = tk.Button(frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
-                            command = plot_rtdhisto_now, font=fontz["normal_small"], relief=tk.GROOVE)
-        but_rtd.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
-
-
-#==============================================================================
-# Block for model frame
-def model_choice():
-    # Available models
-    models = [("Pelton \nCole-Cole","ColeCole"),
-              ("Dias \nmodel","Dias"),
-              ("Debye / Warburg \ndecomposition","PDecomp"),]
-    modes_n, poly_n, c_exp = tk.IntVar(), tk.IntVar(), tk.DoubleVar()
-    modes_n.set(root_ini["Nb modes"]), poly_n.set(root_ini["Polyn order"]), c_exp.set(root_ini["Freq dep"])
-    def draw_rtd_check():
-        global mod_opt_frame
-        try:    mod_opt_frame.destroy()
-        except: pass
-        mod_opt_frame = tk.Frame(frame_model)
-        mod_opt_frame.grid(row=0, column=1, rowspan=4)
-#        mod_opt_frame.grid_rowconfigure(4, weight=1)
-        if mod.get() == "PDecomp":
-            poly_lab = tk.Label(mod_opt_frame, text="""Polyn order""", justify = tk.LEFT, font=fontz["normal_small"])
-            poly_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            poly_scale = tk.Scale(mod_opt_frame, variable=poly_n, width=10, length=70, from_=3, to=5, font=fontz["normal_small"], orient=tk.HORIZONTAL)
-            poly_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
-            exp_lab = tk.Label(mod_opt_frame, text="""c exponent""", justify = tk.LEFT, font=fontz["normal_small"])
-            exp_lab.grid(row=2, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            exp_scale = tk.Scale(mod_opt_frame, variable=c_exp, width=10, length=70, from_=0.1, to=1.0, resolution=0.05, font=fontz["normal_small"], orient=tk.HORIZONTAL)
-            exp_scale.grid(row=3, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
-        if mod.get() == "ColeCole":
-            modes_lab = tk.Label(mod_opt_frame, text="""Nb modes""", justify = tk.LEFT, font=fontz["normal_small"])
-            modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            modes_scale = tk.Scale(mod_opt_frame, variable=modes_n, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
-            modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
-    ### Model choice
-    mod = tk.StringVar()
-    mod.set(root_ini["Spectral IP model"])  # set last used values
-    for i, (txt, val) in enumerate(models):
-        tk.Radiobutton(frame_model, text=txt, justify=tk.LEFT, variable = mod, command = draw_rtd_check, value=val).grid(row=i, column=0, sticky=tk.W+tk.S, padx=(10,0), pady=pad_radio+2)
-    draw_rtd_check()
-    return mod, modes_n, poly_n, c_exp
-
-#==============================================================================
-# Block for entry boxes with MCMC parameters
-def mcmc_parameters():
-    # McMC parameters
-    mcmc_vars = [("Nb of chains:"    , tk.IntVar()),
-                 ("Total iterations:", tk.IntVar()),
-                 ("Burn-in period:"  , tk.IntVar()),
-                 ("Thinning factor:" , tk.IntVar()),
-                 ("Tuning interval:" , tk.IntVar()),
-                 ("Proposal scale:"  , tk.DoubleVar()),]
-    for i, (k, v) in enumerate(mcmc_vars):
-        v.set(root_ini[k])
-        tk.Label(frame_mcmc, text=k, justify = tk.LEFT).grid(row=i, column=0, sticky=tk.W, padx=(10,0))
-        tk.Entry(frame_mcmc ,textvariable=v, width=12).grid(row=i, column=1, sticky=tk.E,padx=(0,10))
-    return mcmc_vars
-
-#==============================================================================
-# Block for import data frame
-def skip_headers():
-    # Headers to skip
-    head = tk.IntVar()
-    head.set(root_ini["Nb header lines"])  # set last used value
-    tk.Label(frame_import, text="""Nb header lines:""", justify = tk.LEFT).grid(row=1, column=0, columnspan=1,sticky=tk.W, padx=(10,0))
-    tk.Entry(frame_import,textvariable=head, width=12).grid(row=1, column=1, columnspan=1,sticky=tk.E+tk.W,padx=(10,10))
-    return head
-
-def phase_units():
-    # Phase units
-    unites = [("mrad","mrad"),
-              ("rad" ,"rad"),
-              ("deg" ,"deg"),]
-    uni = tk.StringVar()
-    uni.set(root_ini["Phase units"])  # set last used value
-    tk.Label(frame_import, text="""Phase units:""", justify = tk.LEFT).grid(row=2, column=0, sticky=tk.W, padx=(10,0))
-    for i, (txt, val) in enumerate(unites):
-        tk.Radiobutton(frame_import, text=txt, variable=uni, command=None, value=val).grid(row=i+2, column=1, sticky=tk.W, padx=(10,10), pady=pad_radio)
-    return uni
-
-#==============================================================================
-# Block for batch options and run/exit buttons
-def checkboxes(): # self expl
-    check_vars = [("Draw data and fit", tk.BooleanVar()),
-                  ("Save fit figure"  , tk.BooleanVar()),
-                  ("Save QC figures " , tk.BooleanVar()),
-                  ("Keep txt traces"  , tk.BooleanVar()),
-                  ("Tuning verbose"   , tk.BooleanVar()),]
-    frame_checkbox = tk.Frame(frame_ruex)
-    frame_checkbox.grid(row=0, column=0, rowspan=2, pady=(5,10), padx=10)
-    for i, (k, v) in enumerate(check_vars):
-        tk.Checkbutton(frame_checkbox, text=k, variable=v).grid(row=i, column=0, sticky=tk.W+tk.N+tk.S)
-        check_vars[i][1].set(root_ini[k]) # set last used values
-    return check_vars
-
-def run_exit(): # self expl
-    tk.Button(frame_ruex, width=14, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
-                        command = run_inversion).grid(row=0, column=1, sticky=tk.N+tk.E+tk.S, padx=(0,10), pady=(5,0))
-
-    tk.Button(frame_ruex, width=14, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
-                        command = close_window).grid(row=1, column=1, sticky=tk.S+tk.E+tk.N, padx=(0,10), pady=(0,10))
-
-#==============================================================================
-# Main window frames - geometry - font - labels
-def main_frames():
-    global frame_import, frame_fileopt, frame_model, frame_mcmc, frame_ruex, frame_list, frame_results
-    frame_import = tk.LabelFrame(root, text="1. Import data", width=200, height=5, font=fontz["bold"])
-    frame_import.grid(row = 0, column=1, columnspan=1, rowspan=5, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))
-    frame_import.grid_columnconfigure(0, weight=1), frame_import.grid_rowconfigure(0, weight=1)
-    frame_model = tk.LabelFrame(root, text="2. SIP model", width=200, height=4, font=fontz["bold"])
-    frame_model.grid(row = 6, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))
-    frame_model.grid_columnconfigure(0, weight=1), frame_model.grid_rowconfigure(0, weight=1)
-    frame_mcmc = tk.LabelFrame(root, text="3. MCMC settings", width=200, height=4, font=fontz["bold"])
-    frame_mcmc.grid(row = 7, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15), ipady=3)
-    frame_mcmc.grid_columnconfigure(0, weight=1)
-    frame_ruex = tk.LabelFrame(root, text="4. Options", width=200, height=4, font=fontz["bold"])
-    frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=(5,10))
-    frame_ruex.columnconfigure(0, weight=1)
-    frame_list = tk.LabelFrame(root, text="List of imported files", font=fontz["bold"])
-    frame_list.grid(row = 0, column=0, columnspan=1, rowspan=15, sticky=tk.W+tk.E+tk.N+tk.S, padx=10, pady=(5,10))
-    frame_list.grid_rowconfigure(1, weight=1), frame_list.columnconfigure(0, weight=1)
-    frame_results = tk.LabelFrame(root, text="Results", font=fontz["bold"])
-    frame_results.grid(row = 0, column=2, columnspan=1, rowspan=15, sticky=tk.W+tk.E+tk.N+tk.S, padx=10, pady=(5,10))
-    frame_results.grid_rowconfigure(14, weight=1)
+        
+    def save(self):
+        root_save = {
+                        "Spectral IP model" : self.model.get(),
+                        "Nb of chains:"     : self.mcmc_vars[0][1].get(),
+                        "Total iterations:" : self.mcmc_vars[1][1].get(),
+                        "Burn-in period:"   : self.mcmc_vars[2][1].get(),
+                        "Thinning factor:"  : self.mcmc_vars[3][1].get(),
+                        "Tuning interval:"  : self.mcmc_vars[4][1].get(),
+                        "Proposal scale:"   : self.mcmc_vars[5][1].get(),
+                        "Nb header lines"   : self.head.get(),
+                        "Phase units"       : self.units.get(),
+                        "Keep txt traces"   : self.check_vars[3][1].get(),
+                        "Draw data and fit" : self.check_vars[0][1].get(),
+                        "Save QC figures "  : self.check_vars[2][1].get(),
+                        "Save fit figure"   : self.check_vars[1][1].get(),
+                        "Tuning verbose"    : self.check_vars[4][1].get(),
+                        "Imported files"    : self.open_files,
+                        "Polyn order"       : self.poly_n.get(),
+                        "Freq dep"          : self.c_exp.get(),
+                        "Nb modes"          : self.modes_n.get(),
+                    }
+        print "\nSaving root_ini"
+        with open(self.working_path+'root_ini', 'w') as f:
+            jdump(root_save, f)
+        print "root_ini successfully saved in:\n", self.working_path
+        print "\n=========END========="
 
 #==============================================================================
 # Build menubar File, Help
-def build_helpmenu():
-    menubar = tk.Menu(root)
-    filemenu = tk.Menu(menubar, tearoff=0)
-    helpmenu = tk.Menu(menubar, tearoff=0)
-    filemenu.add_command(label="Open", command=get_file_list)
-    filemenu.add_separator()
-    filemenu.add_command(label="Exit", command=close_window)
-    menubar.add_cascade(label="File", menu=filemenu)
-    helpmenu.add_command(label="Data file template", command=lambda: TextMessage("Data file template", TextMessage.data_template).popup(size=fontsize))
-    helpmenu.add_command(label="MCMC parameters", command=lambda: TextMessage("Markov-chain Monte Carlo parameters", TextMessage.mcmc_info).popup(size=fontsize)) 
-    helpmenu.add_command(label="References", command=lambda: TextMessage("References", TextMessage.references).popup(size=fontsize))
-    helpmenu.add_separator()
-    helpmenu.add_command(label="License", command=lambda: TextMessage("License information", TextMessage.license_info).popup(size=fontsize))
-    helpmenu.add_command(label="About", command=lambda:about(fontz))
-    menubar.add_cascade(label="Help", menu=helpmenu)
-    return menubar
+#==============================================================================
+    def build_helpmenu(self):
+        menubar = tk.Menu(self.master)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        helpmenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Open", command=self.get_file_list)
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=self.master.destroy)
+        menubar.add_cascade(label="File", menu=filemenu)
+        helpmenu.add_command(label="Data file template", command=lambda: TextMessage().popup("Data file template", TextMessage.data_template, size=fontsize))
+        helpmenu.add_command(label="MCMC parameters", command=lambda: TextMessage().popup("Markov-chain Monte Carlo parameters", TextMessage.mcmc_info, size=fontsize)) 
+        helpmenu.add_command(label="References", command=lambda: TextMessage().popup("References", TextMessage.references, size=fontsize))
+        helpmenu.add_separator()
+        helpmenu.add_command(label="License", command=lambda: TextMessage().popup("License information", TextMessage.license_info, size=fontsize))
+        helpmenu.add_command(label="About", command=lambda : TextMessage().about(fontz))
+        menubar.add_cascade(label="Help", menu=helpmenu)
+        self.master.config(menu=menubar)
 
-def about(fontz):
-    top = tk.Toplevel()
-    top.title("About")
-    top.lift()
-    tk.Label(top,
-              text="""Bayesian inversion of spectral induced polarization data""",
-              justify = tk.CENTER, font=fontz["bold"]).grid(row=0, column=0,columnspan=2,pady=(10,10), padx=(10,10))
-    tk.Label(top,
-              text="""2015-2016
-École Polytechnique de Montréal
-Groupe de recherche en géophysique appliquée
-""",
-              justify = tk.CENTER).grid(row=1, column=0,columnspan=2, pady=(10,10), padx=(10,10))
-    tk.Label(top,
-              text="""Contact:""",
-              justify = tk.CENTER).grid(row=2, column=0,columnspan=1, pady=(10,10), padx=(10,10))
-    about_message = """charleslberube@gmail.com"""
-    msg = tk.Text(top, height=1, width=27)
-    msg.grid(row=2,column=1,padx=(10,10), pady=(10,10))
-    msg.insert("1.0", about_message)
-    button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
-    button.grid(row=3,column=0,columnspan=2,sticky=tk.S, pady=(0,10))
-    top.resizable(width=tk.FALSE, height=tk.FALSE)
 
+
+#==============================================================================
+# Class for popup messages
+#==============================================================================
 class TextMessage:
     
     data_template = """DATA FILE TEMPLATE
@@ -727,7 +741,7 @@ To skip high-frequencies, increase Nb header lines
 Scientific or standard notation is OK
 Data must be formatted using the following template:
 
-=============================================================================
+===============================================================================
 
 Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
 6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02
@@ -740,7 +754,7 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
 2.288e-02, 1.67988e+05, -9.36718e+00, 3.306003e+02, 1.9669860+00
 1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
-=============================================================================
+===============================================================================
 """    
     
     mcmc_info = """===================================================================================
@@ -839,60 +853,54 @@ SOFTWARE.
 https://opensource.org/licenses/MIT
 https://github.com/clberube/bisip
 """    
-    
-    def __init__(self, title, message):
-          self.title = title
-          self.message = message
-    def popup(self, size=10):
+              
+    def popup(self, title, message, size=10):
         top = tk.Toplevel()
-        top.title(self.title)
-        about_message = (self.message)
+        top.title(title)
+        about_message = (message)
         top.lift()
-        msg = tk.Text(top, width=83, font=('courier', size, 'normal'))
+        msg = tk.Text(top, width=90, font=('courier', size, 'normal'))
         msg.grid(stick=tk.N, padx=(10,10), pady=(10,10))
         msg.insert("1.0", about_message)
         button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
         button.grid(sticky=tk.S, pady=(0,10))
+        s = tk.Scrollbar(top, width=20)
+        s.grid(row=0, column=0, sticky=tk.E+tk.N+tk.S, padx=(0,10),pady=(10,10))
+        s['command'] = msg.yview
+        msg['yscrollcommand'] = s.set        
         top.resizable(width=tk.FALSE, height=tk.FALSE)
 
+    def about(self, fontz):
+        top = tk.Toplevel()
+        top.title("About")
+        top.lift()
+        tk.Label(top,
+                  text="""Bayesian inversion of spectral induced polarization data""",
+                  justify = tk.CENTER, font=fontz["bold"]).grid(row=0, column=0,columnspan=2,pady=(10,10), padx=(10,10))
+        tk.Label(top,
+                  text="""2015-2016
+    École Polytechnique de Montréal
+    Groupe de recherche en géophysique appliquée
+    """,
+                  justify = tk.CENTER).grid(row=1, column=0,columnspan=2, pady=(10,10), padx=(10,10))
+        tk.Label(top,
+                  text="""Contact:""",
+                  justify = tk.CENTER).grid(row=2, column=0,columnspan=1, pady=(10,10), padx=(10,10))
+        about_message = """charleslberube@gmail.com"""
+        msg = tk.Text(top, height=1, width=27)
+        msg.grid(row=2,column=1,padx=(10,10), pady=(10,10))
+        msg.insert("1.0", about_message)
+        button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
+        button.grid(row=3,column=0,columnspan=2,sticky=tk.S, pady=(0,10))
+        top.resizable(width=tk.FALSE, height=tk.FALSE)    
 
 #==============================================================================
-# Window start
-root = tk.Tk()
-root.wm_title("Bayesian inversion of SIP data")
-root.option_add("*Font", window_font)
+# Main function
 #==============================================================================
-# For MacOS, bring the window to front
-# Without these lines the application will start in background
-root.lift()
-if "Darwin" in system():
-    root.call('wm', 'attributes', '.', '-topmost', True)
-    root.after_idle(root.call, 'wm', 'attributes', '.', '-topmost', False)
-#==============================================================================
-# Build and display menu
-root.config(menu=build_helpmenu())
-#==============================================================================
-# Build GUI by calling the main GUI functions
-root_ini = root_state().load()
-open_files = root_ini["Imported files"]
-set_plot_par()
-main_frames()
-draw_file_list(open_files)
-but_browse = browse()
-mod, modes_n, poly_n, c_exp = model_choice()
-mcmc_vars = mcmc_parameters()
-head = skip_headers()
-uni = phase_units()
-check_vars = checkboxes()
-run_exit()
-activity(None,None,None,None)
-#==============================================================================
-# Window size options
-root.maxsize(width=root.winfo_width(), height=root.winfo_height())
-root.minsize(width=root.winfo_width(), height=root.winfo_height())
-root.resizable(width=tk.FALSE, height=tk.FALSE)
-#==============================================================================
-# Window loop
-tk.mainloop()
-root_state().save()
-#==============================================================================
+def main(): 
+    root = tk.Tk()
+    app = MainApplication(root, fontz)
+    root.mainloop()
+    app.save()
+if __name__ == '__main__':
+    main()

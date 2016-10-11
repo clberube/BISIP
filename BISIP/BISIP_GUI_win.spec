@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['BISIP_GUI_class.py'],
+a = Analysis(['BISIP_GUI.py'],
              binaries=None,
              datas=None,
              hiddenimports=['scipy.special._ufuncs_cxx',
