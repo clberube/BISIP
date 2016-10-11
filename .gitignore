@@ -3,8 +3,7 @@
 
 BISIP/root_ini
 
-*.pyc
-
+*.py
 
 *.pdf
 
