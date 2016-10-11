@@ -4,7 +4,6 @@ block_cipher = None
 
 
 a = Analysis(['BISIP_GUI.py'],
-             pathex=['/Users/Charles/Desktop/BISIP/BISIP'],
              binaries=None,
              datas=None,
              hiddenimports=['scipy.special._ufuncs_cxx',

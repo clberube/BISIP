@@ -1,10 +1,9 @@
-# -*- mode: python -*-
+﻿# -*- mode: python -*-
 
 block_cipher = None
 
 
-a = Analysis(['BISIP_GUI.py'],
-             pathex=['/Users/Charles/Desktop/BISIP/BISIP'],
+a = Analysis(['BISIP_GUI_class.py'],
              binaries=None,
              datas=None,
              hiddenimports=['scipy.special._ufuncs_cxx',
@@ -28,4 +27,4 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=True, icon='casino.ico', version='versionfile’)
+          console=True, icon='casino.ico', version='versionfile')
