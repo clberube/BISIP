@@ -1,6 +1,17 @@
 # BISIP
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
+### Contents
+**1. Using the standalone executables**  
+**2. Cloning the repository and installing dependencies**  
+**3. Starting the GUI from the command prompt**  
+**4. Calling the inversion function from another script**  
+**5. Building the standalone GUI executables**  
+**6. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**  
+**7. References**  
+
+================================================================================================================================
+
 **1. Using the standalone executables**
   
   Download the executables (OS X or Windows) at:  
@@ -32,7 +43,7 @@
  
     python BISIP_GUI.py
   
-**4. Using the inversion function from another script**
+**4. Calling the inversion function from another script**
 
   Import only the inversion function using:
   
@@ -178,7 +189,7 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**6. References**
+**7. References**
 
 <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
