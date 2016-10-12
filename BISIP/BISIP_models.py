@@ -31,19 +31,19 @@ https://opensource.org/licenses/MIT
 https://github.com/clberube/bisip
 
 This python module may be used to import SIP data, run MCMC inversion and
-return the results. 
+return the results.
 
 It is imported as:
                     from BISIP_models import mcmcSIPinv
-                    
+
 Call with minimal arguments:
 
 sol = mcmcSIPinv('ColeCole', '/Documents/DataFiles/DATA.dat')
 
 Call with all optional arguments:
 
-sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
-                 mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2, 
+sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
+                 mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
                  debye_poly=4, c_exp = 1.0, keep_traces=False)
 """
 
@@ -56,21 +56,20 @@ from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth, Shin_cyth
 from os import path, makedirs
 from sys import argv
 from datetime import datetime
-from shutil import rmtree
 
 #==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
-def run_MCMC(function, mc_p, save_traces=False, save_where=None):         
+def run_MCMC(function, mc_p, save_traces=False, save_where=None):
     print "\nMCMC parameters:\n", mc_p
     if save_traces:
         # If path doesn't exist, create it
-        if not path.exists(save_where): makedirs(save_where)   
+        if not path.exists(save_where): makedirs(save_where)
         MDL = pymc.MCMC(function, db='txt',
                         dbname=save_where)
     else:
         MDL = pymc.MCMC(function, db='ram',
-                        dbname=save_where)                        
+                        dbname=save_where)
     for stoc in MDL.stochastics:
         MDL.use_step_method(pymc.Metropolis, stoc,
                             proposal_distribution='Normal',

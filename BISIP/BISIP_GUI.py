@@ -93,8 +93,7 @@ def flatten(x):
 # All GUI options and choices saved when closing the main window
 # Parameters are saved in root_ini file in the executable's directory
 # To reset and use default parameters, delete root_ini in local directory
-#class root_state:
-    
+
 class MainApplication:
     working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
     default_root = {
@@ -121,9 +120,9 @@ class MainApplication:
     def __init__(self, master, fontz):
         self.master = master
         self.master.resizable(width=tk.FALSE, height=tk.FALSE)
-        self.load()     
+        self.load()
         self.set_plot_par()
-        self.build_helpmenu()        
+        self.build_helpmenu()
         self.make_main_frames()
         self.make_browse_button()
         self.headers_input()
@@ -134,27 +133,27 @@ class MainApplication:
         self.run_exit()
         self.make_options()
         self.model_choice()
-        self.activity(idle=True)   
-             
+        self.activity(idle=True)
+
 #==============================================================================
-# Main frames          
+# Main frames
 #==============================================================================
     def make_main_frames(self):
         # Frame for importing files
         self.frame_import = tk.LabelFrame(self.master, text="1. Import data", width=200, height=5, font=fontz["bold"])
-        self.frame_import.grid(row = 0, column=1, columnspan=1, rowspan=5, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))     
+        self.frame_import.grid(row = 0, column=1, columnspan=1, rowspan=5, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))
         self.frame_import.grid_columnconfigure(0, weight=1), self.frame_import.grid_rowconfigure(0, weight=1)
         # Frame for choosing the model
         self.frame_model = tk.LabelFrame(self.master, text="2. SIP model", width=200, height=4, font=fontz["bold"])
-        self.frame_model.grid(row = 6, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))        
+        self.frame_model.grid(row = 6, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15))
         self.frame_model.grid_columnconfigure(0, weight=1), self.frame_model.grid_rowconfigure(0, weight=1)
         # Frame to enter mcmc parameters
         self.frame_mcmc = tk.LabelFrame(self.master, text="3. MCMC settings", width=200, height=4, font=fontz["bold"])
-        self.frame_mcmc.grid(row = 7, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15), ipady=3)        
+        self.frame_mcmc.grid(row = 7, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15), ipady=3)
         self.frame_mcmc.grid_columnconfigure(0, weight=1)
         # Frame to run and exit
         self.frame_ruex = tk.LabelFrame(self.master, text="4. Options", width=200, height=4, font=fontz["bold"])
-        self.frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=(5,10))            
+        self.frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=(5,10))
         self.frame_ruex.columnconfigure(0, weight=1)
         # Frame to list the imported files and preview
         self.frame_list = tk.LabelFrame(self.master, text="List of imported files", font=fontz["bold"])
@@ -164,9 +163,9 @@ class MainApplication:
         self.frame_results = tk.LabelFrame(self.master, text="Results", font=fontz["bold"])
         self.frame_results.grid(row = 0, column=2, columnspan=1, rowspan=15, sticky=tk.W+tk.E+tk.N+tk.S, padx=10, pady=(5,10))
         self.frame_results.grid_rowconfigure(14, weight=1)
-             
+
 #==============================================================================
-# Running inversion             
+# Running inversion
 #==============================================================================
     def run_inversion(self):
         try:    self.clear(menu=False)
@@ -189,7 +188,7 @@ class MainApplication:
         print "====================="
         print "Starting inversion..."
         print "====================="
-        
+
         print "Model:", self.model.get()
         if self.model.get() == "ColeCole":
             print "Cole-Cole modes:", self.modes_n.get()
@@ -204,7 +203,7 @@ class MainApplication:
             print "Frequency dependence:", self.c_exp.get(), decomp_type
         print "Units:", self.units.get()
         print "Paths:"
-        for i in self.sel_files: 
+        for i in self.sel_files:
             print i
         print "Skipping", self.head.get(), "header lines"
         self.files = [self.sel_files[i].split("/")[-1].split(".")[0] for i in range(len((self.sel_files)))]
@@ -226,7 +225,7 @@ class MainApplication:
             print "====================="
             self.activity()
             self.var_review.set(self.f_n)
-            
+
             self.sol = mcmcSIPinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
                                 headers=self.head.get(), ph_units=self.units.get(),
                                 cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
@@ -242,7 +241,7 @@ class MainApplication:
                 self.plot_window(fig_fit, "Inversion results: "+self.f_n)
             if self.model.get() == "PDecomp":
                 iR.plot_debye(self.sol, save=self.check_vars[1][1].get(), draw=False)
-                
+
             if self.check_vars[2][1].get():
                 iR.plot_histo(self.all_results[self.f_n]["sol"], save=True)
                 iR.plot_traces(self.all_results[self.f_n]["sol"], save=True)
@@ -287,7 +286,7 @@ class MainApplication:
         self.clear(menu=False)
         self.update_results()
         self.diagn_buttons()
-        self.write_output_path()    
+        self.write_output_path()
 
     def draw_drop_down(self):
         try:    self.frame_drop.destroy()
@@ -345,7 +344,7 @@ class MainApplication:
             text_RLD.insert("1.0", self.var_review.get()+"\n\n")
             button = tk.Button(top_RLD, height=1, width=20, text="Dismiss", command=top_RLD.destroy, bg='gray97', relief=tk.GROOVE)
             button.grid(row=1, column=0, sticky=tk.S, pady=(0,10))
-    
+
             s = tk.Scrollbar(top_RLD, width=20)
             s.grid(row=0, column=1, sticky=tk.E+tk.N+tk.S, padx=(0,0),pady=(10,10))
             s['command'] = text_RLD.yview
@@ -434,9 +433,9 @@ class MainApplication:
         all_items = map(str.__add__,map(str.__add__,map(str.__add__,items,items2),items3),items4)
         items = '\n'.join(all_items)
         text_res.insert("1.0", items)
-        
+
 #==============================================================================
-# MCMC parameters        
+# MCMC parameters
 #==============================================================================
     def mcmc_parameters(self):
         # McMC parameters
@@ -468,7 +467,7 @@ class MainApplication:
         for i, (txt, val) in enumerate(models):
             tk.Radiobutton(self.frame_model, text=txt, justify=tk.LEFT, variable = self.model, command = self.draw_rtd_check, value=val).grid(row=i, column=0, sticky=tk.W+tk.S, padx=(10,0), pady=pad_radio+2)
         self.draw_rtd_check()
-        
+
     def draw_rtd_check(self):
         try:    self.model_opt_frame.destroy()
         except: pass
@@ -497,7 +496,7 @@ class MainApplication:
     def run_exit(self): # self expl
         tk.Button(self.frame_ruex, width=14, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
                             command = self.run_inversion).grid(row=0, column=1, sticky=tk.N+tk.E+tk.S, padx=(0,10), pady=(5,0))
-    
+
         tk.Button(self.frame_ruex, width=14, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
                             command = self.master.destroy).grid(row=1, column=1, sticky=tk.S+tk.E+tk.N, padx=(0,10), pady=(0,10))
 
@@ -583,7 +582,7 @@ class MainApplication:
         fit = self.all_results[f_n]["fit"]
         fig_fit = iR.plot_fit(data, fit, self.model.get(), f_n, save=False, draw=True)
         self.plot_window(fig_fit, "Inversion results: "+f_n)
-    
+
     def plot_rtd_now(self):
         f_n = self.var_review.get()
         fig_debye = iR.plot_debye(self.all_results[f_n]["sol"], save=False, draw=True)
@@ -604,7 +603,7 @@ class MainApplication:
         tk.Label(self.frame_import, text="""Nb header lines:""", justify = tk.LEFT).grid(row=1, column=0, columnspan=1,sticky=tk.W, padx=(10,0))
         tk.Entry(self.frame_import, textvariable=self.head, width=12).grid(row=1, column=1, columnspan=1,sticky=tk.E+tk.W,padx=(10,10))
 
-    def phase_units(self):        
+    def phase_units(self):
         # Phase units
         unites = ["mrad", "rad" ,"deg"]
         self.units = tk.StringVar()
@@ -623,12 +622,12 @@ class MainApplication:
         self.frame_path = tk.Frame(self.frame_list)
         self.frame_path.grid(row=0, column=0, padx=20, pady=10, sticky=tk.E+tk.W)
         self.frame_path.columnconfigure(2, weight=1)
-    
+
         self.frame_select = tk.Frame(self.frame_list)
         self.frame_select.grid(row=1, column=0, padx=(20,0), pady=10, sticky=tk.E+tk.W+tk.S+tk.N)
         self.frame_select.columnconfigure(0, weight=1)
         self.frame_select.rowconfigure(1, weight=1)
-    
+
         text_loc = tk.Text(self.frame_path, width=40, height=3, font=fontz["normal_small"])
         text_loc.grid(row=0, column=0, rowspan=1, sticky=tk.N+tk.W+tk.E)
         s = tk.Scrollbar(self.frame_select, width=20)
@@ -661,7 +660,7 @@ class MainApplication:
 #==============================================================================
 # Save and load GUI state
 #==============================================================================
-    
+
     def load(self):
         print "\nLoading root_ini from:\n", self.working_path
         try:
@@ -672,7 +671,7 @@ class MainApplication:
             print "root_ini not found, using default values"
             self.root_ini = self.default_root
         stdout.flush()
-        
+
     def save(self):
         root_save = {
                         "Spectral IP model" : self.model.get(),
@@ -712,7 +711,7 @@ class MainApplication:
         filemenu.add_command(label="Exit", command=self.master.destroy)
         menubar.add_cascade(label="File", menu=filemenu)
         helpmenu.add_command(label="Data file template", command=lambda: TextMessage().popup("Data file template", TextMessage.data_template, size=fontsize))
-        helpmenu.add_command(label="MCMC parameters", command=lambda: TextMessage().popup("Markov-chain Monte Carlo parameters", TextMessage.mcmc_info, size=fontsize)) 
+        helpmenu.add_command(label="MCMC parameters", command=lambda: TextMessage().popup("Markov-chain Monte Carlo parameters", TextMessage.mcmc_info, size=fontsize))
         helpmenu.add_command(label="References", command=lambda: TextMessage().popup("References", TextMessage.references, size=fontsize))
         helpmenu.add_separator()
         helpmenu.add_command(label="License", command=lambda: TextMessage().popup("License information", TextMessage.license_info, size=fontsize))
@@ -726,7 +725,7 @@ class MainApplication:
 # Class for popup messages
 #==============================================================================
 class TextMessage:
-    
+
     data_template = """DATA FILE TEMPLATE
 
 Save data in .csv, .txt, .dat, ... extension file
@@ -755,8 +754,8 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)
 1.144e-02, 1.70107e+05, -7.25533e+00, 5.630541e+02, 3.310889e+00
 
 ===============================================================================
-"""    
-    
+"""
+
     mcmc_info = """===================================================================================
 Meaning of MCMC parameters:
 
@@ -797,8 +796,8 @@ Dias model:         Fast convergence, weak fits
                     10 000 iterations usually converges
 
 ===================================================================================
-"""    
-    
+"""
+
     references = """Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
     Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
@@ -826,8 +825,8 @@ Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
 Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
     “Mineral Discrimination and Removal of Inductive Coupling with
-    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839."""    
-    
+    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839."""
+
     license_info = """The MIT License (MIT)
 
 Copyright (c) 2016 Charles L. Bérubé
@@ -852,8 +851,8 @@ SOFTWARE.
 
 https://opensource.org/licenses/MIT
 https://github.com/clberube/bisip
-"""    
-              
+"""
+
     def popup(self, title, message, size=10):
         top = tk.Toplevel()
         top.title(title)
@@ -867,7 +866,7 @@ https://github.com/clberube/bisip
         s = tk.Scrollbar(top, width=20)
         s.grid(row=0, column=0, sticky=tk.E+tk.N+tk.S, padx=(0,10),pady=(10,10))
         s['command'] = msg.yview
-        msg['yscrollcommand'] = s.set        
+        msg['yscrollcommand'] = s.set
         top.resizable(width=tk.FALSE, height=tk.FALSE)
 
     def about(self, fontz):
@@ -892,13 +891,22 @@ https://github.com/clberube/bisip
         msg.insert("1.0", about_message)
         button = tk.Button(top, height=1, width=20, text="Dismiss", command=top.destroy, bg='gray97', relief=tk.GROOVE)
         button.grid(row=3,column=0,columnspan=2,sticky=tk.S, pady=(0,10))
-        top.resizable(width=tk.FALSE, height=tk.FALSE)    
+        top.resizable(width=tk.FALSE, height=tk.FALSE)
 
 #==============================================================================
 # Main function
 #==============================================================================
-def main(): 
+def main():
     root = tk.Tk()
+    root.wm_title("Bayesian inversion of SIP data")
+    root.option_add("*Font", window_font)
+    #==============================================================================
+    # For MacOS, bring the window to front
+    # Without these lines the application will start in background
+    root.lift()
+    if "Darwin" in system():
+        root.call('wm', 'attributes', '.', '-topmost', True)
+        root.after_idle(root.call, 'wm', 'attributes', '.', '-topmost', False)
     app = MainApplication(root, fontz)
     root.mainloop()
     app.save()
