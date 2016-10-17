@@ -469,8 +469,10 @@ class MainApplication:
         self.draw_rtd_check()
 
     def draw_rtd_check(self):
-        try:    self.model_opt_frame.destroy()
-        except: pass
+        try:
+            self.mod_opt_frame.destroy()
+        except:
+            pass
         self.mod_opt_frame = tk.Frame(self.frame_model)
         self.mod_opt_frame.grid(row=0, column=1, rowspan=4)
         self.mod_opt_frame.grid_rowconfigure(4, weight=1)
