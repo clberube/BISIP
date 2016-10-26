@@ -17,10 +17,10 @@ import BISIP_invResults as iR
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-#model = "ColeCole"
+model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-model = "PDecomp"
+#model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 
@@ -29,7 +29,7 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {'nb_chain'   : 1,
           'nb_iter'    : 10000,
-          'nb_burn'    : 9000,
+          'nb_burn'    : 8000,
           'thin'       : 1,
           'prop_scale' : 1,
           'tune_inter' : 1000,
@@ -52,13 +52,13 @@ filename = [
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-            "/Users/Charles/Documents/Github Repositories/BISIP/Example data/SIP-K389170_avg.dat",
+            "/Users/Charles/Documents/Github Repositories/BISIP/Example data/SIP-K389175_avg.dat",
             ]
 
 #==============================================================================
 """ 4.
     Number of headers to skip ?"""
-skip_header = 3
+skip_header = 1
 
 #==============================================================================
 """ 5.
@@ -71,11 +71,11 @@ ph_units = "mrad"
 # Call to the inversion function for every file
 for i, fn in enumerate(filename):
     print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
-    sol = mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, c_exp=1.0, keep_traces=False)
+    sol = mcmcSIPinv(model, fn, mcmc=mcmc_p, adaptive=False, headers=skip_header, ph_units=ph_units, decomp_poly=4, c_exp=1.0, keep_traces=False)
 
     """Plot fit and data ?"""
     if True:
-        fig_fit = iR.plot_fit(sol["data"], sol["fit"], model, fn, save=True)
+        fig_fit = iR.plot_fit(sol, save=False)
 
     """Save results ?"""
     if True:
@@ -94,11 +94,11 @@ for i, fn in enumerate(filename):
         fig_histo = iR.plot_histo(sol, save=False)
 
     if False:
-        fig_trace = iR.plot_traces(sol["pymc_model"], model, fn, False)
+        fig_trace = iR.plot_traces(sol, save=False)
 
     """Plot parameter summary and Gelman-Rubin convergence test ?"""
     if False:
-        fig_summary = iR.plot_summary(sol["pymc_model"], )
+        fig_summary = iR.plot_summary(sol)
 
 #==============================================================================
 #===========================DATA FILE TEMPLATE=================================

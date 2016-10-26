@@ -60,7 +60,7 @@ from datetime import datetime
 #==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
-def run_MCMC(function, mc_p, save_traces=False, save_where=None):
+def run_MCMC(function, AMH, mc_p, save_traces=False, save_where=None):
     print "\nMCMC parameters:\n", mc_p
     if save_traces:
         # If path doesn't exist, create it
@@ -70,10 +70,18 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
     else:
         MDL = pymc.MCMC(function, db='ram',
                         dbname=save_where)
-    for stoc in MDL.stochastics:
-        MDL.use_step_method(pymc.Metropolis, stoc,
-                            proposal_distribution='Normal',
-                            scale=mc_p['prop_scale'], verbose=mc_p['verbose'])
+
+    if AMH:
+        if mc_p['verbose']:
+            mc_p['verbose'] = 1
+        MDL.use_step_method(pymc.AdaptiveMetropolis, MDL.stochastics, delay=mc_p["cov_delay"], interval=mc_p['cov_inter'], shrink_if_necessary=True, verbose=mc_p['verbose'])
+
+    else:
+        for stoc in MDL.stochastics:
+            MDL.use_step_method(pymc.Metropolis, stoc,
+                                proposal_distribution='Normal',
+                                scale=mc_p['prop_scale'], verbose=mc_p['verbose'])
+
     for i in range(1, mc_p['nb_chain']+1):
         print '\n Chain #%d/%d'%(i, mc_p['nb_chain'])
         MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'])
@@ -133,8 +141,11 @@ mcmc_params = {"nb_chain"   : 1,
                "tune_inter" : 1000,
                "prop_scale" : 1.0,
                "verbose"    : False,
+               "cov_inter"  : 1000,
+               "cov_delay"  : 1000,
                 }
-def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
+
+def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
                ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, keep_traces=False):
 
 #==============================================================================
@@ -223,31 +234,39 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     def PolyDecompModel(decomp_poly, c_exp):
         # Initial guesses
         p0 = {'R0'         : 1.0,
-              'a'          : ([0.01, -0.001, -0.001, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
+              'a'          : None,
+#              'a'          : ([0.01, -0.01, -0.01, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
               'log_tau_hi' : -6.0,
-              'm_hi'       : 1.0,
+              'm_hi'       : 0.5,
               'TotalM'     : None,
               'log_MeanTau': None,
               'U'          : None,
               }
         # Stochastics
         R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
-        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
-        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-6.0, upper=-3.0, value=p0['log_tau_hi'])
-        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
+#        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
+#        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-7.0, upper=-3.0, value=p0['log_tau_hi'])
+#        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
+        a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
+
         # Deterministics
+#        @pymc.deterministic(plot=False)
+#        def m_hi(mp_hi=mp_hi):
+#            return 10**mp_hi / (1 + 10**mp_hi)
         @pymc.deterministic(plot=False)
-        def zmod(log_tau_hi=log_tau_hi, m_hi=m_hi, R0=R0, a=a):
-            return Decomp_cyth(w, tau_10, log_taus, c_exp, log_tau_hi, m_hi, R0, a)
+        def zmod(R0=R0, a=a):
+            return Decomp_cyth(w, tau_10, log_taus, c_exp, R0, a)
         @pymc.deterministic(plot=False)
-        def m(a=a):
+        def m_(a=a):
             return np.sum((a*log_taus.T).T, axis=0)
         @pymc.deterministic(plot=False)
-        def totalM(m=m):
-            return np.sum(m[(log_tau > -3)&(log_tau < 1)])
+        def total_m(m_=m_):
+            return np.sum(m_[(log_tau > -3)&(log_tau < 1)])
         @pymc.deterministic(plot=False)
-        def log_meanTau(m=m, totalM=totalM, a=a):
-            return np.log10(np.exp(np.sum(m[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/totalM))
+        def log_mean_tau(m_=m_, total_m=total_m, a=a):
+            return np.log10(np.exp(np.sum(m_[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/total_m))
+
+
         # Likelihood
         obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
         return locals()
@@ -292,7 +311,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
 #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
                 }
     simulation = sim_dict[model] # Pick entries for the selected model
-    MDL = run_MCMC(simulation["func"](*simulation["args"]), mcmc, save_traces=keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
+    MDL = run_MCMC(simulation["func"](*simulation["args"]), adaptive, mcmc, save_traces=keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
 #    if not keep_traces: rmtree(out_path)   # Deletes the traces if not wanted
 
     """

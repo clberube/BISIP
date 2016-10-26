@@ -52,6 +52,8 @@ import tkFileDialog, tkMessageBox
 import FileDialog, tkFont # These 2 only to avoid pyinstaller error
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.pyplot import rcParams
+from itertools import combinations
+from collections import OrderedDict
 # SIP imports
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
@@ -96,28 +98,39 @@ def flatten(x):
 
 class MainApplication:
     working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
-    default_root = {
-                    "Spectral IP model" : "ColeCole",
-                    "Nb of chains:"     : 1,
-                    "Total iterations:" : 10000,
-                    "Burn-in period:"   : 8000,
-                    "Thinning factor:"  : 1,
-                    "Tuning interval:"  : 1000,
-                    "Proposal scale:"   : 1.0,
-                    "Nb header lines"   : 1,
-                    "Phase units"       : "mrad",
-                    "Keep txt traces"   : False,
-                    "Draw data and fit" : False,
-                    "Save QC figures "  : False,
-                    "Save fit figure"   : False,
-                    "Tuning verbose"    : False,
-                    "Imported files"    : [],
-                    "Polyn order"       : 4,
-                    "Freq dep"          : 1.0,
-                    "Nb modes"          : 2,
-                    }
-
     def __init__(self, master, fontz):
+        self.save_options = {"Save all hexbins":            tk.BooleanVar(),
+                             "Save all bivariate KDE":      tk.BooleanVar(),
+                             "Save fit figures":            tk.BooleanVar(),
+                             "Save traces":                 tk.BooleanVar(),
+                             "Save histograms":             tk.BooleanVar(),
+                             "Save autocorrelations":       tk.BooleanVar(),
+                             "Save Debye RTD":              tk.BooleanVar(),
+                             "Save summaries":              tk.BooleanVar(),
+                             "Save deviance":               tk.BooleanVar(),
+                             "Save loglikelihood":          tk.BooleanVar(),
+                             "Save traces as txt":          tk.BooleanVar(),
+                             "Save CSV results":            tk.BooleanVar(),
+                             "No subplots":                 tk.BooleanVar(),
+                             "PNG figures":                 tk.BooleanVar(),
+                            }
+        self.run_options = OrderedDict((
+                            ("Auto draw fit",                tk.BooleanVar()),
+                            ("Print results in console",     tk.BooleanVar()),
+                            ("Tuning verbose",               tk.BooleanVar()),
+                            ))
+
+        self.mcmc_vars = OrderedDict((
+                                ("Number of chains"     , (tk.IntVar(), 1)),
+                                ("Total iterations"     , (tk.IntVar(), 10000)),
+                                ("Burn-in period"       , (tk.IntVar(), 8000)),
+                                ("Thinning factor"      , (tk.IntVar(), 1)),
+                                ("Tuning interval"      , (tk.IntVar(), 1000)),
+                                ("Proposal scale"       , (tk.DoubleVar(), 1)),
+                                ("Covariance delay"     , (tk.IntVar(), 1000)),
+                                ("Covariance interval"  , (tk.IntVar(), 1000)),
+                                ))
+
         self.master = master
         self.master.resizable(width=tk.FALSE, height=tk.FALSE)
         self.load()
@@ -131,9 +144,28 @@ class MainApplication:
         self.phase_units()
         self.mcmc_parameters()
         self.run_exit()
-        self.make_options()
+        self.make_options(from_root=True)
         self.model_choice()
         self.activity(idle=True)
+
+    def use_default_root_ini(self):
+        self.default_root = {
+                            "Spectral IP model"     : "ColeCole",
+                            "Adaptive Metropolis"   : True,
+                            "Nb header lines"       : 1,
+                            "Phase units"           : "mrad",
+                            "Imported files"        : [],
+                            "Polyn order"           : 4,
+                            "Freq dep"              : 1.0,
+                            "Nb modes"              : 2,
+                            }
+        for k, v in self.save_options.items():
+            self.default_root[k] = v.get()
+        for k, v in self.mcmc_vars.items():
+            self.default_root[k] = v[1]
+        for k, v in self.run_options.items():
+            self.default_root[k] = v.get()
+        return self.default_root
 
 #==============================================================================
 # Main frames
@@ -152,7 +184,7 @@ class MainApplication:
         self.frame_mcmc.grid(row = 7, column=1, columnspan=1, sticky=tk.W+tk.E+tk.N, padx=10, pady=(5,15), ipady=3)
         self.frame_mcmc.grid_columnconfigure(0, weight=1)
         # Frame to run and exit
-        self.frame_ruex = tk.LabelFrame(self.master, text="4. Options", width=200, height=4, font=fontz["bold"])
+        self.frame_ruex = tk.LabelFrame(self.master, text="4. Run", width=200, height=4, font=fontz["bold"])
         self.frame_ruex.grid(row = 8, column=1, columnspan=1, sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=(5,10))
         self.frame_ruex.columnconfigure(0, weight=1)
         # Frame to list the imported files and preview
@@ -168,7 +200,7 @@ class MainApplication:
 # Running inversion
 #==============================================================================
     def run_inversion(self):
-        try:    self.clear(menu=False)
+        try:    self.clear()
         except: pass
         self.sel_files = [str(self.open_files[i]) for i in self.text_files.curselection()]
         if len(self.sel_files) == 0:
@@ -207,14 +239,17 @@ class MainApplication:
             print i
         print "Skipping", self.head.get(), "header lines"
         self.files = [self.sel_files[i].split("/")[-1].split(".")[0] for i in range(len((self.sel_files)))]
-        self.mcmc_params = {"nb_chain"   : self.mcmc_vars[0][1].get(),
-                       "nb_iter"    : self.mcmc_vars[1][1].get(),
-                       "nb_burn"    : self.mcmc_vars[2][1].get(),
-                       "thin"       : self.mcmc_vars[3][1].get(),
-                       "tune_inter" : self.mcmc_vars[4][1].get(),
-                       "prop_scale" : self.mcmc_vars[5][1].get(),
-                       "verbose"    : self.check_vars[4][1].get(),
-                        }
+
+        self.mcmc_params = {"verbose"    : self.run_options["Tuning verbose"].get(),
+                            "nb_chain"   : self.mcmc_vars["Number of chains"][0].get(),
+                            "nb_iter"    : self.mcmc_vars["Total iterations"][0].get(),
+                            "nb_burn"    : self.mcmc_vars["Burn-in period"][0].get(),
+                            "thin"       : self.mcmc_vars["Thinning factor"][0].get(),
+                            "tune_inter" : self.mcmc_vars["Tuning interval"][0].get(),
+                            "prop_scale" : self.mcmc_vars["Proposal scale"][0].get(),
+                            "cov_inter"  : self.mcmc_vars["Covariance interval"][0].get(),
+                            "cov_delay"  : self.mcmc_vars["Covariance delay"][0].get(),
+                            }
         # Appel de la fonction d'inversion avec les paramètres sélectionnés
         try:    del(self.all_results)
         except: pass
@@ -225,28 +260,41 @@ class MainApplication:
             print "====================="
             self.activity()
             self.var_review.set(self.f_n)
-
             self.sol = mcmcSIPinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
-                                headers=self.head.get(), ph_units=self.units.get(),
+                                adaptive=self.adaptive.get(), headers=self.head.get(), ph_units=self.units.get(),
                                 cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
-                                c_exp=self.c_exp.get(), keep_traces=self.check_vars[3][1].get())
+                                c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get())
 
             self.all_results[self.f_n] = {"pm":self.sol["params"],"MDL":self.sol["pymc_model"],"data":self.sol["data"],"fit":self.sol["fit"], "sol":self.sol}
 #           Impression ou non des résultats, graphiques, histogrammes
             self.update_results()
-            iR.print_resul(self.sol)
-            iR.save_resul(self.sol)
-            fig_fit = iR.plot_fit(self.sol, save=self.check_vars[1][1].get(), draw=self.check_vars[0][1].get())
-            if self.check_vars[0][1].get():
+            if self.run_options["Print results in console"].get():
+                iR.print_resul(self.sol)
+            if self.save_options["Save CSV results"].get():
+                iR.save_resul(self.sol)
+            fig_fit = iR.plot_fit(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get(), draw=self.run_options["Auto draw fit"].get())
+            if self.run_options["Auto draw fit"].get():
                 self.plot_window(fig_fit, "Inversion results: "+self.f_n)
             if self.model.get() == "PDecomp":
-                iR.plot_debye(self.sol, save=self.check_vars[1][1].get(), draw=False)
-
-            if self.check_vars[2][1].get():
-                iR.plot_histo(self.all_results[self.f_n]["sol"], save=True)
-                iR.plot_traces(self.all_results[self.f_n]["sol"], save=True)
-                iR.plot_summary(self.all_results[self.f_n]["sol"], save=True)
-                iR.plot_autocorr(self.all_results[self.f_n]["sol"], save=True)
+                iR.plot_debye(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save all hexbins"].get():
+                for v1, v2 in list(combinations(self.list_of_parameters, 2)):
+                    iR.plot_hexbin(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save all bivariate KDE"].get():
+                for v1, v2 in list(combinations(self.list_of_parameters, 2)):
+                    iR.plot_KDE(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save histograms"].get():
+                iR.plot_histo(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save traces"].get():
+                iR.plot_traces(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save summaries"].get():
+                iR.plot_summary(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save autocorrelations"].get():
+                iR.plot_autocorr(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save deviance"].get():
+                iR.plot_deviance(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+            if self.save_options["Save loglikelihood"].get():
+                iR.plot_logp(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.files.index(self.f_n)+1 == len(self.files):
                 self.activity(done=True)
                 self.diagn_buttons()
@@ -275,7 +323,7 @@ class MainApplication:
             text_done = tk.Label(self.frame_activ, text="""Done\n""", width=40, anchor=tk.W)
             text_done.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
 
-    def clear(self, menu): # self expl
+    def clear(self, menu=False): # self expl
         self.frame_optimal.destroy()
         self.frame_saved_in.destroy()
         self.frame_diagn_but.destroy()
@@ -283,7 +331,7 @@ class MainApplication:
             self.frame_drop.destroy(), self.frame_activ.destroy()
 
     def change_file(self):
-        self.clear(menu=False)
+        self.clear()
         self.update_results()
         self.diagn_buttons()
         self.write_output_path()
@@ -354,6 +402,24 @@ class MainApplication:
             tkMessageBox.showwarning("Diagnostic error",
                                      "Error\nRun inversion first", parent=self.master)
 
+    def popup_bivar(self, bivar_type):
+        try: self.top_bivar.destroy()
+        except: pass
+        self.top_bivar = tk.Toplevel()
+        self.top_bivar.title("Bivariate plotting")
+        tk.Label(self.top_bivar, text="Select two different parameters: ").grid(row=0, column=0, sticky=tk.W+tk.E+tk.N, pady=(5,5))
+        self.biv1, self.biv2 = tk.StringVar(), tk.StringVar()
+        self.biv1.set(self.list_of_parameters[0])
+        self.biv2.set(self.list_of_parameters[1])
+        optionmenu1 = tk.OptionMenu(self.top_bivar, self.biv1, *self.list_of_parameters)
+        optionmenu2 = tk.OptionMenu(self.top_bivar, self.biv2, *self.list_of_parameters)
+        optionmenu1.grid(row=1, column=0, sticky=tk.W+tk.E+tk.S)
+        optionmenu1.config(bg = "gray97", relief=tk.GROOVE)
+        optionmenu2.grid(row=2, column=0, sticky=tk.W+tk.E+tk.S)
+        optionmenu2.config(bg = "gray97", relief=tk.GROOVE)
+        button = tk.Button(self.top_bivar, height=1, width=20, text="OK", command=lambda: self.plot_diagnostic(bivar_type), bg='gray97', relief=tk.GROOVE)
+        button.grid(row=3, column=0, sticky=tk.S, pady=(10,10))
+
     # Diagnostics buttons
     def diagn_buttons(self):
         try:    self.frame_diagn_but.destroy()
@@ -363,32 +429,44 @@ class MainApplication:
         self.frame_diagn_but.columnconfigure((0,1,2), weight=1)
         but_cle = tk.Button(self.frame_diagn_but, height=1, width=10, text = "Clear", fg='black', bg='gray97', font=fontz["normal_small"],
                             command = lambda: self.clear(menu=True), relief=tk.GROOVE)
-        but_cle.grid(row=7, column=0, columnspan=3, sticky=tk.E+tk.S, pady=(5,0))
+        but_cle.grid(row=9, column=0, columnspan=3, sticky=tk.E+tk.S, pady=(5,0))
         but_mer = tk.Button(self.frame_diagn_but, height=1, text = "Merge csv result files", fg='black', bg='gray97',
                             command = self.merge_csv_files, font=fontz["normal_small"], relief=tk.GROOVE)
-        but_mer.grid(row=1, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_mer.grid(row=0, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
         but_fit = tk.Button(self.frame_diagn_but, height=1, text = "Draw data and fit", fg='black', bg='gray97',
                             command = self.plot_fit_now, font=fontz["normal_small"], relief=tk.GROOVE)
-        but_fit.grid(row=2, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_fit.grid(row=1, column=1, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
+        but_dev = tk.Button(self.frame_diagn_but, height=1, text = "Model deviance", fg='black', bg='gray97',
+                            command = lambda: self.plot_diagnostic("deviance"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_dev.grid(row=1, column=0, sticky=tk.W+tk.E+tk.S, padx=(0,0), pady=(5,0))
+        but_lik = tk.Button(self.frame_diagn_but, height=1, text = "Log-likelihood", fg='black', bg='gray97',
+                            command = lambda: self.plot_diagnostic("logp"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_lik.grid(row=1, column=2, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
         but_sum = tk.Button(self.frame_diagn_but, height=1, text = "Summary and Gelman-Rubin convergence", fg='black', bg='gray97',
                             command = lambda: self.plot_diagnostic("summary"), font=fontz["normal_small"], relief=tk.GROOVE)
-        but_sum.grid(row=5, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_sum.grid(row=7, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_hex = tk.Button(self.frame_diagn_but, height=1, text = "Hexagonal binning", fg='black', bg='gray97',
+                            command = lambda: self.popup_bivar("hexbin"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_hex.grid(row=2, column=0, columnspan=1, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+        but_kde = tk.Button(self.frame_diagn_but, height=1, text = "Bivariate KDE", fg='black', bg='gray97',
+                            command = lambda: self.popup_bivar("KDE"), font=fontz["normal_small"], relief=tk.GROOVE)
+        but_kde.grid(row=2, column=2, columnspan=1, sticky=tk.W+tk.E+tk.S, pady=(5,0), padx=(5,0))
         but_rld = tk.Button(self.frame_diagn_but, height=1, text = "Raftery-Lewis diagnostic", fg='black', bg='gray97',
                             command = self.RLD_diagnostic, font=fontz["normal_small"], relief=tk.GROOVE)
-        but_rld.grid(row=6, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,5))
+        but_rld.grid(row=8, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,5))
         but_tra = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Traces", fg='black', bg='gray97',
                             command = lambda: self.plot_diagnostic("traces"), font=fontz["normal_small"], relief=tk.GROOVE)
-        but_tra.grid(row=4, column=0, sticky=tk.W+tk.E+tk.S, padx=(0,0), pady=(5,0))
+        but_tra.grid(row=6, column=0, sticky=tk.W+tk.E+tk.S, padx=(0,0), pady=(5,0))
         but_his = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Histograms", fg='black', bg='gray97',
                             command = lambda: self.plot_diagnostic("histo"), font=fontz["normal_small"], relief=tk.GROOVE)
-        but_his.grid(row=4, column=1, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
+        but_his.grid(row=6, column=1, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
         but_aut = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Autocorrelation", fg='black', bg='gray97',
                             command = lambda: self.plot_diagnostic("autocorr"), font=fontz["normal_small"], relief=tk.GROOVE)
-        but_aut.grid(row=4, column=2, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
+        but_aut.grid(row=6, column=2, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
         if self.model.get() == "PDecomp":
             but_rtd = tk.Button(self.frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
                                 command = self.plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
-            but_rtd.grid(row=3, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
+            but_rtd.grid(row=5, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
 
     def write_output_path(self):
         try:    self.frame_saved_in.destroy()
@@ -411,9 +489,12 @@ class MainApplication:
         self.frame_optimal.grid(row=2, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
         self.frame_optimal.columnconfigure(0, weight=1)
         keys = sorted([x for x in pm.keys() if "_std" not in x])
-        if model in ["PDecomp", "DDebye"]:
+        try:
+            keys.remove("m_")
+        except:
+            pass
+        if model == "PDecomp":
             adj = -1
-            if "m" in keys: keys.remove("m")
         else:
             adj = 0
         values = flatten([pm[k] for k in sorted(keys)])
@@ -422,11 +503,15 @@ class MainApplication:
             if len(pm[k].shape) > 0:
                 keys[i] = [keys[i]+"%d"%n for n in range(1+adj,pm[k].shape[0]+1+adj)]
         keys = list(flatten(keys))
+        self.list_of_parameters = keys
+        for c, k in enumerate(self.list_of_parameters):
+            if "tau" in k:
+                self.list_of_parameters[c] = "log_"+k
         label_res = tk.Label(self.frame_optimal, text="""Optimal parameters:""", anchor=tk.W)
         label_res.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
         text_res = tk.Text(self.frame_optimal, height=len(values), width=40, font=("Courier new", fontsize+res_size, "bold"))
         text_res.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N)
-        items = ["{:<10}".format(x+":") for x in keys]
+        items = ["{:<13}".format(x+":") for x in keys]
         items2 = [" %.3e " %x for x in values]
         items3 = ["+/- %.0e" %x for x in errors]
         items4 = [" (%.2f%%)" %(abs(100*e/v)) for v,e in zip(values,errors)]
@@ -439,16 +524,34 @@ class MainApplication:
 #==============================================================================
     def mcmc_parameters(self):
         # McMC parameters
-        self.mcmc_vars = [("Nb of chains:"    , tk.IntVar()),
-                          ("Total iterations:", tk.IntVar()),
-                          ("Burn-in period:"  , tk.IntVar()),
-                          ("Thinning factor:" , tk.IntVar()),
-                          ("Tuning interval:" , tk.IntVar()),
-                          ("Proposal scale:"  , tk.DoubleVar()),]
-        for i, (k, v) in enumerate(self.mcmc_vars):
-            v.set(self.root_ini[k])
-            tk.Label(self.frame_mcmc, text=k, justify = tk.LEFT).grid(row=i, column=0, sticky=tk.W, padx=(10,0))
-            tk.Entry(self.frame_mcmc ,textvariable=v, width=12).grid(row=i, column=1, sticky=tk.E,padx=(0,10))
+        self.adaptive = tk.BooleanVar()
+        self.adaptive_text = tk.StringVar()
+        def yesno():
+            if self.adaptive.get():
+                self.adaptive_text.set("AM")
+                for i, (k, v) in enumerate(self.mcmc_vars.items()):
+                    v[0].set(self.root_ini[k])
+                    if k in ["Tuning interval", "Proposal scale"]:
+                        tk.Entry(self.frame_mcmc ,textvariable=v[0],fg="grey", width=12).grid(row=i+1, column=1, sticky=tk.E,padx=(0,10))
+                        tk.Label(self.frame_mcmc, text=k, justify = tk.LEFT, fg="grey").grid(row=i+1, column=0, sticky=tk.W, padx=(10,0))
+                    else:
+                        tk.Entry(self.frame_mcmc ,textvariable=v[0], width=12).grid(row=i+1, column=1, sticky=tk.E,padx=(0,10))
+                        tk.Label(self.frame_mcmc, text=k, justify = tk.LEFT).grid(row=i+1, column=0, sticky=tk.W, padx=(10,0))
+            else:
+                self.adaptive_text.set("MH")
+                for i, (k, v) in enumerate(self.mcmc_vars.items()):
+                    v[0].set(self.root_ini[k])
+                    if k in ["Covariance interval", "Covariance delay"]:
+                        tk.Entry(self.frame_mcmc ,textvariable=v[0],fg="grey", width=12).grid(row=i+1, column=1, sticky=tk.E,padx=(0,10))
+                        tk.Label(self.frame_mcmc, text=k, justify = tk.LEFT, fg="grey").grid(row=i+1, column=0, sticky=tk.W, padx=(10,0))
+                    else:
+                        tk.Entry(self.frame_mcmc ,textvariable=v[0], width=12).grid(row=i+1, column=1, sticky=tk.E,padx=(0,10))
+                        tk.Label(self.frame_mcmc, text=k, justify = tk.LEFT).grid(row=i+1, column=0, sticky=tk.W, padx=(10,0))
+
+        tk.Label(self.frame_mcmc, text="Use Adaptive Metropolis:", justify = tk.LEFT).grid(row=0, column=0, sticky=tk.W, padx=(10,0))
+        tk.Checkbutton(self.frame_mcmc , variable=self.adaptive, textvariable=self.adaptive_text, width=12, command=yesno).grid(row=0, column=1, sticky=tk.E,padx=(0,10))
+        self.adaptive.set(self.root_ini["Adaptive Metropolis"])
+        yesno()
 
 #==============================================================================
 # SIP model
@@ -494,25 +597,42 @@ class MainApplication:
 #==============================================================================
 # Run Exit Options
 #==============================================================================
+    def run_exit(self):
+        for i, (k, v) in enumerate(self.run_options.items()):
+            tk.Checkbutton(self.frame_ruex, text=k, variable=v).grid(row=i, column=0, padx=(10,0), sticky=tk.W+tk.N+tk.S)
+            self.run_options[k].set(self.root_ini[k]) # set last used values
+        tk.Button(self.frame_ruex, width=14, text = "Options", fg='black', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+                            command = self.make_options).grid(row=i+1, column=0, rowspan=1, sticky=tk.N+tk.E+tk.W+tk.S, padx=(10,5), pady=(0,10))
+        tk.Button(self.frame_ruex, width=14, height=2, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+                            command = self.run_inversion).grid(row=0, column=1, rowspan=2, sticky=tk.N+tk.E+tk.S, padx=(5,10), pady=(5,0))
+        tk.Button(self.frame_ruex, width=14, height=2, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+                            command = self.master.destroy).grid(row=2, column=1, rowspan=2, sticky=tk.S+tk.E+tk.N, padx=(5,10), pady=(0,10))
 
-    def run_exit(self): # self expl
-        tk.Button(self.frame_ruex, width=14, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
-                            command = self.run_inversion).grid(row=0, column=1, sticky=tk.N+tk.E+tk.S, padx=(0,10), pady=(5,0))
+    def make_options(self, from_root=False):
+        try: self.top_checkbox.destroy()
+        except: pass
 
-        tk.Button(self.frame_ruex, width=14, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
-                            command = self.master.destroy).grid(row=1, column=1, sticky=tk.S+tk.E+tk.N, padx=(0,10), pady=(0,10))
-
-    def make_options(self):
-        self.check_vars = [("Draw data and fit", tk.BooleanVar()),
-                           ("Save fit figure"  , tk.BooleanVar()),
-                          ("Save QC figures " , tk.BooleanVar()),
-                          ("Keep txt traces"  , tk.BooleanVar()),
-                          ("Tuning verbose"   , tk.BooleanVar()),]
-        self.frame_checkbox = tk.Frame(self.frame_ruex)
-        self.frame_checkbox.grid(row=0, column=0, rowspan=2, pady=(5,10), padx=10)
-        for i, (k, v) in enumerate(self.check_vars):
-            tk.Checkbutton(self.frame_checkbox, text=k, variable=v).grid(row=i, column=0, sticky=tk.W+tk.N+tk.S)
-            self.check_vars[i][1].set(self.root_ini[k]) # set last used values
+        # Select all or none functions
+        def select_all(): # self expl
+            for v in self.save_options.values():
+                v.set(True)
+        def select_none(): # self expl
+            for v in self.save_options.values():
+                v.set(False)
+        if not from_root:
+            self.top_checkbox = tk.Toplevel(self.master)
+            self.top_checkbox.title("Save options")
+            frame_checkbox = tk.LabelFrame(self.top_checkbox, text="Check items to save", width=200, height=4, font=fontz["bold"])
+            frame_checkbox.grid(row = 0, column=0,sticky=tk.S+tk.W+tk.E+tk.N, padx=10, pady=10)
+            tk.Button(frame_checkbox, height=1, width=15, text="Check all", command=select_all, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
+            tk.Button(frame_checkbox, height=1, width=15, text="Check none", command=select_none, bg='gray97', font=fontz["normal_small"], relief=tk.GROOVE).grid(row=0, column=1, sticky=tk.E, pady=5, padx=10)
+            button = tk.Button(frame_checkbox, height=2, width=20, text="OK", bg='gray97', font=fontz["bold"], command=self.top_checkbox.destroy, relief=tk.GROOVE)
+            button.grid(row=len(self.save_options)+2, column=0, columnspan=2, sticky=tk.W+tk.E, pady=(10,10), padx=(20,20))
+        for i, (k, v) in enumerate(sorted(self.save_options.items())):
+            if from_root:
+                self.save_options[k].set(self.root_ini[k])
+            if not from_root:
+                tk.Checkbutton(frame_checkbox, text=k, variable=v).grid(row=i+1, column=0, sticky=tk.W+tk.N+tk.S,padx=(10,10),pady=(5,0))
 
 #==============================================================================
 # Plotting
@@ -556,6 +676,22 @@ class MainApplication:
             if which == "summary":
                 summa_plot = iR.plot_summary(sol, save=False)
                 self.plot_window(summa_plot, "Parameter summary: "+f_n)
+            if which == "deviance":
+                devi_plot = iR.plot_deviance(sol, save=False)
+                self.plot_window(devi_plot, "Model deviance: "+f_n)
+            if which == "logp":
+                logp_plot = iR.plot_logp(sol, save=False)
+                self.plot_window(logp_plot, "Log-likelihood: "+f_n)
+            if which == "hexbin":
+                try: self.top_bivar.destroy()
+                except: pass
+                hex_plot = iR.plot_hexbin(sol, self.biv1.get(), self.biv2.get(), save=False)
+                self.plot_window(hex_plot, "Hexagonal binning: "+f_n)
+            if which == "KDE":
+                try: self.top_bivar.destroy()
+                except: pass
+                kde_plot = iR.plot_KDE(sol, self.biv1.get(), self.biv2.get(), save=False)
+                self.plot_window(kde_plot, "Bivariate KDE: "+f_n)
             stdout.flush()
         except:
             tkMessageBox.showwarning("Error analyzing results", "Error\nProblem with inversion results\nTry adding iterations",
@@ -580,9 +716,8 @@ class MainApplication:
 
     def plot_fit_now(self):
         f_n = self.var_review.get()
-        data = self.all_results[f_n]["data"]
-        fit = self.all_results[f_n]["fit"]
-        fig_fit = iR.plot_fit(data, fit, self.model.get(), f_n, save=False, draw=True)
+        sol = self.all_results[f_n]["sol"]
+        fig_fit = iR.plot_fit(sol, save=False, draw=True)
         self.plot_window(fig_fit, "Inversion results: "+f_n)
 
     def plot_rtd_now(self):
@@ -671,30 +806,28 @@ class MainApplication:
             print "root_ini successfully loaded"
         except:
             print "root_ini not found, using default values"
-            self.root_ini = self.default_root
+            self.root_ini = self.use_default_root_ini()
         stdout.flush()
 
     def save(self):
         root_save = {
-                        "Spectral IP model" : self.model.get(),
-                        "Nb of chains:"     : self.mcmc_vars[0][1].get(),
-                        "Total iterations:" : self.mcmc_vars[1][1].get(),
-                        "Burn-in period:"   : self.mcmc_vars[2][1].get(),
-                        "Thinning factor:"  : self.mcmc_vars[3][1].get(),
-                        "Tuning interval:"  : self.mcmc_vars[4][1].get(),
-                        "Proposal scale:"   : self.mcmc_vars[5][1].get(),
-                        "Nb header lines"   : self.head.get(),
-                        "Phase units"       : self.units.get(),
-                        "Keep txt traces"   : self.check_vars[3][1].get(),
-                        "Draw data and fit" : self.check_vars[0][1].get(),
-                        "Save QC figures "  : self.check_vars[2][1].get(),
-                        "Save fit figure"   : self.check_vars[1][1].get(),
-                        "Tuning verbose"    : self.check_vars[4][1].get(),
-                        "Imported files"    : self.open_files,
-                        "Polyn order"       : self.poly_n.get(),
-                        "Freq dep"          : self.c_exp.get(),
-                        "Nb modes"          : self.modes_n.get(),
+                        "Spectral IP model"     : self.model.get(),
+                        "Adaptive Metropolis"   : self.adaptive.get(),
+                        "Nb header lines"       : self.head.get(),
+                        "Phase units"           : self.units.get(),
+                        "Imported files"        : self.open_files,
+                        "Polyn order"           : self.poly_n.get(),
+                        "Freq dep"              : self.c_exp.get(),
+                        "Nb modes"              : self.modes_n.get(),
                     }
+
+        for k, v in self.mcmc_vars.items():
+            root_save[k] = v[0].get()
+        for k, v in self.save_options.items():
+            root_save[k] = v.get()
+        for k, v in self.run_options.items():
+            root_save[k] = v.get()
+
         print "\nSaving root_ini"
         with open(self.working_path+'root_ini', 'w') as f:
             jdump(root_save, f)

@@ -37,12 +37,14 @@ This Python module contains functions to visualize the Bayesian inversion result
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
+from fastkde import fastKDE
+import seaborn.apionly as sns
 import numpy as np
 from os import path, makedirs
 from sys import argv
 from math import ceil
 from pymc import raftery_lewis, gelman_rubin, geweke
-from scipy.stats import norm
+from scipy.stats import norm, gaussian_kde
 from BISIP_models import get_data
 #==============================================================================
 
@@ -62,6 +64,17 @@ def flatten(x):
             result.append(el)
     return result
 
+def get_model_type(sol):
+    model = sol["SIP_model"]
+    if model == "PDecomp":
+        if sol["model_type"]["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol["model_type"]["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"
+    return model
+
 def print_resul(sol):
 #==============================================================================
     # Impression des résultats
@@ -76,19 +89,240 @@ def print_resul(sol):
     for l, v, e in zip(labels, v_keys, e_keys):
         print l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v]))
 
-def plot_histo(sol, save):
-    MDL, model = sol["pymc_model"], sol["SIP_model"]
+def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    MDL = sol["pymc_model"]
+    model = get_model_type(sol)
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
-    keys.remove("zmod")
-    if model == "PDecomp":
-        keys.remove("m")
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"
+    try:
+        keys.remove("zmod")
+        keys.remove("m_")
+    except:
+        pass
+    for (i, k) in enumerate(keys):
+        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        if vect > 1:
+            keys[i] = [k+"%d"%n for n in range(1,vect+1)]
+    keys = list(flatten(keys))
+
+    if no_subplots:
+        figs = {}
+        for c, k in enumerate(keys):
+            fig, ax = plt.subplots(figsize=(6,4))
+            if k == "R0":
+                stoc = "R0"
+            else:
+                stoc =  ''.join([i for i in k if not i.isdigit()])
+                stoc_num = [int(i) for i in k if i.isdigit()]
+            try:
+                data = sorted(MDL.trace(stoc)[:][:,stoc_num[0]-1])
+            except:
+                data = sorted(MDL.trace(stoc)[:])
+            fit = norm.pdf(data, np.mean(data), np.std(data))
+            plt.yticks(fontsize=14)
+            plt.xticks(fontsize=14)
+            plt.xlabel("%s value"%k, fontsize=14)
+            plt.ylabel("Probability density", fontsize=14)
+            hist = plt.hist(data, bins=20, normed=True, linewidth=1.0, color="white")
+            plt.plot(data, fit, "-b", label="Fitted PDF", linewidth=1.5)
+            plt.legend(loc='best')
+            plt.grid(None)
+            if save:
+                save_where = '/Figures/Histograms/%s/' %filename
+                actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+                save_path = actual_path+save_where
+                if c == 0:
+                    print "\nSaving histogram figures in:\n", save_path
+                if not path.exists(save_path):
+                    makedirs(save_path)
+                fig.savefig(save_path+'Histo-%s-%s-%s.%s'%(model,filename,k,save_as))
+            figs[k] = fig
+            plt.close(fig)
+        return figs
+
+    else:
+        ncols = 2
+        nrows = int(ceil(len(keys)*1.0 / ncols))
+        fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
+        for c, (a, k) in enumerate(zip(ax.flat, keys)):
+            if k == "R0":
+                stoc = "R0"
+            else:
+                stoc =  ''.join([i for i in k if not i.isdigit()])
+                stoc_num = [int(i) for i in k if i.isdigit()]
+            try:
+                data = sorted(MDL.trace(stoc)[:][:,stoc_num[0]-1])
+            except:
+                data = sorted(MDL.trace(stoc)[:])
+            fit = norm.pdf(data, np.mean(data), np.std(data))
+            plt.axes(a)
+            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+            plt.locator_params(axis = 'y', nbins = 8)
+            plt.locator_params(axis = 'x', nbins = 7)
+            plt.yticks(fontsize=12)
+            plt.xticks(fontsize=12)
+            plt.xlabel(k, fontsize=12)
+            plt.ylabel("Frequency", fontsize=12)
+            hist = plt.hist(data, bins=20, normed=False, label=filename, linewidth=1.0, color="white")
+            xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in xrange(len(hist[1])-1)]
+            binwidth = (max(xh) - min(xh)) / len(hist[1])
+            fit *= len(data) * binwidth
+            plt.plot(data, fit, "-b", linewidth=1.5)
+            plt.grid(None)
+        fig.tight_layout(w_pad=0.1, h_pad=1.0)
+        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
+            a.set_visible(False)
+        if save:
+            save_where = '/Figures/Histograms/'
+            actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+            save_path = actual_path+save_where
+            print "\nSaving parameter histograms in:\n", save_path
+            if not path.exists(save_path):
+                makedirs(save_path)
+            fig.savefig(save_path+'Histo-%s-%s.%s'%(model,filename,save_as))
+        try:    plt.close(fig)
+        except: pass
+        return fig
+
+def plot_KDE(sol, var1, var2, save=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    MDL = sol["pymc_model"]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    model = get_model_type(sol)
+    if var1 == "R0":
+        stoc1 = "R0"
+    else:
+        stoc1 =  ''.join([i for i in var1 if not i.isdigit()])
+        stoc_num1 = [int(i) for i in var1 if i.isdigit()]
+    try:
+        x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
+    except:
+        x = MDL.trace(stoc1)[:]
+    if var2 == "R0":
+        stoc2 = "R0"
+    else:
+        stoc2 =  ''.join([i for i in var2 if not i.isdigit()])
+        stoc_num2 = [int(i) for i in var2 if i.isdigit()]
+    try:
+        y = MDL.trace(stoc2)[:,stoc_num2[0]-1]
+    except:
+        y = MDL.trace(stoc2)[:]
+    xmin, xmax = min(x), max(x)
+    ymin, ymax = min(y), max(y)
+    fig, ax = plt.subplots(figsize=(8,6))
+    plt.grid(None)
+
+    # Peform the kernel density estimate
+    xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([x, y])
+    kernel = gaussian_kde(values, bw_method='silverman')
+    f = np.reshape(kernel(positions).T, xx.shape)
+
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    # Contourf plot
+    plt.scatter(x, y, c='k', s=10)
+    cfset = ax.contourf(xx, yy, f, cmap=plt.cm.Blues, alpha=0.8)
+    ## Or kernel density estimate plot instead of the contourf plot
+#    ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
+    # Contour plot
+    cset = ax.contour(xx, yy, f, colors='k', alpha=1)
+    # Label plot
+    ax.clabel(cset, inline=1, fmt='%d', fontsize=10)
+    plt.yticks(fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.ylabel("%s" %var2, fontsize=14)
+    plt.xlabel("%s" %var1, fontsize=14)
+    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+    if save:
+        save_where = '/Figures/Bivariate KDE/%s/' %filename
+        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        save_path = actual_path+save_where
+        print "\nSaving KDE figure in:\n", save_path
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'KDE-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as))
+    plt.close(fig)
+    return fig
+
+def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    MDL = sol["pymc_model"]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    model = get_model_type(sol)
+    if var1 == "R0":
+        stoc1 = "R0"
+    else:
+        stoc1 =  ''.join([i for i in var1 if not i.isdigit()])
+        stoc_num1 = [int(i) for i in var1 if i.isdigit()]
+    try:
+        x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
+    except:
+        x = MDL.trace(stoc1)[:]
+    if var2 == "R0":
+        stoc2 = "R0"
+    else:
+        stoc2 =  ''.join([i for i in var2 if not i.isdigit()])
+        stoc_num2 = [int(i) for i in var2 if i.isdigit()]
+    try:
+        y = MDL.trace(stoc2)[:,stoc_num2[0]-1]
+    except:
+        y = MDL.trace(stoc2)[:]
+    xmin, xmax = min(x), max(x)
+    ymin, ymax = min(y), max(y)
+    fig, ax = plt.subplots(figsize=(8,6))
+    plt.grid(None)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+#    plt.scatter(x, y)
+    plt.hexbin(x, y, gridsize=20, cmap=plt.cm.Blues)
+    cb = plt.colorbar()
+    cb.set_label('Number of observations')
+    plt.yticks(fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.ylabel("%s" %var2, fontsize=14)
+    plt.xlabel("%s" %var1, fontsize=14)
+    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+    if save:
+        save_where = '/Figures/Hexbins/%s/' %filename
+        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        save_path = actual_path+save_where
+        print "\nSaving hexbin figure in:\n", save_path
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'Bivar-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as))
+    plt.close(fig)
+    return fig
+
+def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    MDL = sol["pymc_model"]
+    model = get_model_type(sol)
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
+    try:
+        keys.remove("zmod")
+        keys.remove("m_")
+    except:
+        pass
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -96,123 +330,89 @@ def plot_histo(sol, save):
     keys = list(flatten(keys))
     ncols = 2
     nrows = int(ceil(len(keys)*1.0 / ncols))
-    fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
-    for c, (a, k) in enumerate(zip(ax.flat, keys)):
-        if k == "R0":
-            stoc = "R0"
-        else:
-            stoc =  ''.join([i for i in k if not i.isdigit()])
-            stoc_num = [int(i) for i in k if i.isdigit()]
-        try:
-            data = sorted(MDL.trace(stoc)[:][:,stoc_num[0]-1])
-        except:
-            data = sorted(MDL.trace(stoc)[:])
-        fit = norm.pdf(data, np.mean(data), np.std(data))
-        plt.axes(a)
-        plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-        plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-        plt.locator_params(axis = 'y', nbins = 8)
-        plt.locator_params(axis = 'x', nbins = 7)
-        plt.yticks(fontsize=12)
-        plt.xticks(fontsize=12)
-        plt.xlabel(k, fontsize=12)
-        plt.ylabel("Frequency", fontsize=12)
-        hist = plt.hist(data, bins=20, normed=False, label=filename, linewidth=1.0, color="white")
-        xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in xrange(len(hist[1])-1)]
-        binwidth = (max(xh) - min(xh)) / len(hist[1])
-        fit *= len(data) * binwidth
-        plt.plot(data, fit, "-b", linewidth=1.5)
-        plt.grid(None)
-#        plt.legend(fontsize=8)
-#        plt.title(filename, fontsize=8)
-    fig.tight_layout(w_pad=0.1, h_pad=1.0)
-    for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
-        a.set_visible(False)
-    if save:
-        save_where = '/Figures/Histograms/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
-        save_path = actual_path+save_where
-        print "\nSaving parameter histograms in:\n", save_path
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'Histo-%s-%s.pdf'%(model,filename))
-    try:    plt.close(fig)
-    except: pass
-    return fig
+    if no_subplots:
+        figs = {}
+        for c, k in enumerate(keys):
+            fig, ax = plt.subplots(figsize=(8,4))
+            if k == "R0":
+                stoc = "R0"
+            else:
+                stoc =  ''.join([i for i in k if not i.isdigit()])
+                stoc_num = [int(i) for i in k if i.isdigit()]
+            try:
+                data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
+            except:
+                data = MDL.trace(stoc)[:]
+            sampler = MDL.get_state()["sampler"]
+            x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
+            plt.yticks(fontsize=14)
+            plt.xticks(fontsize=14)
+            plt.ylabel("%s value" %k, fontsize=14)
+            plt.xlabel("Iteration number", fontsize=14)
+            plt.plot(x, data, '-', color='b', label=k, linewidth=2.0)
+            if save:
+                save_where = '/Figures/Traces/%s/' %filename
+                actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+                save_path = actual_path+save_where
+                if c == 0:
+                    print "\nSaving traces figure in:\n", save_path
+                if not path.exists(save_path):
+                    makedirs(save_path)
+                fig.savefig(save_path+'Trace-%s-%s-%s.%s'%(model,filename,k,save_as))
+            figs[k] = fig
+            plt.close(fig)
+        return figs
 
-def plot_traces(sol, save):
-    MDL, model = sol["pymc_model"], sol["SIP_model"]
+    else:
+        fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
+        for c, (a, k) in enumerate(zip(ax.flat, keys)):
+            if k == "R0":
+                stoc = "R0"
+            else:
+                stoc =  ''.join([i for i in k if not i.isdigit()])
+                stoc_num = [int(i) for i in k if i.isdigit()]
+            try:
+                data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
+            except:
+                data = MDL.trace(stoc)[:]
+            plt.axes(a)
+            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+            plt.locator_params(axis = 'y', nbins = 6)
+            plt.yticks(fontsize=12)
+            plt.xticks(fontsize=12)
+            plt.ylabel(k, fontsize=12)
+            plt.xlabel("Last iterations", fontsize=12)
+            plt.plot(data, '-', color='b', label=filename, linewidth=1.0)
+            plt.grid(None)
+        fig.tight_layout()
+        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
+            a.set_visible(False)
+        if save:
+            save_where = '/Figures/Traces/'
+            actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+            save_path = actual_path+save_where
+            print "\nSaving trace figures in:\n", save_path
+            if not path.exists(save_path):
+                makedirs(save_path)
+            fig.savefig(save_path+'Trace-%s-%s.%s'%(model,filename,save_as))
+        plt.close(fig)
+        return fig
+
+def plot_summary(sol, save=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    MDL, ch_n = sol["pymc_model"], sol["mcmc"]["nb_chain"]
+    model = get_model_type(sol)
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
-    keys.remove("zmod")
-    if model == "PDecomp":
-        keys.remove("m")
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"                
-    for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
-        if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(1,vect+1)]
-    keys = list(flatten(keys))
-    ncols = 2
-    nrows = int(ceil(len(keys)*1.0 / ncols))
-    fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
-    for c, (a, k) in enumerate(zip(ax.flat, keys)):
-        if k == "R0":
-            stoc = "R0"
-        else:
-            stoc =  ''.join([i for i in k if not i.isdigit()])
-            stoc_num = [int(i) for i in k if i.isdigit()]
-        try:
-            data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
-        except:
-            data = MDL.trace(stoc)[:]
-#        x = np.arange(MDL.get_state()["sampler"]["_burn"], MDL.get_state()["sampler"]["_iter"], MDL.get_state()["sampler"]["_thin"])
-        plt.axes(a)
-        plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-        plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-        plt.locator_params(axis = 'y', nbins = 6)
-        plt.yticks(fontsize=12)
-        plt.xticks(fontsize=12)
-        plt.ylabel(k, fontsize=12)
-        plt.xlabel("Iteration", fontsize=12)
-        plt.plot(data, '-', color='b', label=filename, linewidth=1.0)
-        plt.grid(None)
-#        plt.legend(loc=2, fontsize=8)
-#        plt.title(filename, fontsize=8)
-    fig.tight_layout()
-    for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
-        a.set_visible(False)
-
-    if save:
-        save_where = '/Figures/Traces/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
-        save_path = actual_path+save_where
-        print "\nSaving traces figure in:\n", save_path
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'Trace-%s-%s.pdf'%(model,filename))
-    try:    plt.close(fig)
-    except: pass
-    return fig
-
-def plot_summary(sol, save):
-    MDL, model, ch_n = sol["pymc_model"], sol["SIP_model"], sol["mcmc"]["nb_chain"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-    keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
-    keys.remove("zmod")
-    if model == "PDecomp":
-        keys.remove("m")
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"        
+    try:
+        keys.remove("zmod")
+        keys.remove("m_")
+    except:
+        pass
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -270,25 +470,26 @@ def plot_summary(sol, save):
         print "\nSaving summary figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Summary-%s-%s.pdf'%(model,filename))
+        fig.savefig(save_path+'Summary-%s-%s.%s'%(model,filename,save_as))
     try:    plt.close(fig)
     except: pass
 
     return fig
 
-def plot_autocorr(sol, save):
-    MDL, model = sol["pymc_model"], sol["SIP_model"]
+def plot_autocorr(sol, save=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    MDL = sol["pymc_model"]
+    model = get_model_type(sol)
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-    keys = sorted([x.__name__ for x in MDL.stochastics]) + sorted([x.__name__ for x in MDL.deterministics])
-    keys.remove("zmod")
-    if model == "PDecomp":
-        keys.remove("m")              
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"
+    keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
+    try:
+        keys.remove("zmod")
+        keys.remove("m_")
+    except:
+        pass
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
@@ -325,19 +526,18 @@ def plot_autocorr(sol, save):
         print "\nSaving autocorrelation figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Autocorr-%s-%s.pdf'%(model,filename))
+        fig.savefig(save_path+'Autocorr-%s-%s.%s'%(model,filename,save_as))
     try:    plt.close(fig)
     except: pass
     return fig
 
-def plot_debye(sol, save, draw):
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-    if sol["model_type"]["c_exp"] == 0.5:
-        model = "WarburgDecomp"
-    elif sol["model_type"]["c_exp"] == 1.0:
-        model = "DebyeDecomp"
+def plot_debye(sol, save=False, draw=False, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
     else:
-        model = "ColeColeDecomp"    
+        save_as = 'pdf'
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    model = get_model_type(sol)
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
         x = np.log10(sol["data"]["tau"])
@@ -359,33 +559,7 @@ def plot_debye(sol, save, draw):
         print "\nSaving relaxation time distribution figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Polynomial-RTD-%s-%s.pdf'%(model, filename))
-    try:    plt.close(fig)
-    except: pass
-    if draw:    return fig
-    else:       return None
-
-def plot_debye_histo(sol, save, draw):
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-    if draw or save:
-        fig, ax = plt.subplots(figsize=(6,4))
-        x = np.log10(sol["data"]["tau"])
-        y = 100*sol["params"]["m"]
-        plt.bar(x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], width=0.2, label="Debye RTD")
-        ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        plt.xlabel("log Relaxation time (s)", fontsize=14)
-        plt.ylabel("Chargeability (%)", fontsize=14)
-        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
-        plt.legend(numpoints=1, fontsize=14, loc="best")
-        fig.tight_layout()
-    if save:
-        save_where = '/Figures/Debye distributions/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
-        save_path = actual_path+save_where
-        print "\nSaving relaxation time distribution figure in:\n", save_path
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'Discrete-RTD-%s.pdf'%(filename))
+        fig.savefig(save_path+'Polynomial-RTD-%s-%s.%s'%(model, filename,save_as))
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
@@ -393,14 +567,8 @@ def plot_debye_histo(sol, save, draw):
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
-    MDL, pm, model, filepath = sol["pymc_model"], sol["params"], sol["SIP_model"], sol["path"]
-    if model == "PDecomp":
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"      
+    MDL, pm, filepath = sol["pymc_model"], sol["params"], sol["path"]
+    model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     save_where = '/Results/'
     actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -435,14 +603,7 @@ def save_resul(sol):
     MDL.write_csv(save_path+'STATS_%s_%s.csv' %(model,sample_name), variables=(vars_))
 
 def merge_results(sol,files):
-    model = sol["SIP_model"]    
-    if model == "PDecomp":
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"     
+    model = get_model_type(sol)
     save_where = '/Batch results/'
     actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
     save_path = actual_path+save_where
@@ -508,19 +669,101 @@ def plot_data(filename, headers, ph_units):
     plt.close(fig)
     return fig
 
-def plot_fit(sol, save=False, draw=True):
+def plot_deviance(sol, save=False, draw=True, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    model = get_model_type(sol)
+    if draw or save:
+        fig, ax = plt.subplots(figsize=(6,4))
+        deviance = sol["pymc_model"].trace('deviance')[:]
+        sampler_state = sol["pymc_model"].get_state()["sampler"]
+        x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
+        plt.plot(x, deviance, "-b", linewidth=2, label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol["pymc_model"].DIC,sol["pymc_model"].BPIC))
+        plt.xlabel("Iteration", fontsize=14)
+        plt.ylabel("Deviance", fontsize=14)
+        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
+        plt.legend(numpoints=1, fontsize=14, loc="best")
+        fig.tight_layout()
+    if save:
+        save_where = '/Figures/ModelDeviance/'
+        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        save_path = actual_path+save_where
+        print "\nSaving model deviance figure in:\n", save_path
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'ModelDeviance-%s-%s.%s'%(model,filename,save_as))
+    try:    plt.close(fig)
+    except: pass
+    if draw:    return fig
+    else:       return None
+
+def logp_trace(model):
+    """
+    return a trace of logp for model
+    """
+    #init
+    db = model.db
+    n_samples = db.trace('deviance').length()
+    logp = np.empty(n_samples, np.double)
+    #loop over all samples
+    for i_sample in xrange(n_samples):
+        #set the value of all stochastic to their 'i_sample' value
+        for stochastic in model.stochastics:
+            try:
+                value = db.trace(stochastic.__name__)[i_sample]
+                stochastic.value = value
+
+            except KeyError:
+                print "No trace available for %s. " % stochastic.__name__
+
+        #get logp
+        logp[i_sample] = model.logp
+    return logp
+
+def plot_logp(sol, save=False, draw=True, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    model = get_model_type(sol)
+    if draw or save:
+        fig, ax = plt.subplots(figsize=(6,4))
+        logp = logp_trace(sol["pymc_model"])
+        sampler_state = sol["pymc_model"].get_state()["sampler"]
+        x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
+        plt.plot(x, logp, "-b", linewidth=2, label="logp")
+        plt.xlabel("Iteration", fontsize=14)
+        plt.ylabel("Log-likelihood", fontsize=14)
+        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
+        plt.legend(numpoints=1, fontsize=14, loc="best")
+        fig.tight_layout()
+    if save:
+        save_where = '/Figures/LogLikelihood/'
+        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        save_path = actual_path+save_where
+        print "\nSaving logp trace figure in:\n", save_path
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'LogLikelihood-%s-%s.%s'%(model,filename,save_as))
+    try:    plt.close(fig)
+    except: pass
+    if draw:    return fig
+    else:       return None
+
+def plot_fit(sol, save=False, draw=True, save_as_png=True):
+    if save_as_png:
+        save_as = 'png'
+    else:
+        save_as = 'pdf'
     filepath = sol["path"]
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
-    model = sol["SIP_model"]
+    model = get_model_type(sol)
     data = sol["data"]
     fit = sol["fit"]
-    if model == "PDecomp":
-        if sol["model_type"]["c_exp"] == 0.5:
-            model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
-            model = "DebyeDecomp"
-        else:
-            model = "ColeColeDecomp"    
     # Graphiques du fit
     f = data["freq"]
     Zr0 = max(abs(data["Z"]))
@@ -582,7 +825,7 @@ def plot_fit(sol, save=False, draw=True):
         print "\nSaving fit figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'FIT-%s-%s.pdf'%(model,sample_name))
+        fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as))
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
