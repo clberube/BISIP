@@ -445,7 +445,7 @@ class MainApplication:
         but_sum = tk.Button(self.frame_diagn_but, height=1, text = "Summary and Gelman-Rubin convergence", fg='black', bg='gray97',
                             command = lambda: self.plot_diagnostic("summary"), font=fontz["normal_small"], relief=tk.GROOVE)
         but_sum.grid(row=7, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
-        but_hex = tk.Button(self.frame_diagn_but, height=1, text = "Hexagonal binning", fg='black', bg='gray97',
+        but_hex = tk.Button(self.frame_diagn_but, height=1, text = "Hex. binning", fg='black', bg='gray97',
                             command = lambda: self.popup_bivar("hexbin"), font=fontz["normal_small"], relief=tk.GROOVE)
         but_hex.grid(row=2, column=0, columnspan=1, sticky=tk.W+tk.E+tk.S, pady=(5,0))
         but_kde = tk.Button(self.frame_diagn_but, height=1, text = "Bivariate KDE", fg='black', bg='gray97',

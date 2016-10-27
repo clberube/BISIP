@@ -37,8 +37,6 @@ This Python module contains functions to visualize the Bayesian inversion result
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
-from fastkde import fastKDE
-import seaborn.apionly as sns
 import numpy as np
 from os import path, makedirs
 from sys import argv
