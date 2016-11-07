@@ -1,6 +1,8 @@
 # BISIP
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 
+Download the executables for [Mac OS X (64bit)] (https://www.dropbox.com/s/6namw3yiq9we9k2/BISIP%20Workplace%20%28OS%20X%2064bit%29.zip?dl=1) or [Windows (64bit)] (https://www.dropbox.com/s/4nnstfs80dxitp2/BISIP%20Workplace%20%28Win64%29.zip?dl=1)
+
 ### Contents
 **1. Using the standalone executables**  
 **2. Cloning the repository and installing dependencies**  
@@ -14,10 +16,8 @@
 
 **1. Using the standalone executables**
   
-  Download the executables (OS X or Windows) at:  
-  <https://drive.google.com/open?id=0B3_1MlzD_zfQdUw5NTVMOUZVTXM>  
   No Python installation is needed to run, the applications are standalone  
-  Executables compiled on OS X 10.11.6 and Windows 10
+  Executables were compiled on OS X 10.11.6 and Windows 10
   
     a. Extract the BISIP Workplace folder to a local directory  
     b. Launch the executable in BISIP Workplace  
