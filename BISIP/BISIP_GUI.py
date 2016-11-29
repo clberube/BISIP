@@ -603,9 +603,9 @@ class MainApplication:
             self.run_options[k].set(self.root_ini[k]) # set last used values
         tk.Button(self.frame_ruex, width=14, text = "Options", fg='black', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
                             command = self.make_options).grid(row=i+1, column=0, rowspan=1, sticky=tk.N+tk.E+tk.W+tk.S, padx=(10,5), pady=(0,10))
-        tk.Button(self.frame_ruex, width=14, height=2, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
-                            command = self.run_inversion).grid(row=0, column=1, rowspan=2, sticky=tk.N+tk.E+tk.S, padx=(5,10), pady=(5,0))
-        tk.Button(self.frame_ruex, width=14, height=2, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+        tk.Button(self.frame_ruex, width=14, height=1, text = "RUN", fg='blue', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
+                            command = self.run_inversion).grid(row=0, column=1, rowspan=2, sticky=tk.N+tk.E+tk.S, padx=(5,10), pady=(5,0), ipadx=0, ipady=0)
+        tk.Button(self.frame_ruex, width=14, height=1, text = "EXIT", fg='red', bg='gray97', font=fontz["bold"], relief=tk.GROOVE,
                             command = self.master.destroy).grid(row=2, column=1, rowspan=2, sticky=tk.S+tk.E+tk.N, padx=(5,10), pady=(0,10))
 
     def make_options(self, from_root=False):
@@ -710,7 +710,7 @@ class MainApplication:
         button = tk.Button(top_fig, height=1, width=20, text="Dismiss", bg='gray97', command=_quit, relief=tk.GROOVE)
         button.grid(row=2, column=0, columnspan=1, sticky=tk.W, pady=(10,10), padx=(20,20))
         toolbar_frame = tk.Frame(top_fig)
-        toolbar_frame.grid(row=0,column=0,columnspan=2, sticky=tk.W)
+        toolbar_frame.grid(row=0,column=0,columnspan=2, sticky=tk.W+tk.E)
         NavigationToolbar2TkAgg( canvas, toolbar_frame )
         top_fig.resizable(width=tk.FALSE, height=tk.FALSE)
 

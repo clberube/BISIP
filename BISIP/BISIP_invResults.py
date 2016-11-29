@@ -781,7 +781,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
     Amp_min = abs(fit["lo95"])/Zr0
     Amp_max = abs(fit["up95"])/Zr0
     if draw or save:
-        fig, ax = plt.subplots(2, 1, figsize=(6,8))
+        fig, ax = plt.subplots(1, 2, figsize=(12,4))
         for t in ax:
             t.tick_params(labelsize=14)
         # Real-Imag
@@ -795,25 +795,27 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
 #        plt.xlim([None, 1])
 #        plt.ylim([0, None])
 #        plt.title(sample_name, fontsize=10)
-        # Freq-Phas
-        plt.axes(ax[0])
-        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
-        plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
-        ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3)
-        plt.xlabel(sym_labels['freq'], fontsize=14)
-        plt.ylabel(sym_labels['phas'], fontsize=14)
-        ax[0].legend(loc=2, numpoints=1, fontsize=12)
-        plt.ylim([1,1000])
         # Freq-Ampl
-        plt.axes(ax[1])
+        plt.axes(ax[0])
         plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
         plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
         plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
         plt.xlabel(sym_labels['freq'], fontsize=14)
         plt.ylabel(sym_labels['ampl'], fontsize=14)
-        ax[1].legend(loc=1, numpoints=1, fontsize=12)
+        ax[0].legend(loc=1, numpoints=1, fontsize=12)
         plt.ylim([None,1.0])
+
+        # Freq-Phas
+        plt.axes(ax[1])
+        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
+        plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
+        ax[1].set_yscale("log", nonposy='clip')
+        plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3)
+        plt.xlabel(sym_labels['freq'], fontsize=14)
+        plt.ylabel(sym_labels['phas'], fontsize=14)
+        ax[1].legend(loc=2, numpoints=1, fontsize=12)
+        plt.ylim([1,1000])
+
 #        plt.title(sample_name, fontsize=12)
         fig.tight_layout()
     if save:
