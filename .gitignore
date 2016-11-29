@@ -5,6 +5,10 @@ BISIP/root_ini
 
 *.pdf
 
+*.png
+
+*.csv
+
 *.txt
 
 .DS_Store
