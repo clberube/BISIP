@@ -17,10 +17,10 @@ import BISIP_invResults as iR
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-#model = "ColeCole"
+model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-model = "PDecomp"
+#model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 
@@ -28,8 +28,8 @@ model = "PDecomp"
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {'nb_chain'   : 1,
-          'nb_iter'    : 10000,
-          'nb_burn'    : 8000,
+          'nb_iter'    : 100000,
+          'nb_burn'    : 80000,
           'thin'       : 1,
           'prop_scale' : 1,
           'tune_inter' : 1000,
@@ -52,8 +52,8 @@ filename = [
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
 #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-#            "/Users/Charles/Documents/Github Repositories/BISIP/Example data/SIP-K389175_avg.dat",
-            "/Users/Charles/Documents/Python Scripts/BISIP/Example data/SIP-K389175_avg.dat",            
+            "/Users/Charles/Documents/Github Repositories/BISIP/Example data/SIP-K389175_avg.dat",
+#            "/Users/Charles/Documents/Python Scripts/BISIP/Example data/SIP-K389175_avg.dat",
             ]
 
 #==============================================================================

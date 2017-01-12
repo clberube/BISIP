@@ -51,7 +51,7 @@ sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
 # Import PyMC, Numpy, and Cython extension with SIP functions
 import pymc
 import numpy as np
-from BISIP_cython_funcs import ColeCole_cyth, Dias_cyth, Decomp_cyth, Shin_cyth
+from BISIP_cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
 # System imports
 from os import path, makedirs
 from sys import argv
@@ -166,7 +166,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
         # Deterministics
         @pymc.deterministic(plot=False)
         def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
-            return ColeCole_cyth(w, R0, m, lt, c)
+            return ColeCole_cyth1(w, R0, m, lt, c)
         # Likelihood
         obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size=(2,len(w)), observed=True)
         return locals()
