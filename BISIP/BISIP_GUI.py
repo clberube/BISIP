@@ -582,7 +582,7 @@ class MainApplication:
         if self.model.get() == "PDecomp":
             poly_lab = tk.Label(self.mod_opt_frame, text="""Polyn order""", justify = tk.LEFT, font=fontz["normal_small"])
             poly_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
-            poly_scale = tk.Scale(self.mod_opt_frame, variable=self.poly_n, width=10, length=70, from_=3, to=5, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            poly_scale = tk.Scale(self.mod_opt_frame, variable=self.poly_n, width=10, length=70, from_=3, to=6, font=fontz["normal_small"], orient=tk.HORIZONTAL)
             poly_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
             exp_lab = tk.Label(self.mod_opt_frame, text="""c exponent""", justify = tk.LEFT, font=fontz["normal_small"])
             exp_lab.grid(row=2, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))

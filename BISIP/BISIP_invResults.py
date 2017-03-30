@@ -36,7 +36,7 @@ This Python module contains functions to visualize the Bayesian inversion result
 #==============================================================================
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.ticker import FormatStrFormatter
+import matplotlib.ticker as mticker
 import numpy as np
 from os import path, makedirs
 from sys import argv
@@ -158,8 +158,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
                 data = sorted(MDL.trace(stoc)[:])
             fit = norm.pdf(data, np.mean(data), np.std(data))
             plt.axes(a)
-            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+#            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+#            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
             plt.locator_params(axis = 'y', nbins = 8)
             plt.locator_params(axis = 'x', nbins = 7)
             plt.yticks(fontsize=12)
@@ -172,6 +172,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             fit *= len(data) * binwidth
             plt.plot(data, fit, "-b", linewidth=1.5)
             plt.grid(None)
+            plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
         fig.tight_layout(w_pad=0.1, h_pad=1.0)
         for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
             a.set_visible(False)
@@ -187,71 +188,203 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
         except: pass
         return fig
 
-def plot_KDE(sol, var1, var2, save=False, save_as_png=True):
-    if save_as_png:
+def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
+    if True:
         save_as = 'png'
     else:
         save_as = 'pdf'
+    if var1 == var2:
+        fig, ax = plt.subplots(figsize=(3,3))
+        plt.close(fig)
+        return fig
+    else:
+        if fig == None or ax == None:
+            fig, ax = plt.subplots(figsize=(3,3))
+        MDL = sol["pymc_model"]
+        filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+        model = get_model_type(sol)
+        if var1 == "R0":
+            stoc1 = "R0"
+        else:
+            stoc1 =  ''.join([i for i in var1 if not i.isdigit()])
+            stoc_num1 = [int(i) for i in var1 if i.isdigit()]
+        try:
+            x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
+        except:
+            x = MDL.trace(stoc1)[:]
+        if var2 == "R0":
+            stoc2 = "R0"
+        else:
+            stoc2 =  ''.join([i for i in var2 if not i.isdigit()])
+            stoc_num2 = [int(i) for i in var2 if i.isdigit()]
+        try:
+            y = MDL.trace(stoc2)[:,stoc_num2[0]-1]
+        except:
+            y = MDL.trace(stoc2)[:]
+        xmin, xmax = min(x), max(x)
+        ymin, ymax = min(y), max(y) 
+        # Peform the kernel density estimate
+        xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+        positions = np.vstack([xx.ravel(), yy.ravel()])
+        values = np.vstack([x, y])
+        kernel = gaussian_kde(values)
+        kernel.set_bandwidth(bw_method='silverman')
+        kernel.set_bandwidth(bw_method=kernel.factor * 2.)
+        f = np.reshape(kernel(positions).T, xx.shape)
+    
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        plt.axes(ax)
+        # Contourf plot
+        plt.grid(None)
+        plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+        ax.scatter(x, y, color='k', s=1)
+        plt.xticks(rotation=90)
+        plt.locator_params(axis = 'y', nbins = 7)
+        plt.locator_params(axis = 'x', nbins = 7)
+        cfset = ax.contourf(xx, yy, f, cmap=plt.cm.Blues, alpha=0.7)
+        ## Or kernel density estimate plot instead of the contourf plot
+#        ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
+        # Contour plot
+#        cset = ax.contour(xx, yy, f, levels=cfset.levels[2::2], colors='k', alpha=0.8)
+        # Label plot
+    #    ax.clabel(cset, cset.levels[::1], inline=1, fmt='%.1E', fontsize=10)
+        plt.yticks(fontsize=14)
+        plt.xticks(fontsize=14)
+        plt.ylabel("%s" %var2, fontsize=14)
+        plt.xlabel("%s" %var1, fontsize=14)
+    #    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+    #    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+        if save:
+            save_where = '/Figures/Bivariate KDE/%s/' %filename
+            actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+            save_path = actual_path+save_where
+            print "\nSaving KDE figure in:\n", save_path
+            if not path.exists(save_path):
+                makedirs(save_path)
+            fig.savefig(save_path+'KDE-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as), dpi=200)
+#        plt.close(fig)
+        return fig
+
+def plot_all_KDE(sol):
     MDL = sol["pymc_model"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
-    if var1 == "R0":
-        stoc1 = "R0"
-    else:
-        stoc1 =  ''.join([i for i in var1 if not i.isdigit()])
-        stoc_num1 = [int(i) for i in var1 if i.isdigit()]
+    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
+    sampler = MDL.get_state()["sampler"]
     try:
-        x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
+        keys.remove("zmod")
+        keys.remove("m_")
+        keys.remove("log_mean_tau")
+        keys.remove("total_m")
+
     except:
-        x = MDL.trace(stoc1)[:]
-    if var2 == "R0":
-        stoc2 = "R0"
-    else:
-        stoc2 =  ''.join([i for i in var2 if not i.isdigit()])
-        stoc_num2 = [int(i) for i in var2 if i.isdigit()]
-    try:
-        y = MDL.trace(stoc2)[:,stoc_num2[0]-1]
-    except:
-        y = MDL.trace(stoc2)[:]
-    xmin, xmax = min(x), max(x)
-    ymin, ymax = min(y), max(y)
-    fig, ax = plt.subplots(figsize=(8,6))
-    plt.grid(None)
+        pass
+    for (i, k) in enumerate(keys):
+        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        if vect > 1:
+            keys[i] = [k+"%d"%n for n in range(0,vect)]
+    keys = list(flatten(keys))
+    ncols = len(keys)
+    nrows = len(keys)
+#    fig, ax = plt.subplots(nrows, ncols, figsize=(10,10))
+    
+    fig = plt.figure(figsize=(10,10))
+#    plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+    plotz = len(keys)    
+    for i in range(plotz):
+        for j in range(plotz):
+            if j<i:
+                var1 = keys[j]
+                var2 = keys[i]
+                print (var1, var2)
+                ax = plt.subplot2grid((plotz-1, plotz-1), (i-1,j))
+                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,1))
+                ax.ticklabel_format(axis='x', style='sci', scilimits=(0,1))
+                
+                if var1 == "R0":
+                    stoc1 = "R0"
+                else:
+                    stoc1 =  ''.join([k for k in var1 if not k.isdigit()])
+                    stoc_num1 = [int(k) for k in var1 if k.isdigit()]
+                try:
+                    x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
+                except:
+                    x = MDL.trace(stoc1)[:]
+                if var2 == "R0":
+                    stoc2 = "R0"
+                else:
+                    stoc2 =  ''.join([k for k in var2 if not k.isdigit()])
+                    stoc_num2 = [int(k) for k in var2 if k.isdigit()]
+                try:
+                    y = MDL.trace(stoc2)[:,stoc_num2[0]-1]
+                except:
+                    y = MDL.trace(stoc2)[:]
+                xmin, xmax = min(x), max(x)
+                ymin, ymax = min(y), max(y) 
+                # Peform the kernel density estimate
+                xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+                positions = np.vstack([xx.ravel(), yy.ravel()])
+                values = np.vstack([x, y])
+                kernel = gaussian_kde(values)
+                kernel.set_bandwidth(bw_method='silverman')
+                kernel.set_bandwidth(bw_method=kernel.factor * 2.)
+                f = np.reshape(kernel(positions).T, xx.shape)
+            
+                ax.set_xlim(xmin, xmax)
+                ax.set_ylim(ymin, ymax)
+                plt.axes(ax)
+                # Contourf plot
+                plt.grid(None)
+                ax.scatter(x, y, color='k', s=1)
+                plt.xticks(rotation=90)
+                plt.locator_params(axis = 'y', nbins = 7)
+                plt.locator_params(axis = 'x', nbins = 7)
+                cfset = ax.contourf(xx, yy, f, cmap=plt.cm.Blues, alpha=0.7)
+                ## Or kernel density estimate plot instead of the contourf plot
+        #        ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
+                # Contour plot
+        #        cset = ax.contour(xx, yy, f, levels=cfset.levels[2::2], colors='k', alpha=0.8)
+                # Label plot
+            #    ax.clabel(cset, cset.levels[::1], inline=1, fmt='%.1E', fontsize=10)
+                plt.yticks(fontsize=14)
+                plt.xticks(fontsize=14)
+                if j == 0:
+                    plt.ylabel("%s" %var2, fontsize=14)
+                if i == len(keys)-1:
+                    plt.xlabel("%s" %var1, fontsize=14)
+                if j != 0:
+                    ax.yaxis.set_ticklabels([])
+                if i != len(keys)-1:
+                    ax.xaxis.set_ticklabels([])
+                plt.suptitle("Adaptive Metropolis step method", fontsize=14)
+    
+    
+    
+    
+#    for v1 in range(len(keys)):
+#        for v2 in range(len(keys)):
+#            if v1 < v2:
+#            
+##                if v1 == v2:
+##                    if keys[v1] == "R0":
+##                        stoc1 = "R0"
+##                    else:
+##                        stoc1 =  ''.join([i for i in keys[v1] if not i.isdigit()])
+##                        stoc_num1 = [int(i) for i in keys[v1] if i.isdigit()]
+##                    try:
+##                        x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
+##                    except:
+##                        x = MDL.trace(stoc1)[:]
+##                        ax[v1,v2].hist(x)
+#                
+#                fig = plot_KDE(sol, keys[v1], keys[v2], fig, ax[v2, v1])
+#                print v1, v2
+##            ax[i,j] = axs
+#            fig = plot_axes(axs, fig)
+#            fig.axes.append(axs)
 
-    # Peform the kernel density estimate
-    xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-    positions = np.vstack([xx.ravel(), yy.ravel()])
-    values = np.vstack([x, y])
-    kernel = gaussian_kde(values, bw_method='silverman')
-    f = np.reshape(kernel(positions).T, xx.shape)
-
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
-
-    # Contourf plot
-    plt.scatter(x, y, c='k', s=10)
-    cfset = ax.contourf(xx, yy, f, cmap=plt.cm.Blues, alpha=0.8)
-    ## Or kernel density estimate plot instead of the contourf plot
-#    ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
-    # Contour plot
-    cset = ax.contour(xx, yy, f, colors='k', alpha=1)
-    # Label plot
-    ax.clabel(cset, inline=1, fmt='%d', fontsize=10)
-    plt.yticks(fontsize=14)
-    plt.xticks(fontsize=14)
-    plt.ylabel("%s" %var2, fontsize=14)
-    plt.xlabel("%s" %var1, fontsize=14)
-    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-    if save:
-        save_where = '/Figures/Bivariate KDE/%s/' %filename
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
-        save_path = actual_path+save_where
-        print "\nSaving KDE figure in:\n", save_path
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'KDE-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as))
-    plt.close(fig)
+    fig.tight_layout(pad=0, w_pad=1.0, h_pad=0.1)         
     return fig
 
 def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
@@ -282,20 +415,22 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
         y = MDL.trace(stoc2)[:]
     xmin, xmax = min(x), max(x)
     ymin, ymax = min(y), max(y)
-    fig, ax = plt.subplots(figsize=(8,6))
+    fig, ax = plt.subplots(figsize=(4,4))
     plt.grid(None)
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
 #    plt.scatter(x, y)
     plt.hexbin(x, y, gridsize=20, cmap=plt.cm.Blues)
+    plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+    plt.xticks(rotation=90)
+    plt.locator_params(axis = 'y', nbins = 5)
+    plt.locator_params(axis = 'x', nbins = 5)    
     cb = plt.colorbar()
     cb.set_label('Number of observations')
     plt.yticks(fontsize=14)
     plt.xticks(fontsize=14)
     plt.ylabel("%s" %var2, fontsize=14)
     plt.xlabel("%s" %var1, fontsize=14)
-    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
     if save:
         save_where = '/Figures/Hexbins/%s/' %filename
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -316,6 +451,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
     model = get_model_type(sol)
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
+    sampler = MDL.get_state()["sampler"]
     try:
         keys.remove("zmod")
         keys.remove("m_")
@@ -324,7 +460,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(1,vect+1)]
+            keys[i] = [k+"%d"%n for n in range(0,vect)]
     keys = list(flatten(keys))
     ncols = 2
     nrows = int(ceil(len(keys)*1.0 / ncols))
@@ -332,6 +468,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
         figs = {}
         for c, k in enumerate(keys):
             fig, ax = plt.subplots(figsize=(8,4))
+            plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
             if k == "R0":
                 stoc = "R0"
             else:
@@ -341,7 +478,6 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
                 data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
             except:
                 data = MDL.trace(stoc)[:]
-            sampler = MDL.get_state()["sampler"]
             x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
             plt.yticks(fontsize=14)
             plt.xticks(fontsize=14)
@@ -373,19 +509,21 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
                 data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
             except:
                 data = MDL.trace(stoc)[:]
+            x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
             plt.axes(a)
-            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+            plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+#            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+#            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
             plt.locator_params(axis = 'y', nbins = 6)
             plt.yticks(fontsize=12)
             plt.xticks(fontsize=12)
             plt.ylabel(k, fontsize=12)
-            plt.xlabel("Last iterations", fontsize=12)
-            plt.plot(data, '-', color='b', label=filename, linewidth=1.0)
+            plt.xlabel("Iteration number", fontsize=12)
+            plt.plot(x, data, '-', color='b', label=filename, linewidth=1.0)
             plt.grid(None)
-        fig.tight_layout()
-        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
-            a.set_visible(False)
+        fig.tight_layout(pad=0, w_pad=0., h_pad=0.0)
+#        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
+#            a.set_visible(False)
         if save:
             save_where = '/Figures/Traces/'
             actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -452,6 +590,7 @@ def plot_summary(sol, save=False, save_as_png=True):
                 ax2.scatter(R, i, color="b", marker="s", s=50, edgecolors='k')
             else:
                 ax2.scatter(R[int(k[-1])-1], i, color="b", marker="s", s=50, edgecolors='k')
+    
     ax1.set_ylim([-1, len(keys)])
     ax1.set_yticks(range(0,len(keys)))
     ax1.set_yticklabels(keys)
@@ -496,6 +635,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
     ncols = 2
     nrows = int(ceil(len(keys)*1.0 / ncols))
     fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
+    plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
     for (a, k) in zip(ax.flat, keys):
         if k[-1] not in ["%d"%d for d in range(1,8)] or k =="R0":
             data = sorted(MDL.trace(k)[:].ravel())
@@ -542,7 +682,7 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         x = np.linspace(min(x), max(x),100)
         y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol["params"]["a"])], axis=0)
         plt.errorbar(10**x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], None, None, "-k", linewidth=2, label="Debye RTD")
-        ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
         plt.xlabel("Relaxation time (s)", fontsize=14)
         plt.ylabel("Chargeability (%)", fontsize=14)
         plt.yticks(fontsize=14), plt.xticks(fontsize=14)
@@ -781,29 +921,28 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
     Amp_min = abs(fit["lo95"])/Zr0
     Amp_max = abs(fit["up95"])/Zr0
     if draw or save:
-        fig, ax = plt.subplots(1, 2, figsize=(12,4))
+        fig, ax = plt.subplots(1, 2, figsize=(10,4))
         for t in ax:
             t.tick_params(labelsize=14)
         # Real-Imag
-#        plt.axes(ax[0])
-#        plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
-#        plt.plot(zn_fit.real, -zn_fit.imag, 'r-', label='Fit')
-#        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='0.5', alpha=0.5)
-#        plt.xlabel(sym_labels['real'], fontsize=14)
-#        plt.ylabel(sym_labels['imag'], fontsize=14)
-#        plt.legend(numpoints=1, fontsize=14)
-#        plt.xlim([None, 1])
-#        plt.ylim([0, None])
-#        plt.title(sample_name, fontsize=10)
-        # Freq-Ampl
         plt.axes(ax[0])
-        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-        plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
-        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
+        plt.errorbar(f, -zn_dat.imag, zn_err.imag, None, '.', label='Data')
+        plt.semilogx(f, -zn_fit.imag, 'r-', label='Fitted model')
+        plt.fill_between(f, -zn_max.imag, -zn_min.imag, color='dimgray', alpha=0.3)
         plt.xlabel(sym_labels['freq'], fontsize=14)
-        plt.ylabel(sym_labels['ampl'], fontsize=14)
-        ax[0].legend(loc=1, numpoints=1, fontsize=12)
-        plt.ylim([None,1.0])
+        plt.ylabel(sym_labels['imag'], fontsize=14)
+        plt.legend(loc=2, numpoints=1, fontsize=12)
+#        plt.xlim([None, 1])
+        plt.ylim([0, max(-zn_dat.imag)])
+        # Freq-Ampl
+#        plt.axes(ax[0])
+#        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
+#        plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
+#        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
+#        plt.xlabel(sym_labels['freq'], fontsize=14)
+#        plt.ylabel(sym_labels['ampl'], fontsize=14)
+#        ax[0].legend(loc=1, numpoints=1, fontsize=12)
+#        plt.ylim([None,1.0])
 
         # Freq-Phas
         plt.axes(ax[1])
@@ -852,20 +991,20 @@ def plot_par():
           u'axes.color_cycle': [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
           u'axes.edgecolor': u'black',
           u'axes.facecolor': u'white',
-          u'axes.formatter.limits': [-7, 7],
+          u'axes.formatter.limits': [-3, 4],
           u'axes.formatter.use_locale': False,
-          u'axes.formatter.use_mathtext': False,
+          u'axes.formatter.use_mathtext': True,
           u'axes.formatter.useoffset': True,
           u'axes.grid': True,
           u'axes.grid.which': u'major',
           u'axes.hold': True,
           u'axes.labelcolor': u'black',
-          u'axes.labelsize': 12.0,
+          u'axes.labelsize': 14.0,
           u'axes.labelweight': u'normal',
           u'axes.linewidth': 1.0,
-          u'axes.titlesize': 12.0,
+          u'axes.titlesize': 14.0,
           u'axes.titleweight': u'normal',
-          u'axes.unicode_minus': True,
+          u'axes.unicode_minus': False,
           u'axes.xmargin': 0.0,
           u'axes.ymargin': 0.0,
           u'axes3d.grid': True,
@@ -879,7 +1018,7 @@ def plot_par():
           u'figure.dpi': 72.0,
           u'figure.edgecolor': u'white',
           u'figure.facecolor': u'white',
-          u'figure.figsize': [6.0, 4.0],
+          u'figure.figsize': [1.0, 1.0],
           u'figure.frameon': True,
           u'figure.max_open_warning': 20,
           u'figure.subplot.bottom': 0.125,
@@ -1052,7 +1191,7 @@ def plot_par():
           u'webagg.port_retries': 50,
           u'xtick.color': u'k',
           u'xtick.direction': u'in',
-          u'xtick.labelsize': 12.0,
+          u'xtick.labelsize': 14.0,
           u'xtick.major.pad': 4.0,
           u'xtick.major.size': 6.0,
           u'xtick.major.width': 1.0,
@@ -1061,7 +1200,7 @@ def plot_par():
           u'xtick.minor.width': 1.0,
           u'ytick.color': u'k',
           u'ytick.direction': u'in',
-          u'ytick.labelsize': 12.0,
+          u'ytick.labelsize': 14.0,
           u'ytick.major.pad': 4.0,
           u'ytick.major.size': 6.0,
           u'ytick.major.width': 1.0,

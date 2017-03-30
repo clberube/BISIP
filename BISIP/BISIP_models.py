@@ -48,11 +48,11 @@ sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
 """
 
 #==============================================================================
-# Import PyMC, Numpy, and Cython extension with SIP functions
+# Import PyMC, Numpy, and Cython extension
 import pymc
 import numpy as np
 from BISIP_cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
-# System imports
+# Imports to save things
 from os import path, makedirs
 from sys import argv
 from datetime import datetime
@@ -84,7 +84,7 @@ def run_MCMC(function, AMH, mc_p, save_traces=False, save_where=None):
 
     for i in range(1, mc_p['nb_chain']+1):
         print '\n Chain #%d/%d'%(i, mc_p['nb_chain'])
-        MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'])
+        MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'], tune_throughout=True)
     return MDL
 
 #==============================================================================
@@ -154,15 +154,15 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
     def ColeColeModel(cc_modes):
         # Initial guesses
         p0 = {'R0'       : 1.0,
-              'm'        : [seigle_m, 1.0, 0.5],
-              'log_tau'  : [-1, -6, -3],
-              'c'        : [0.25, 0.5, 0.5],
+              'm'        : None,
+              'log_tau'  : None,
+              'c'        : None,
               }
         # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1 , value=p0["R0"])
-        m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0["m"][:cc_modes], size=cc_modes)
-        log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=3.0, value=p0['log_tau'][:cc_modes], size=cc_modes)
-        c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'][:cc_modes], size=cc_modes)
+        R0 = pymc.Uniform('R0', lower=0.7, upper=1.3 , value=p0["R0"])
+        m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0["m"], size=cc_modes)
+        log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=4.0, value=p0['log_tau'], size=cc_modes)
+        c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'], size=cc_modes)
         # Deterministics
         @pymc.deterministic(plot=False)
         def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
@@ -236,16 +236,16 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
         p0 = {'R0'         : 1.0,
               'a'          : None,
 #              'a'          : ([0.01, -0.01, -0.01, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
-              'log_tau_hi' : -6.0,
+              'log_tau_hi' : -5.0,
               'm_hi'       : 0.5,
               'TotalM'     : None,
               'log_MeanTau': None,
               'U'          : None,
               }
         # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=p0['R0'])
+        R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
 #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
-#        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-7.0, upper=-3.0, value=p0['log_tau_hi'])
+#        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
 #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
         a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
 
@@ -267,6 +267,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
             return np.log10(np.exp(np.sum(m_[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/total_m))
         # Likelihood
         obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
+#        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
         return locals()
 
 #==============================================================================
@@ -281,7 +282,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
     n_freq = len(w)
     n_decades = np.ceil(max(np.log10(1.0/w))) - np.floor(min(np.log10(1.0/w)))
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
-    log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), 2*n_freq)
+    log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), n_freq)
     log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
     tau_10 = 10**log_tau # Accelerates sampling
     data["tau"] = tau_10 # Put relaxation times in data dictionary

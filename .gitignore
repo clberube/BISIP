@@ -12,3 +12,7 @@ BISIP/root_ini
 *.txt
 
 .DS_Store
+
+BISIP/1mrad_PDecomp_10_MCMC_Solutions_Adaptive_False.pkl
+
+*.pkl

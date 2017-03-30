@@ -12,94 +12,122 @@ Copyright (c) 2015-2016 Charles L. Bérubé
 import numpy as np
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
+import cPickle as pickle
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as output:
+        pickle.dump(obj, output, -1)
 
 #==============================================================================
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-model = "ColeCole"
+#model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-#model = "PDecomp"
+model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 
 #==============================================================================
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
-mcmc_p = {'nb_chain'   : 1,
-          'nb_iter'    : 100000,
-          'nb_burn'    : 80000,
-          'thin'       : 1,
-          'prop_scale' : 1,
-          'tune_inter' : 1000,
-          'verbose'    : False,
+mcmc_p = {"nb_chain"   : 1,
+          "nb_iter"    : 300000,
+          "nb_burn"    : 000000,
+          "thin"       : 1,
+          "tune_inter" : 10000,
+          "prop_scale" : 1.0,
+          "verbose"    : False,
+          "cov_inter"  : 50000,
+          "cov_delay"  : 50000,
           }
+sol = []
 
-#==============================================================================
-""" 3.
-    Paths to files ?"""
-filename = [
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389005_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389019_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389046_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389055_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389058_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389062_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389077_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389198_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389214_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
-#            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-            "/Users/Charles/Documents/Github Repositories/BISIP/Example data/SIP-K389175_avg.dat",
-#            "/Users/Charles/Documents/Python Scripts/BISIP/Example data/SIP-K389175_avg.dat",
-            ]
+#for noise in [10, 5, 1]:
+#for noise in range(1,11):
+for noise in [1]:
+#noise = 5
+    adapt = True
+#    adapt = False
+    repeat = 10
+    save_as = "%dmrad_%s_%d_MCMC_Solutions_Adaptive_%s.pkl" %(noise,model,repeat,str(adapt))
+    #save_as = "%dmrad_%d_MCMC_Traces_Adaptive_%s.pkl" %(noise,repeat,str(adapt))
+    #save_as = "tests.pkl"
+    
+    #==============================================================================
+    """ 3.
+        Paths to files ?"""
+    filename = [
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389005_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389019_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389046_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389055_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389058_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389062_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389077_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389198_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389214_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
+    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
+                "/Users/Charles/Documents/Github/BISIP/Example data/SIP-K389176_avg.dat",
+#                "/Users/Charles/Documents/Python Scripts/BISIP/Example data/SIP-K389176_avg.dat",
+#                "/Users/Charles/Documents/Python/Fuchs data processing/tripleCC-2_noise%dmrad.dat"%noise,
+#                "/Users/Charles/Documents/Python/Fuchs data processing/doubleCC_01_01_noise%dmrad.dat"%noise,
+#                "/Users/Charles/Documents/Python/Fuchs data processing/doubleCC_04_04_noise%dmrad.dat"%noise,
+                ]
+    
+    #==============================================================================
+    """ 4.
+        Number of headers to skip ?"""
+    skip_header = 1
+    
+    #==============================================================================
+    """ 5.
+        Phase units in raw data file ?"""
+    # {"rad" = radians}  {"mrad" = milliradians}  {"deg" = degrés}
+    ph_units = "mrad"
+    
+    #==============================================================================
+    # Call to the inversion function for every file
+    #for i, fn in enumerate(filename):
+    for i in range(repeat):
+        fn = filename[0]
+        print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
+        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, adaptive=adapt, headers=skip_header, ph_units=ph_units, decomp_poly=3, cc_modes=2, c_exp=0.5, keep_traces=False))
+    
+        """Plot fit and data ?"""
+        if False:
+            fig_fit = iR.plot_fit(sol, save=False)
+    
+        """Save results ?"""
+        if False:
+            iR.save_resul(sol)
+    
+        """Plot Debye relaxation time distribution ?"""
+        if False:
+            fig_RTD = iR.plot_debye(sol, save=True, draw=True)
+    
+        """Print numerical results ?"""
+        if False:
+            iR.print_resul(sol)
+    
+        """Plot parameter histograms ?"""
+        if False:
+            fig_histo = iR.plot_histo(sol, save=False)
+    
+        if False:
+            fig_trace = iR.plot_traces(sol, save=False)
+    
+        """Plot parameter summary and Gelman-Rubin convergence test ?"""
+        if False:
+            fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-#==============================================================================
-""" 4.
-    Number of headers to skip ?"""
-skip_header = 1
-
-#==============================================================================
-""" 5.
-    Phase units in raw data file ?"""
-# {"rad" = radians}  {"mrad" = milliradians}  {"deg" = degrés}
-ph_units = "mrad"
-
-#==============================================================================
-
-# Call to the inversion function for every file
-for i, fn in enumerate(filename):
-    print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
-    sol = mcmcSIPinv(model, fn, mcmc=mcmc_p, adaptive=False, headers=skip_header, ph_units=ph_units, decomp_poly=4, c_exp=1.0, keep_traces=False)
-
-    """Plot fit and data ?"""
-    if True:
-        fig_fit = iR.plot_fit(sol, save=False)
-
-    """Save results ?"""
-    if True:
-        iR.save_resul(sol)
-
-    """Plot Debye relaxation time distribution ?"""
-    if False:
-        fig_RTD = iR.plot_debye(sol, save=True, draw=True)
-
-    """Print numerical results ?"""
-    if True:
-        iR.print_resul(sol)
-
-    """Plot parameter histograms ?"""
-    if False:
-        fig_histo = iR.plot_histo(sol, save=False)
-
-    if False:
-        fig_trace = iR.plot_traces(sol, save=False)
-
-    """Plot parameter summary and Gelman-Rubin convergence test ?"""
-    if False:
-        fig_summary = iR.plot_summary(sol)
+# For further use in Python
+saved_sol = [{key: value for key, value in s.items() if key not in ["pymc_model"]} for s in sol]
+#save_object(saved_sol, save_as)
+#print "Solutions saved in list under", save_as
 
 #==============================================================================
 #===========================DATA FILE TEMPLATE=================================

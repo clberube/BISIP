@@ -23,7 +23,6 @@ from libc.stdlib cimport malloc, free
 
 DTYPE = np.float_
 ctypedef cnp.float_t DTYPE_t
-
 DTYPE2 = np.complex128
 ctypedef cnp.complex128_t DTYPE2_t
 
@@ -109,21 +108,21 @@ def Decomp_cyth(cnp.ndarray[DTYPE_t, ndim=1] w, cnp.ndarray[DTYPE_t, ndim=1] tau
     cdef int S = tau_10.shape[0]
     cdef int i, j, k
     cdef cnp.ndarray[DTYPE_t, ndim=1] M = np.zeros(S, dtype=DTYPE)
-    cdef cnp.ndarray[DTYPE2_t, ndim=1] z_hi = np.empty(N, dtype=DTYPE2)
-    cdef cnp.ndarray[DTYPE2_t, ndim=1] z_de = np.zeros(S, dtype=DTYPE2)
-    cdef cnp.ndarray[DTYPE2_t, ndim=1] z_ = np.zeros(N, dtype=DTYPE2)
+    cdef double complex z_
+    cdef double complex z_hi
     cdef cnp.ndarray[DTYPE_t, ndim=2] Z = np.empty((2,N), dtype=DTYPE)
     for i in range(D):
         for k in range(S):
-            M[k] = M[k] + a[i]*(log_taus[i,k])
+            M[k] = M[k] + a[i]*(log_taus[i,k])    
     for j in range(N):
+        z_ = 0 
         for k in range(S):
-            z_de[j] = z_de[j] + C_Debye(w[j], M[k], tau_10[k], c_exp)
-#        z_hi[j] = C_Debye(w[j], m_hi, 10**log_tau_hi, 1.0)
-#        z_[j] = R0*(1 - (z_hi[j] + z_de[j]))
-        z_[j] = R0*(1 - (z_de[j]))
-        Z[0,j] = z_[j].real
-        Z[1,j] = z_[j].imag
+            z_ +=  C_Debye(w[j], M[k], tau_10[k], c_exp)
+#        z_hi = C_Debye(w[j], m_hi, 10**log_tau_hi, 1.0)
+#        z_ += z_hi
+        z_ = R0*(1 - z_)
+        Z[0,j] = z_.real
+        Z[1,j] = z_.imag
     return Z
 
 def Shin_cyth(cnp.ndarray[DTYPE_t, ndim=1] w, cnp.ndarray[DTYPE_t, ndim=1] R, cnp.ndarray[DTYPE_t, ndim=1] log_Q, cnp.ndarray[DTYPE_t, ndim=1] n):
