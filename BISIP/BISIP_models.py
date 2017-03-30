@@ -84,7 +84,7 @@ def run_MCMC(function, AMH, mc_p, save_traces=False, save_where=None):
 
     for i in range(1, mc_p['nb_chain']+1):
         print '\n Chain #%d/%d'%(i, mc_p['nb_chain'])
-        MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'], tune_throughout=True)
+        MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'], tune_throughout=False)
     return MDL
 
 #==============================================================================
