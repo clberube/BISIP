@@ -926,14 +926,15 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
             t.tick_params(labelsize=14)
         # Real-Imag
         plt.axes(ax[0])
-        plt.errorbar(f, -zn_dat.imag, zn_err.imag, None, '.', label='Data')
-        plt.semilogx(f, -zn_fit.imag, 'r-', label='Fitted model')
-        plt.fill_between(f, -zn_max.imag, -zn_min.imag, color='dimgray', alpha=0.3)
-        plt.xlabel(sym_labels['freq'], fontsize=14)
+        plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
+        plt.plot(zn_fit.real, -zn_fit.imag, 'r-', label='Fitted model')
+        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='dimgray', alpha=0.3)
+        plt.xlabel(sym_labels['real'], fontsize=14)
         plt.ylabel(sym_labels['imag'], fontsize=14)
-        plt.legend(loc=2, numpoints=1, fontsize=12)
-#        plt.xlim([None, 1])
+        plt.legend(loc=1, numpoints=1, fontsize=12)
+        plt.xlim([None, 1])
         plt.ylim([0, max(-zn_dat.imag)])
+        
         # Freq-Ampl
 #        plt.axes(ax[0])
 #        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
