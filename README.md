@@ -1,6 +1,6 @@
 # BISIP
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
-### Download the latest executables for [Mac OS X (64bit)] (https://www.dropbox.com/s/6namw3yiq9we9k2/BISIP%20Workplace%20%28OS%20X%2064bit%29.zip?dl=1) or [Windows (64bit)] (https://www.dropbox.com/s/4nnstfs80dxitp2/BISIP%20Workplace%20%28Win64%29.zip?dl=1)
+### Download the latest executables for [Mac OS X (64bit)](https://www.dropbox.com/s/6namw3yiq9we9k2/BISIP%20Workplace%20%28OS%20X%2064bit%29.zip?dl=1) or [Windows (64bit)](https://www.dropbox.com/s/4nnstfs80dxitp2/BISIP%20Workplace%20%28Win64%29.zip?dl=1)
 
 ### Contents
 **1. Using the standalone executables**  
