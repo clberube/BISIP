@@ -125,7 +125,7 @@ def format_results(M, Z_max):
     pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
     pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
     pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
-    pm.update({(k.replace("log_", ""))+"_std": pm[k+"_std"]*(10**pm[k]) for k in var_keys if k.startswith("log_")})
+    pm.update({(k.replace("log_", ""))+"_std": np.log(10)*pm[k+"_std"]*(10**pm[k]) for k in var_keys if k.startswith("log_")})
     pm = {k: v for (k, v) in pm.items() if "log_" not in k}
     return pm           # returns parameters and uncertainty
 
