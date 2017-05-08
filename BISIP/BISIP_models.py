@@ -60,7 +60,7 @@ from datetime import datetime
 #==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
-def run_MCMC(function, AMH, mc_p, save_traces=False, save_where=None):
+def run_MCMC(function, mc_p, save_traces=False, save_where=None):
     print "\nMCMC parameters:\n", mc_p
     if save_traces:
         # If path doesn't exist, create it
@@ -71,7 +71,7 @@ def run_MCMC(function, AMH, mc_p, save_traces=False, save_where=None):
         MDL = pymc.MCMC(function, db='ram',
                         dbname=save_where)
 
-    if AMH:
+    if mc_p["adaptive"]:
         if mc_p['verbose']:
             mc_p['verbose'] = 1
         MDL.use_step_method(pymc.AdaptiveMetropolis, MDL.stochastics, delay=mc_p["cov_delay"], interval=mc_p['cov_inter'], shrink_if_necessary=True, verbose=mc_p['verbose'])
@@ -134,7 +134,8 @@ def format_results(M, Z_max):
 # Import in script using
 # from BISIP_models import mcmcSIPinv
 # Default MCMC parameters:
-mcmc_params = {"nb_chain"   : 1,
+mcmc_params = {"adaptive"   : False,
+               "nb_chain"   : 1,
                "nb_iter"    : 10000,
                "nb_burn"    : 8000,
                "thin"       : 1,
@@ -145,7 +146,7 @@ mcmc_params = {"nb_chain"   : 1,
                "cov_delay"  : 1000,
                 }
 
-def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
+def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
                ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, keep_traces=False):
 
 #==============================================================================
@@ -310,7 +311,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, adaptive=False, headers=1,
 #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
                 }
     simulation = sim_dict[model] # Pick entries for the selected model
-    MDL = run_MCMC(simulation["func"](*simulation["args"]), adaptive, mcmc, save_traces=keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
+    MDL = run_MCMC(simulation["func"](*simulation["args"]), mcmc, save_traces=keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
 #    if not keep_traces: rmtree(out_path)   # Deletes the traces if not wanted
 
     """

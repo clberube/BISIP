@@ -240,7 +240,8 @@ class MainApplication:
         print "Skipping", self.head.get(), "header lines"
         self.files = [self.sel_files[i].split("/")[-1].split(".")[0] for i in range(len((self.sel_files)))]
 
-        self.mcmc_params = {"verbose"    : self.run_options["Tuning verbose"].get(),
+        self.mcmc_params = {"adaptive"   : self.adaptive.get(),
+                            "verbose"    : self.run_options["Tuning verbose"].get(),
                             "nb_chain"   : self.mcmc_vars["Number of chains"][0].get(),
                             "nb_iter"    : self.mcmc_vars["Total iterations"][0].get(),
                             "nb_burn"    : self.mcmc_vars["Burn-in period"][0].get(),
@@ -261,7 +262,7 @@ class MainApplication:
             self.activity()
             self.var_review.set(self.f_n)
             self.sol = mcmcSIPinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
-                                adaptive=self.adaptive.get(), headers=self.head.get(), ph_units=self.units.get(),
+                                headers=self.head.get(), ph_units=self.units.get(),
                                 cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
                                 c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get())
 

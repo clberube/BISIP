@@ -32,15 +32,16 @@ model = "PDecomp"
 #==============================================================================
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
-mcmc_p = {"nb_chain"   : 1,
-          "nb_iter"    : 300000,
-          "nb_burn"    : 000000,
+mcmc_p = {"adaptive"   : True,
+          "nb_chain"   : 1,
+          "nb_iter"    : 30000,
+          "nb_burn"    : 00000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 50000,
-          "cov_delay"  : 50000,
+          "cov_inter"  : 5000,
+          "cov_delay"  : 5000,
           }
 sol = []
 
@@ -50,7 +51,7 @@ for noise in [1]:
 #noise = 5
     adapt = True
 #    adapt = False
-    repeat = 10
+    repeat = 1
     save_as = "%dmrad_%s_%d_MCMC_Solutions_Adaptive_%s.pkl" %(noise,model,repeat,str(adapt))
     #save_as = "%dmrad_%d_MCMC_Traces_Adaptive_%s.pkl" %(noise,repeat,str(adapt))
     #save_as = "tests.pkl"
@@ -95,7 +96,7 @@ for noise in [1]:
     for i in range(repeat):
         fn = filename[0]
         print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
-        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, adaptive=adapt, headers=skip_header, ph_units=ph_units, decomp_poly=3, cc_modes=2, c_exp=0.5, keep_traces=False))
+        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=3, cc_modes=2, c_exp=0.5, keep_traces=False))
     
         """Plot fit and data ?"""
         if False:
