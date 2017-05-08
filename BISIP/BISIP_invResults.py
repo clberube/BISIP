@@ -104,9 +104,11 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(1,vect+1)]
+            if "Decomp" in model:
+                keys[i] = [k+"%d"%n for n in range(0,vect)]
+            else:
+                keys[i] = [k+"%d"%n for n in range(1,vect+1)]
     keys = list(flatten(keys))
-
     if no_subplots:
         figs = {}
         for c, k in enumerate(keys):
@@ -156,10 +158,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
                 data = sorted(MDL.trace(stoc)[:])
             fit = norm.pdf(data, np.mean(data), np.std(data))
             plt.axes(a)
-#            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-#            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-#            plt.locator_params(axis = 'y', nbins = 8)
-#            plt.locator_params(axis = 'x', nbins = 7)
+            plt.locator_params(axis = 'y', nbins = 8)
+            plt.locator_params(axis = 'x', nbins = 7)
             plt.xlabel(k)
             hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='black', linewidth=1.0, color="white")
             xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in xrange(len(hist[1])-1)]
@@ -170,7 +170,6 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
         
         for c in range(nrows):
-#            ax[c][ncols-1].axes.get_yaxis().set_ticklabels([])
             ax[c][0].set_ylabel("Frequency")
 
         plt.tight_layout(pad=1, w_pad=1, h_pad=0)
@@ -460,7 +459,10 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
     for (i, k) in enumerate(keys):
         vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
         if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(0,vect)]
+            if "Decomp" in model:
+                keys[i] = [k+"%d"%n for n in range(0,vect)]
+            else:
+                keys[i] = [k+"%d"%n for n in range(1,vect+1)]
     keys = list(flatten(keys))
     ncols = 2
     nrows = int(ceil(len(keys)*1.0 / ncols))
@@ -479,10 +481,8 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             except:
                 data = MDL.trace(stoc)[:]
             x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
-            plt.yticks(fontsize=14)
-            plt.xticks(fontsize=14)
-            plt.ylabel("%s value" %k, fontsize=14)
-            plt.xlabel("Iteration number", fontsize=14)
+            plt.ylabel("%s value" %k)
+            plt.xlabel("Iteration number")
             plt.plot(x, data, '-', color='b', label=k, linewidth=2.0)
             if save:
                 save_where = '/Figures/Traces/%s/' %filename
@@ -498,7 +498,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
         return figs
 
     else:
-        fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
+        fig, ax = plt.subplots(nrows, ncols, figsize=(8,nrows*1.4))
         for c, (a, k) in enumerate(zip(ax.flat, keys)):
             if k == "R0":
                 stoc = "R0"
@@ -512,18 +512,28 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
             plt.axes(a)
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-#            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-#            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
             plt.locator_params(axis = 'y', nbins = 6)
-            plt.yticks(fontsize=12)
-            plt.xticks(fontsize=12)
-            plt.ylabel(k, fontsize=12)
-            plt.xlabel("Iteration number", fontsize=12)
+            plt.ylabel(k)
             plt.plot(x, data, '-', color='b', label=filename, linewidth=1.0)
             plt.grid(None)
-        fig.tight_layout(pad=0, w_pad=0., h_pad=0.0)
-#        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
-#            a.set_visible(False)
+            
+        plt.tight_layout(pad=0.1, w_pad=0., h_pad=-2)
+        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
+            a.set_visible(False)
+        
+        ax[:,0][-1].set_xlabel("Iteration number")
+        for a in ax[:-1]:
+            a[0].axes.get_xaxis().set_ticklabels([])
+        
+        if len(keys) % 2 == 0:
+            ax[:,1][-1].set_xlabel("Iteration number")
+            for a in ax[:-1]:
+                a[1].axes.get_xaxis().set_ticklabels([])
+        else:
+            ax[:,1][-2].set_xlabel("Iteration number")
+            for a in ax[:-2]:    
+                a[1].axes.get_xaxis().set_ticklabels([])
+            
         if save:
             save_where = '/Figures/Traces/'
             actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
