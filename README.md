@@ -55,16 +55,19 @@
   To call the function with optional arguments:
   
   Example for Debye decomposition: 
+    
     sol = mcmcSIPinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
                       headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=True,  
                       debye_poly=4, c_exp = 1.0, keep_traces=False)
                       
   Example for Cole-Cole inversion:
+    
     sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
                       headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=False,  
                       cc_modes=2, keep_traces=False)
   
   Where `mcmc_params` is a python dictionary.
+    
     mcmc_p = {"adaptive"   : True,
               "nb_chain"   : 1,
               "nb_iter"    : 500000,
@@ -77,11 +80,18 @@
               "cov_delay"  : 50000,    # Only used when mcmc_p["adaptive"]=True
               }
                   
-  
   And `sol` is a self-explanatory python dictionary containing the results:
   
     In []: sol.keys()
-    Out[]: ['pymc_model', 'params', 'fit', 'data']
+    Out[]: 
+    ['pymc_model',
+     'params',
+     'fit',
+     'model_type',
+     'path',
+     'data',
+     'mcmc',
+     'SIP_model']
   
   For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
   
@@ -97,6 +107,21 @@
   
     In []: sol['params']['c']
     Out[]: array([2.127E-01, 5.805E-01])
+  
+  To return the MCMC parameters that were used in the inversion:
+  
+    In []: sol["mcmc"]
+    Out[]: 
+    {'adaptive': True,
+     'cov_delay': 5000,
+     'cov_inter': 5000,
+     'nb_burn': 0,
+     'nb_chain': 1,
+     'nb_iter': 30000,
+     'prop_scale': 1.0,
+     'thin': 1,
+     'tune_inter': 10000,
+     'verbose': False}
   
   To return the most probable fit:
   
