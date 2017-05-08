@@ -52,22 +52,31 @@
   
     sol = mcmcSIPinv('ColeCole', '/Documents/DataFiles/DATA.dat')
   
-  The full list of optional arguments is:
+  To call the function with optional arguments:
   
-    sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
-                      mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2, 
+  Example for Debye decomposition: 
+    sol = mcmcSIPinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
+                      headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=True,  
                       debye_poly=4, c_exp = 1.0, keep_traces=False)
+                      
+  Example for Cole-Cole inversion:
+    sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
+                      headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=False,  
+                      cc_modes=2, keep_traces=False)
   
-  Where `mcmc_params` is a python dictionary:
-  
-    mcmc_params = {'nb_chain'  : 1,
-                  'nb_iter'    : 50000,
-                  'nb_burn'    : 40000,
-                  'thin'       : 1,
-                  'tune_inter' : 1000,
-                  'prop_scale' : 1.0,
-                  'verbose'    : False,
-                  }
+  Where `mcmc_params` is a python dictionary.
+    mcmc_p = {"adaptive"   : True,
+              "nb_chain"   : 1,
+              "nb_iter"    : 500000,
+              "nb_burn"    : 400000,
+              "thin"       : 1,
+              "tune_inter" : 10000,    # Only used when mcmc_p["adaptive"]=False
+              "prop_scale" : 1.0,      # Only used when mcmc_p["adaptive"]=False
+              "verbose"    : False,
+              "cov_inter"  : 50000,    # Only used when mcmc_p["adaptive"]=True
+              "cov_delay"  : 50000,    # Only used when mcmc_p["adaptive"]=True
+              }
+                  
   
   And `sol` is a self-explanatory python dictionary containing the results:
   
@@ -135,7 +144,7 @@ To return the raw data:
 
 **Data must be formatted using the following template:**  
 
-    Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg)  
+    Frequency, Amplitude  , Phase shift , Amplit error, Phase error  
     6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02  
     3.000e+03, 1.22177e+05, -1.46221e+02, 1.392825e+01, 1.134464e-01  
     1.500e+03, 1.25553e+05, -9.51099e+01, 2.762214e+01, 2.199114e-01  
