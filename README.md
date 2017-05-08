@@ -83,27 +83,26 @@
   And `sol` is a self-explanatory python dictionary containing the results:
   
     In []: sol.keys()
-    Out[]: 
-    ['pymc_model',
-     'params',
-     'fit',
-     'model_type',
-     'path',
-     'data',
-     'mcmc',
-     'SIP_model']
+    Out[]: ['pymc_model',
+           'params',
+           'fit',
+           'model_type',
+           'path',
+           'data',
+           'mcmc',
+           'SIP_model']
   
   For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
   
     In []: sol['params']
     Out[]: {'R0': 51467.05483286261,
-            'R0_std': 126.18837609979391,
-            'c': array([2.127E-01, 5.805E-01]),
-            'c_std': array([5.864E-03, 5.611E-03]),
-            'm': array([1.435E-01, 9.887E-01]),
-            'm_std': array([2.895E-03, 9.175E-03]),
-            'tau': array([1.267E+01, 1.692E-06]),
-            'tau_std': array([7.253E-01, 2.692E-08])}
+           'R0_std': 126.18837609979391,
+           'c': array([2.127E-01, 5.805E-01]),
+           'c_std': array([5.864E-03, 5.611E-03]),
+           'm': array([1.435E-01, 9.887E-01]),
+           'm_std': array([2.895E-03, 9.175E-03]),
+           'tau': array([1.267E+01, 1.692E-06]),
+           'tau_std': array([7.253E-01, 2.692E-08])}
   
     In []: sol['params']['c']
     Out[]: array([2.127E-01, 5.805E-01])
@@ -111,17 +110,16 @@
   To return the MCMC parameters that were used in the inversion:
   
     In []: sol["mcmc"]
-    Out[]: 
-    {'adaptive': True,
-     'cov_delay': 5000,
-     'cov_inter': 5000,
-     'nb_burn': 0,
-     'nb_chain': 1,
-     'nb_iter': 30000,
-     'prop_scale': 1.0,
-     'thin': 1,
-     'tune_inter': 10000,
-     'verbose': False}
+    Out[]: {'adaptive': True,
+           'cov_delay': 5000,
+           'cov_inter': 5000,
+           'nb_burn': 0,
+           'nb_chain': 1,
+           'nb_iter': 30000,
+           'prop_scale': 1.0,
+           'thin': 1,
+           'tune_inter': 10000,
+           'verbose': False}
   
   To return the most probable fit:
   
