@@ -121,10 +121,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             except:
                 data = sorted(MDL.trace(stoc)[:])
             fit = norm.pdf(data, np.mean(data), np.std(data))
-            plt.yticks(fontsize=14)
-            plt.xticks(fontsize=14)
-            plt.xlabel("%s value"%k, fontsize=14)
-            plt.ylabel("Probability density", fontsize=14)
+            plt.xlabel("%s value"%k)
+            plt.ylabel("Probability density")
             hist = plt.hist(data, bins=20, normed=True, linewidth=1.0, color="white")
             plt.plot(data, fit, "-b", label="Fitted PDF", linewidth=1.5)
             plt.legend(loc='best')
@@ -137,7 +135,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
                     print "\nSaving histogram figures in:\n", save_path
                 if not path.exists(save_path):
                     makedirs(save_path)
-                fig.savefig(save_path+'Histo-%s-%s-%s.%s'%(model,filename,k,save_as))
+                fig.savefig(save_path+'Histo-%s-%s-%s.%s'%(model,filename,k,save_as), bbox_inches='tight')
             figs[k] = fig
             plt.close(fig)
         return figs
@@ -145,7 +143,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     else:
         ncols = 2
         nrows = int(ceil(len(keys)*1.0 / ncols))
-        fig, ax = plt.subplots(nrows, ncols, figsize=(10,nrows*2))
+        fig, ax = plt.subplots(nrows, ncols, figsize=(7,nrows*1.8))
         for c, (a, k) in enumerate(zip(ax.flat, keys)):
             if k == "R0":
                 stoc = "R0"
@@ -160,20 +158,22 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             plt.axes(a)
 #            plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
 #            plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-            plt.locator_params(axis = 'y', nbins = 8)
-            plt.locator_params(axis = 'x', nbins = 7)
-            plt.yticks(fontsize=12)
-            plt.xticks(fontsize=12)
-            plt.xlabel(k, fontsize=12)
-            plt.ylabel("Frequency", fontsize=12)
-            hist = plt.hist(data, bins=20, normed=False, label=filename, linewidth=1.0, color="white")
+#            plt.locator_params(axis = 'y', nbins = 8)
+#            plt.locator_params(axis = 'x', nbins = 7)
+            plt.xlabel(k)
+            hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='black', linewidth=1.0, color="white")
             xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in xrange(len(hist[1])-1)]
             binwidth = (max(xh) - min(xh)) / len(hist[1])
             fit *= len(data) * binwidth
             plt.plot(data, fit, "-b", linewidth=1.5)
             plt.grid(None)
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-        fig.tight_layout(w_pad=0.1, h_pad=1.0)
+        
+        for c in range(nrows):
+#            ax[c][ncols-1].axes.get_yaxis().set_ticklabels([])
+            ax[c][0].set_ylabel("Frequency")
+
+        plt.tight_layout(pad=1, w_pad=1, h_pad=0)
         for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
             a.set_visible(False)
         if save:
@@ -183,7 +183,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             print "\nSaving parameter histograms in:\n", save_path
             if not path.exists(save_path):
                 makedirs(save_path)
-            fig.savefig(save_path+'Histo-%s-%s.%s'%(model,filename,save_as))
+            fig.savefig(save_path+'Histo-%s-%s.%s'%(model,filename,save_as), bbox_inches='tight')
         try:    plt.close(fig)
         except: pass
         return fig
@@ -921,43 +921,45 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
     Amp_min = abs(fit["lo95"])/Zr0
     Amp_max = abs(fit["up95"])/Zr0
     if draw or save:
-        fig, ax = plt.subplots(1, 2, figsize=(10,4))
-        for t in ax:
-            t.tick_params(labelsize=14)
+        fig, ax = plt.subplots(1, 3, figsize=(12,3))
+#        for t in ax:
+#            t.tick_params(labelsize=14)
         # Real-Imag
-        plt.axes(ax[0])
+        plt.axes(ax[2])
         plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
         plt.plot(zn_fit.real, -zn_fit.imag, 'r-', label='Fitted model')
         plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='dimgray', alpha=0.3)
-        plt.xlabel(sym_labels['real'], fontsize=14)
-        plt.ylabel(sym_labels['imag'], fontsize=14)
-        plt.legend(loc=1, numpoints=1, fontsize=12)
+        plt.xlabel(sym_labels['real'])
+        plt.ylabel(sym_labels['imag'])
+        plt.legend(loc='best', numpoints=1)
         plt.xlim([None, 1])
         plt.ylim([0, max(-zn_dat.imag)])
         
         # Freq-Ampl
-#        plt.axes(ax[0])
-#        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-#        plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
-#        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
-#        plt.xlabel(sym_labels['freq'], fontsize=14)
-#        plt.ylabel(sym_labels['ampl'], fontsize=14)
-#        ax[0].legend(loc=1, numpoints=1, fontsize=12)
-#        plt.ylim([None,1.0])
+        plt.axes(ax[1])
+        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
+        plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
+        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
+        plt.xlabel(sym_labels['freq'])
+        plt.ylabel(sym_labels['ampl'])
+        plt.legend(loc='best', numpoints=1)
+        plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
+        plt.ylim([None,1.0])
 
         # Freq-Phas
-        plt.axes(ax[1])
+        plt.axes(ax[0])
         plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
         plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
-        ax[1].set_yscale("log", nonposy='clip')
+        ax[0].set_yscale("log", nonposy='clip')
         plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3)
-        plt.xlabel(sym_labels['freq'], fontsize=14)
-        plt.ylabel(sym_labels['phas'], fontsize=14)
-        ax[1].legend(loc=2, numpoints=1, fontsize=12)
+        plt.xlabel(sym_labels['freq'])
+        plt.ylabel(sym_labels['phas'])
+        plt.legend(loc='best', numpoints=1)
+        plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         plt.ylim([1,1000])
 
 #        plt.title(sample_name, fontsize=12)
-        fig.tight_layout()
+        plt.tight_layout(pad=0.1, h_pad=0, w_pad=0)
     if save:
         save_where = '/Figures/Fit figures/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -965,7 +967,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         print "\nSaving fit figure in:\n", save_path
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as))
+        fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as), bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
@@ -975,7 +977,8 @@ def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
 
 def plot_par():
-    rc = {u'agg.path.chunksize': 0,
+    rc = {u'_internal.classic_mode': False,
+          u'agg.path.chunksize': 0,
           u'animation.avconv_args': [],
           u'animation.avconv_path': u'avconv',
           u'animation.bitrate': -1,
@@ -985,40 +988,95 @@ def plot_par():
           u'animation.ffmpeg_args': [],
           u'animation.ffmpeg_path': u'ffmpeg',
           u'animation.frame_format': u'png',
+          u'animation.html': u'none',
           u'animation.mencoder_args': [],
           u'animation.mencoder_path': u'mencoder',
           u'animation.writer': u'ffmpeg',
-          u'axes.axisbelow': False,
-          u'axes.color_cycle': [u'b', u'g', u'r', u'c', u'm', u'y', u'k'],
-          u'axes.edgecolor': u'black',
+          u'axes.autolimit_mode': u'data',
+          u'axes.axisbelow': u'line',
+          u'axes.edgecolor': u'k',
           u'axes.facecolor': u'white',
           u'axes.formatter.limits': [-3, 4],
+          u'axes.formatter.offset_threshold': 4,
           u'axes.formatter.use_locale': False,
           u'axes.formatter.use_mathtext': True,
           u'axes.formatter.useoffset': True,
           u'axes.grid': True,
+          u'axes.grid.axis': u'both',
           u'axes.grid.which': u'major',
-          u'axes.hold': True,
-          u'axes.labelcolor': u'black',
-          u'axes.labelsize': 14.0,
+          u'axes.hold': None,
+          u'axes.labelcolor': u'k',
+          u'axes.labelpad': 4.0,
+          u'axes.labelsize': u'medium',
           u'axes.labelweight': u'normal',
           u'axes.linewidth': 1.0,
-          u'axes.titlesize': 14.0,
+          u'axes.spines.bottom': True,
+          u'axes.spines.left': True,
+          u'axes.spines.right': True,
+          u'axes.spines.top': True,
+          u'axes.titlepad': 6.0,
+          u'axes.titlesize': u'large',
           u'axes.titleweight': u'normal',
-          u'axes.unicode_minus': False,
+          u'axes.unicode_minus': True,
           u'axes.xmargin': 0.0,
           u'axes.ymargin': 0.0,
           u'axes3d.grid': True,
+          u'backend': 'module://ipykernel.pylab.backend_inline',
           u'backend.qt4': u'PyQt4',
           u'backend.qt5': u'PyQt5',
           u'backend_fallback': True,
+          u'boxplot.bootstrap': None,
+          u'boxplot.boxprops.color': u'k',
+          u'boxplot.boxprops.linestyle': u'-',
+          u'boxplot.boxprops.linewidth': 1.0,
+          u'boxplot.capprops.color': u'k',
+          u'boxplot.capprops.linestyle': u'-',
+          u'boxplot.capprops.linewidth': 1.0,
+          u'boxplot.flierprops.color': u'k',
+          u'boxplot.flierprops.linestyle': u'none',
+          u'boxplot.flierprops.linewidth': 1.0,
+          u'boxplot.flierprops.marker': u'o',
+          u'boxplot.flierprops.markeredgecolor': u'k',
+          u'boxplot.flierprops.markerfacecolor': u'none',
+          u'boxplot.flierprops.markersize': 6.0,
+          u'boxplot.meanline': False,
+          u'boxplot.meanprops.color': u'C2',
+          u'boxplot.meanprops.linestyle': u'--',
+          u'boxplot.meanprops.linewidth': 1.0,
+          u'boxplot.meanprops.marker': u'^',
+          u'boxplot.meanprops.markeredgecolor': u'C2',
+          u'boxplot.meanprops.markerfacecolor': u'C2',
+          u'boxplot.meanprops.markersize': 6.0,
+          u'boxplot.medianprops.color': u'C1',
+          u'boxplot.medianprops.linestyle': u'-',
+          u'boxplot.medianprops.linewidth': 1.0,
+          u'boxplot.notch': False,
+          u'boxplot.patchartist': False,
+          u'boxplot.showbox': True,
+          u'boxplot.showcaps': True,
+          u'boxplot.showfliers': True,
+          u'boxplot.showmeans': False,
+          u'boxplot.vertical': True,
+          u'boxplot.whiskerprops.color': u'k',
+          u'boxplot.whiskerprops.linestyle': u'-',
+          u'boxplot.whiskerprops.linewidth': 1.0,
+          u'boxplot.whiskers': 1.5,
+          u'contour.corner_mask': True,
           u'contour.negative_linestyle': u'dashed',
+          u'date.autoformatter.day': u'%Y-%m-%d',
+          u'date.autoformatter.hour': u'%m-%d %H',
+          u'date.autoformatter.microsecond': u'%M:%S.%f',
+          u'date.autoformatter.minute': u'%d %H:%M',
+          u'date.autoformatter.month': u'%Y-%m',
+          u'date.autoformatter.second': u'%H:%M:%S',
+          u'date.autoformatter.year': u'%Y',
           u'docstring.hardcopy': True,
+          u'errorbar.capsize': 0.0,
           u'examples.directory': u'',
           u'figure.autolayout': False,
           u'figure.dpi': 72.0,
-          u'figure.edgecolor': u'white',
-          u'figure.facecolor': u'white',
+          u'figure.edgecolor': 'white',
+          u'figure.facecolor': 'white',
           u'figure.figsize': [1.0, 1.0],
           u'figure.frameon': True,
           u'figure.max_open_warning': 20,
@@ -1026,8 +1084,10 @@ def plot_par():
           u'figure.subplot.hspace': 0.2,
           u'figure.subplot.left': 0.125,
           u'figure.subplot.right': 0.9,
-          u'figure.subplot.top': 0.9,
+          u'figure.subplot.top': 0.88,
           u'figure.subplot.wspace': 0.2,
+          u'figure.titlesize': u'large',
+          u'figure.titleweight': u'normal',
           u'font.cursive': [u'Apple Chancery',
                             u'Textile',
                             u'Zapf Chancery',
@@ -1040,7 +1100,9 @@ def plot_par():
                             u'Impact',
                             u'Western',
                             u'fantasy'],
-          u'font.monospace': [u'Bitstream Vera Sans Mono',
+          u'font.monospace': [u'DejaVu Sans Mono',
+                              u'Bitstream Vera Sans Mono',
+                              u'Computer Modern Typewriter',
                               u'Andale Mono',
                               u'Nimbus Mono L',
                               u'Courier New',
@@ -1048,13 +1110,15 @@ def plot_par():
                               u'Fixed',
                               u'Terminal',
                               u'monospace'],
-          u'font.sans-serif': [u'Helvetica',
+          u'font.sans-serif': [u'DejaVu Sans',
                                u'Bitstream Vera Sans',
+                               u'Computer Modern Sans Serif',
                                u'Lucida Grande',
                                u'Verdana',
                                u'Geneva',
                                u'Lucid',
                                u'Arial',
+                               u'Helvetica',
                                u'Avant Garde',
                                u'sans-serif'],
           u'font.serif': [u'Bitstream Vera Serif',
@@ -1069,22 +1133,26 @@ def plot_par():
                           u'Palatino',
                           u'Charter',
                           u'serif'],
-          u'font.size': 14.0,
+          u'font.size': 12.0,
           u'font.stretch': u'normal',
           u'font.style': u'normal',
           u'font.variant': u'normal',
           u'font.weight': u'medium',
-          u'grid.alpha': 0.3,
-          u'grid.color': u'black',
-          u'grid.linestyle': u':',
-          u'grid.linewidth': 1.0,
+          u'grid.alpha': 1.0,
+          u'grid.color': u'#b0b0b0',
+          u'grid.linestyle': u'-',
+          u'grid.linewidth': 0.8,
+          u'hatch.color': u'k',
+          u'hatch.linewidth': 1.0,
+          u'hist.bins': 10,
           u'image.aspect': u'equal',
           u'image.cmap': u'jet',
-          u'image.interpolation': u'bilinear',
+          u'image.composite_image': True,
+          u'image.interpolation': u'nearest',
           u'image.lut': 256,
           u'image.origin': u'upper',
-          u'image.resample': False,
-          u'interactive': False,
+          u'image.resample': True,
+          u'interactive': True,
           u'keymap.all_axes': [u'a'],
           u'keymap.back': [u'left', u'c', u'backspace'],
           u'keymap.forward': [u'right', u'v'],
@@ -1098,39 +1166,45 @@ def plot_par():
           u'keymap.yscale': [u'l'],
           u'keymap.zoom': [u'o'],
           u'legend.borderaxespad': 0.5,
-          u'legend.borderpad': 0.2,
+          u'legend.borderpad': 0.4,
           u'legend.columnspacing': 2.0,
-          u'legend.fancybox': False,
-          u'legend.fontsize': 12.0,
-          u'legend.framealpha': None,
+          u'legend.edgecolor': u'0.2',
+          u'legend.facecolor': u'inherit',
+          u'legend.fancybox': True,
+          u'legend.fontsize': u'small',
+          u'legend.framealpha': 0.8,
           u'legend.frameon': True,
           u'legend.handleheight': 0.7,
-          u'legend.handlelength': 1.5,
+          u'legend.handlelength': 2.0,
           u'legend.handletextpad': 0.8,
-          u'legend.isaxes': True,
           u'legend.labelspacing': 0.2,
-          u'legend.loc': u'upper right',
+          u'legend.loc': u'best',
           u'legend.markerscale': 1.0,
           u'legend.numpoints': 1,
           u'legend.scatterpoints': 1,
           u'legend.shadow': False,
           u'lines.antialiased': True,
-          u'lines.color': u'blue',
+          u'lines.color': u'C0',
           u'lines.dash_capstyle': u'butt',
-          u'lines.dash_joinstyle': u'miter',
+          u'lines.dash_joinstyle': u'round',
+          u'lines.dashdot_pattern': [6.4, 1.6, 1.0, 1.6],
+          u'lines.dashed_pattern': [3.7, 1.6],
+          u'lines.dotted_pattern': [1.0, 1.65],
           u'lines.linestyle': u'-',
           u'lines.linewidth': 1.0,
           u'lines.marker': u'None',
           u'lines.markeredgewidth': 1.0,
           u'lines.markersize': 6.0,
+          u'lines.scale_dashes': True,
           u'lines.solid_capstyle': u'projecting',
           u'lines.solid_joinstyle': u'miter',
+          u'markers.fillstyle': u'full',
           u'mathtext.bf': u'serif:bold',
           u'mathtext.cal': u'cursive',
           u'mathtext.default': u'regular',
           u'mathtext.fallback_to_cm': True,
           u'mathtext.fontset': u'stixsans',
-          u'mathtext.it': u'serif:italic',
+          u'mathtext.it': u'sans:italic',
           u'mathtext.rm': u'serif',
           u'mathtext.sf': u'sans',
           u'mathtext.tt': u'monospace',
@@ -1138,6 +1212,7 @@ def plot_par():
           u'patch.antialiased': True,
           u'patch.edgecolor': u'black',
           u'patch.facecolor': u'blue',
+          u'patch.force_edgecolor': False,
           u'patch.linewidth': 1.0,
           u'path.effects': [],
           u'path.simplify': True,
@@ -1161,22 +1236,23 @@ def plot_par():
           u'ps.usedistiller': False,
           u'savefig.bbox': u'tight',
           u'savefig.directory': u'~',
-          u'savefig.dpi': 200,
+          u'savefig.dpi': 200.0,
           u'savefig.edgecolor': u'white',
           u'savefig.facecolor': u'white',
-          u'savefig.format': u'pdf',
+          u'savefig.format': u'png',
           u'savefig.frameon': True,
           u'savefig.jpeg_quality': 95,
           u'savefig.orientation': u'portrait',
           u'savefig.pad_inches': 0.1,
           u'savefig.transparent': False,
+          u'scatter.marker': u'o',
           u'svg.fonttype': u'path',
+          u'svg.hashsalt': None,
           u'svg.image_inline': True,
-          u'svg.image_noscale': False,
           u'text.antialiased': True,
-          u'text.color': u'black',
+          u'text.color': u'k',
           u'text.dvipnghack': None,
-          u'text.hinting': True,
+          u'text.hinting': u'auto',
           u'text.hinting_factor': 8,
           u'text.latex.preamble': [],
           u'text.latex.preview': False,
@@ -1190,22 +1266,38 @@ def plot_par():
           u'webagg.open_in_browser': True,
           u'webagg.port': 8988,
           u'webagg.port_retries': 50,
+          u'xtick.alignment': u'center',
+          u'xtick.bottom': True,
           u'xtick.color': u'k',
           u'xtick.direction': u'in',
-          u'xtick.labelsize': 14.0,
+          u'xtick.labelsize': u'medium',
+          u'xtick.major.bottom': True,
           u'xtick.major.pad': 4.0,
-          u'xtick.major.size': 6.0,
-          u'xtick.major.width': 1.0,
+          u'xtick.major.size': 3.5,
+          u'xtick.major.top': True,
+          u'xtick.major.width': 0.8,
+          u'xtick.minor.bottom': True,
           u'xtick.minor.pad': 4.0,
-          u'xtick.minor.size': 3.0,
-          u'xtick.minor.width': 1.0,
+          u'xtick.minor.size': 2.0,
+          u'xtick.minor.top': True,
+          u'xtick.minor.visible': False,
+          u'xtick.minor.width': 0.6,
+          u'xtick.top': False,
+          u'ytick.alignment': u'center_baseline',
           u'ytick.color': u'k',
           u'ytick.direction': u'in',
-          u'ytick.labelsize': 14.0,
-          u'ytick.major.pad': 4.0,
-          u'ytick.major.size': 6.0,
+          u'ytick.labelsize': u'medium',
+          u'ytick.left': True,
+          u'ytick.major.left': True,
+          u'ytick.major.pad': 3.5,
+          u'ytick.major.right': True,
+          u'ytick.major.size': 3.5,
           u'ytick.major.width': 1.0,
+          u'ytick.minor.left': True,
           u'ytick.minor.pad': 4.0,
+          u'ytick.minor.right': True,
           u'ytick.minor.size': 3.0,
-          u'ytick.minor.width': 1.0}
+          u'ytick.minor.visible': False,
+          u'ytick.minor.width': 0.6,
+          u'ytick.right': False}
     return rc

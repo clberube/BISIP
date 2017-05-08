@@ -504,9 +504,9 @@ class MainApplication:
                 keys[i] = [keys[i]+"%d"%n for n in range(1+adj,pm[k].shape[0]+1+adj)]
         keys = list(flatten(keys))
         self.list_of_parameters = keys
-        for c, k in enumerate(self.list_of_parameters):
-            if "tau" in k:
-                self.list_of_parameters[c] = "log_"+k
+#        for c, k in enumerate(self.list_of_parameters):
+#            if "tau" in k:
+#                self.list_of_parameters[c] = "log_"+k
         label_res = tk.Label(self.frame_optimal, text="""Optimal parameters:""", anchor=tk.W)
         label_res.grid(row=0, column=0, sticky=tk.W+tk.E+tk.N)
         text_res = tk.Text(self.frame_optimal, height=len(values), width=40, font=("Courier new", fontsize+res_size, "bold"))
