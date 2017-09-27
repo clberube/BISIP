@@ -2,6 +2,9 @@
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 ### Download the latest executables for [Mac OS X (64bit)](https://www.dropbox.com/s/6namw3yiq9we9k2/BISIP%20Workplace%20%28OS%20X%2064bit%29.zip?dl=1) or [Windows (64bit)](https://www.dropbox.com/s/4nnstfs80dxitp2/BISIP%20Workplace%20%28Win64%29.zip?dl=1)
 
+Charles L. Bérubé, Michel Chouteau, Pejman Shamsipour, Randolph J. Enkin, Gema R. Olivo, Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils, In Computers & Geosciences, Volume 105, 2017, Pages 51-64, ISSN 0098-3004, https://doi.org/10.1016/j.cageo.2017.05.001.
+(http://www.sciencedirect.com/science/article/pii/S0098300416306446)
+
 ### Contents
 **1. Using the standalone executables**  
 **2. Cloning the repository and installing dependencies**  
@@ -221,6 +224,8 @@ python cython_setup.py build_ext --inplace
 ```
 
 **7. References**
+
+<sub>Charles L. Bérubé, Michel Chouteau, Pejman Shamsipour, Randolph J. Enkin, and Gema R. Olivo. 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105: 51-64, ISSN 0098-3004, https://doi.org/10.1016/j.cageo.2017.05.001.
 
 <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
