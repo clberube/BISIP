@@ -1,6 +1,6 @@
 # BISIP
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
-### Download the latest executables for [Mac OS X (64bit)](https://www.dropbox.com/s/6namw3yiq9we9k2/BISIP%20Workplace%20%28OS%20X%2064bit%29.zip?dl=1) or [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0-windows/BISIP_Workplace_windows.zip)
+### Download the latest executables for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) or [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0-windows/BISIP_Workplace_windows.zip)
 
 Charles L. Bérubé, Michel Chouteau, Pejman Shamsipour, Randolph J. Enkin, Gema R. Olivo, Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils, In Computers & Geosciences, Volume 105, 2017, Pages 51-64, ISSN 0098-3004, https://doi.org/10.1016/j.cageo.2017.05.001.
 (http://www.sciencedirect.com/science/article/pii/S0098300416306446)
