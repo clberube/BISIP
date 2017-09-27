@@ -110,25 +110,25 @@ class MainApplication:
                              "Save deviance":               tk.BooleanVar(),
                              "Save loglikelihood":          tk.BooleanVar(),
                              "Save traces as txt":          tk.BooleanVar(),
-                             "Save CSV results":            tk.BooleanVar(),
+                             "Tuning verbose":              tk.BooleanVar(),
                              "No subplots":                 tk.BooleanVar(),
                              "PNG figures":                 tk.BooleanVar(),
                             }
         self.run_options = OrderedDict((
                             ("Auto draw fit",                tk.BooleanVar()),
                             ("Print results in console",     tk.BooleanVar()),
-                            ("Tuning verbose",               tk.BooleanVar()),
+                            ("Save CSV results",             tk.BooleanVar()),
                             ))
 
         self.mcmc_vars = OrderedDict((
                                 ("Number of chains"     , (tk.IntVar(), 1)),
-                                ("Total iterations"     , (tk.IntVar(), 10000)),
-                                ("Burn-in period"       , (tk.IntVar(), 8000)),
+                                ("Total iterations"     , (tk.IntVar(), 100000)),
+                                ("Burn-in period"       , (tk.IntVar(), 80000)),
                                 ("Thinning factor"      , (tk.IntVar(), 1)),
-                                ("Tuning interval"      , (tk.IntVar(), 1000)),
+                                ("Tuning interval"      , (tk.IntVar(), 10000)),
                                 ("Proposal scale"       , (tk.DoubleVar(), 1)),
-                                ("Covariance delay"     , (tk.IntVar(), 1000)),
-                                ("Covariance interval"  , (tk.IntVar(), 1000)),
+                                ("Covariance delay"     , (tk.IntVar(), 10000)),
+                                ("Covariance interval"  , (tk.IntVar(), 10000)),
                                 ))
 
         self.master = master
@@ -241,7 +241,7 @@ class MainApplication:
         self.files = [self.sel_files[i].split("/")[-1].split(".")[0] for i in range(len((self.sel_files)))]
 
         self.mcmc_params = {"adaptive"   : self.adaptive.get(),
-                            "verbose"    : self.run_options["Tuning verbose"].get(),
+                            "verbose"    : self.save_options["Tuning verbose"].get(),
                             "nb_chain"   : self.mcmc_vars["Number of chains"][0].get(),
                             "nb_iter"    : self.mcmc_vars["Total iterations"][0].get(),
                             "nb_burn"    : self.mcmc_vars["Burn-in period"][0].get(),
@@ -271,7 +271,7 @@ class MainApplication:
             self.update_results()
             if self.run_options["Print results in console"].get():
                 iR.print_resul(self.sol)
-            if self.save_options["Save CSV results"].get():
+            if self.run_options["Save CSV results"].get():
                 iR.save_resul(self.sol)
             fig_fit = iR.plot_fit(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get(), draw=self.run_options["Auto draw fit"].get())
             if self.run_options["Auto draw fit"].get():
@@ -479,8 +479,11 @@ class MainApplication:
         label_done.grid(row=0, column=0, columnspan=1, sticky=tk.W+tk.E)
         text_path = tk.Text(self.frame_saved_in, height=3, width=35, font=fontz["normal_small"])
         text_path.grid(row=1, column=0, columnspan=1, sticky=tk.W+tk.E, padx=0)
-        text_path.insert("1.0", "%s" %(self.working_path))
-
+        if self.run_options["Save CSV results"].get():         
+            text_path.insert("1.0", "%s" %(self.working_path))
+        else:
+            text_path.insert("1.0", "RESULTS NOT SAVED. CSV SAVE OPTION IS UNCHECKED.")
+            
     def update_results(self):
         pm = self.all_results[self.var_review.get()]["pm"]
         model = self.model.get()

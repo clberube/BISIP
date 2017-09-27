@@ -689,15 +689,18 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
         x = np.log10(sol["data"]["tau"])
-        x = np.linspace(min(x), max(x),100)
+        xmax = max(x)-1
+        xmin = min(x)+1
+        x = np.linspace(xmin, xmax,100)
         y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol["params"]["a"])], axis=0)
-        plt.errorbar(10**x[(x>-3)&(x<1)], y[(x>-3)&(x<1)], None, None, "-k", linewidth=2, label="Debye RTD")
+        plt.errorbar(10**x, y, None, None, "-k", linewidth=2, label="Debye RTD")  
+        ax.fill_between(10**x, 0, y, where=x >= -3, color='lightgray', alpha=0.7)
         ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
         plt.xlabel("Relaxation time (s)", fontsize=14)
         plt.ylabel("Chargeability (%)", fontsize=14)
         plt.yticks(fontsize=14), plt.xticks(fontsize=14)
         plt.xscale("log")
-        plt.xlim([1e-3, 1e1])
+        plt.xlim([10**xmin, 10**xmax])
         plt.legend(numpoints=1, fontsize=14, loc="best")
         fig.tight_layout()
     if save:
@@ -966,10 +969,15 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         plt.ylabel(sym_labels['phas'])
         plt.legend(loc='best', numpoints=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
-        plt.ylim([1,1000])
+        plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
 
-#        plt.title(sample_name, fontsize=12)
+        if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
+            plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])  
+        if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
+            plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
+            
         plt.tight_layout(pad=0.1, h_pad=0, w_pad=0)
+        
     if save:
         save_where = '/Figures/Fit figures/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")

@@ -136,14 +136,14 @@ def format_results(M, Z_max):
 # Default MCMC parameters:
 mcmc_params = {"adaptive"   : False,
                "nb_chain"   : 1,
-               "nb_iter"    : 10000,
-               "nb_burn"    : 8000,
+               "nb_iter"    : 100000,
+               "nb_burn"    : 80000,
                "thin"       : 1,
-               "tune_inter" : 1000,
+               "tune_inter" : 10000,
                "prop_scale" : 1.0,
                "verbose"    : False,
-               "cov_inter"  : 1000,
-               "cov_delay"  : 1000,
+               "cov_inter"  : 10000,
+               "cov_delay"  : 10000,
                 }
 
 def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
@@ -262,10 +262,10 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
             return np.sum((a*log_taus.T).T, axis=0)
         @pymc.deterministic(plot=False)
         def total_m(m_=m_):
-            return np.sum(m_[(log_tau > -3)&(log_tau < 1)])
+            return np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)])
         @pymc.deterministic(plot=False)
         def log_mean_tau(m_=m_, total_m=total_m, a=a):
-            return np.log10(np.exp(np.sum(m_[(log_tau > -3)&(log_tau < 1)]*np.log(10**log_tau[(log_tau > -3)&(log_tau < 1)]))/total_m))
+            return np.log10(np.exp(np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)]*np.log(10**log_tau[(log_tau >= -3)&(log_tau <= max(log_tau)-1)]))/total_m))
         # Likelihood
         obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
 #        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
