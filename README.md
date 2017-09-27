@@ -209,6 +209,7 @@ Or
 ```sh
 pyinstaller BISIP_GUI_osx.spec
 ```
+On Windows this works best with pyinstaller 3.1, setuptools 19.2, pymc 2.3.5 and numpy 1.11.3.
 
 **6. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
