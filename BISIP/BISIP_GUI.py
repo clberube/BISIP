@@ -99,8 +99,8 @@ def flatten(x):
 class MainApplication:
     working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
     def __init__(self, master, fontz):
-        self.save_options = {"Save all hexbins":            tk.BooleanVar(),
-                             "Save all bivariate KDE":      tk.BooleanVar(),
+        self.save_options = {"Save all hexbins (will make error)":            tk.BooleanVar(),
+                             "Save all bivariate KDE (will make error)":      tk.BooleanVar(),
                              "Save fit figures":            tk.BooleanVar(),
                              "Save traces":                 tk.BooleanVar(),
                              "Save histograms":             tk.BooleanVar(),
@@ -278,10 +278,10 @@ class MainApplication:
                 self.plot_window(fig_fit, "Inversion results: "+self.f_n)
             if self.model.get() == "PDecomp":
                 iR.plot_debye(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get())
-            if self.save_options["Save all hexbins"].get():
+            if self.save_options["Save all hexbins (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
                     iR.plot_hexbin(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
-            if self.save_options["Save all bivariate KDE"].get():
+            if self.save_options["Save all bivariate KDE (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
                     iR.plot_KDE(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save histograms"].get():

@@ -36,7 +36,7 @@ VSVersionInfo(
         StringStruct(u'OriginalFilename', u'bisipgui.exe'),
         StringStruct(u'FileVersion', u'1, 1, 1, 1'),
         StringStruct(u'FileDescription', u'Bayesian inference of spectral induced polarization parameters'),
-        StringStruct(u'LegalCopyright', u'Copyright 2015 Charles L. Berube'),
+        StringStruct(u'LegalCopyright', u'Copyright 2015-2017 Charles L. Berube'),
         StringStruct(u'LegalTrademarks', u''),])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
