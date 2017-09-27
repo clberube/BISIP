@@ -2,7 +2,7 @@
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 ### Download the latest release for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) or [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
-Charles L. Bérubé, Michel Chouteau, Pejman Shamsipour, Randolph J. Enkin, Gema R. Olivo, Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils, In Computers & Geosciences, Volume 105, 2017, Pages 51-64, ISSN 0098-3004, https://doi.org/10.1016/j.cageo.2017.05.001.
+Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
 ### Contents
 **1. Using the standalone executables**  
@@ -225,7 +225,7 @@ python cython_setup.py build_ext --inplace
 
 **7. References**
 
-<sub>Charles L. Bérubé, Michel Chouteau, Pejman Shamsipour, Randolph J. Enkin, and Gema R. Olivo. 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105: 51-64, ISSN 0098-3004, https://doi.org/10.1016/j.cageo.2017.05.001.
+<sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
 <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
