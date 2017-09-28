@@ -491,6 +491,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             plt.ylabel("%s value" %k)
             plt.xlabel("Iteration number")
             plt.plot(x, data, '-', label=k, linewidth=2.0)
+            plt.grid('on')
             if save:
                 save_where = '/Figures/Traces/%s/' %filename
                 actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -522,7 +523,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             plt.locator_params(axis = 'y', nbins = 6)
             plt.ylabel(k)
             plt.plot(x, data, '-', label=filename, linewidth=1.0)
-            plt.grid(None)
+            plt.grid('on')
             
         plt.tight_layout(pad=0.1, w_pad=0., h_pad=-2)
         for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
@@ -694,22 +695,23 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
     filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
-        fig, ax = plt.subplots(figsize=(6,4))
+        fig, ax = plt.subplots(figsize=(5,3))
         x = np.log10(sol["data"]["tau"])
         xmax = max(x)-1
         xmin = min(x)+1
         x = np.linspace(xmin, xmax,100)
         y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol["params"]["a"])], axis=0)
-        plt.errorbar(10**x, y, None, None, "-k", linewidth=2, label="Debye RTD")  
-        ax.fill_between(10**x, 0, y, where=x >= -3, color='lightgray', alpha=0.7)
-        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
-        plt.xlabel("Relaxation time (s)", fontsize=14)
-        plt.ylabel("Chargeability (%)", fontsize=14)
-        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
+        plt.errorbar(10**x, y, None, None, "-", linewidth=2, label="Debye RTD")  
+        ax.fill_between(10**x, 0, y, where=x >= -3, color='#7f7f7f', alpha=0.3)
+#        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
+        plt.xlabel("Relaxation time (s)", fontsize=12)
+        plt.ylabel("Chargeability (%)", fontsize=12)
+        plt.yticks(fontsize=12), plt.xticks(fontsize=12)
         plt.xscale("log")
         plt.xlim([10**xmin, 10**xmax])
+        plt.grid('on')
         plt.ylim([0, None])
-        plt.legend(numpoints=1, fontsize=14, loc="best")
+        plt.legend(numpoints=1, fontsize=11, loc="best")
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'
@@ -979,11 +981,14 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
 
+        for a in ax:
+            a.grid('on')
+
         if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
             plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])  
         if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
             plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
-            
+        
         plt.tight_layout(pad=1, h_pad=0, w_pad=0)
         
     if save:
@@ -1008,34 +1013,6 @@ def plot_par():
     rc = {u'figure.dpi': 72.0,
           u'figure.edgecolor': 'white',
           u'figure.facecolor': 'white',
-          u'figure.figsize': [1.0, 1.0],
-          u'figure.frameon': True,
-          u'figure.max_open_warning': 20,
-          u'figure.subplot.bottom': 0.125,
-          u'figure.subplot.hspace': 0.2,
-          u'figure.subplot.left': 0.125,
-          u'figure.subplot.right': 0.9,
-          u'figure.subplot.top': 0.88,
-          u'figure.subplot.wspace': 0.2,
-          u'font.size': 10.0,
-          u'font.stretch': u'normal',
-          u'font.style': u'normal',
-          u'font.variant': u'normal',
-          u'font.weight': u'medium',
-          u'grid.alpha': 1.0,
-          u'grid.color': u'#b0b0b0',
-          u'grid.linestyle': u'-',
-          u'grid.linewidth': 0.8,
-          u'legend.fontsize': 10,
-          u'mathtext.bf': u'serif:bold',
-          u'mathtext.cal': u'cursive',
-          u'mathtext.default': u'regular',
-          u'mathtext.fallback_to_cm': True,
-          u'mathtext.fontset': u'stixsans',
-          u'mathtext.it': u'sans:italic',
-          u'mathtext.rm': u'serif',
-          u'mathtext.sf': u'sans',
-          u'mathtext.tt': u'monospace',
           u'savefig.bbox': u'tight',
           u'savefig.directory': u'~',
           u'savefig.dpi': 200.0,

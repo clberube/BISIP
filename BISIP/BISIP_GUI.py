@@ -728,7 +728,7 @@ class MainApplication(object):
             top_fig.destroy()
         canvas = FigureCanvasTkAgg(fig, master=top_fig)
         canvas.show()
-        canvas.get_tk_widget().grid(row=1, column=0, columnspan = 3, sticky=tk.N+tk.S+tk.E+tk.W)
+        canvas.get_tk_widget().grid(row=1, column=0, columnspan = 3, pady=(15,15), padx=(25,25), sticky=tk.N+tk.S+tk.E+tk.W)
         button = tk.Button(top_fig, height=1, width=20, text="Dismiss", bg='gray97', command=_quit, relief=tk.GROOVE)
         button.grid(row=2, column=0, columnspan=1, sticky=tk.W, pady=(10,10), padx=(20,20))
         toolbar_frame = tk.Frame(top_fig)
