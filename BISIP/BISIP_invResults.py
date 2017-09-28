@@ -126,7 +126,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             plt.xlabel("%s value"%k)
             plt.ylabel("Probability density")
             hist = plt.hist(data, bins=20, normed=True, linewidth=1.0, color="white")
-            plt.plot(data, fit, "-b", label="Fitted PDF", linewidth=1.5)
+            plt.plot(data, fit, "-", label="Fitted PDF", linewidth=1.5)
             plt.legend(loc='best')
             plt.grid('off')
             if save:
@@ -165,7 +165,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in xrange(len(hist[1])-1)]
             binwidth = (max(xh) - min(xh)) / len(hist[1])
             fit *= len(data) * binwidth
-            plt.plot(data, fit, "-b", linewidth=1.5)
+            plt.plot(data, fit, "-", linewidth=1.5)
             plt.grid('off')
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
         
@@ -483,7 +483,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
             plt.ylabel("%s value" %k)
             plt.xlabel("Iteration number")
-            plt.plot(x, data, '-', color='b', label=k, linewidth=2.0)
+            plt.plot(x, data, '-', label=k, linewidth=2.0)
             if save:
                 save_where = '/Figures/Traces/%s/' %filename
                 actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
@@ -514,7 +514,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
             plt.locator_params(axis = 'y', nbins = 6)
             plt.ylabel(k)
-            plt.plot(x, data, '-', color='b', label=filename, linewidth=1.0)
+            plt.plot(x, data, '-', label=filename, linewidth=1.0)
             plt.grid(None)
             
         plt.tight_layout(pad=0.1, w_pad=0., h_pad=-2)
@@ -940,34 +940,34 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         # Real-Imag
         plt.axes(ax[2])
         plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
-        plt.plot(zn_fit.real, -zn_fit.imag, 'r-', label='Fitted model')
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='dimgray', alpha=0.3)
+        plt.plot(zn_fit.real, -zn_fit.imag, '-', label='Fitted model')
+        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='#7f7f7f', alpha=0.2)
         plt.xlabel(sym_labels['real'])
         plt.ylabel(sym_labels['imag'])
-        plt.legend(loc='best', numpoints=1)
+        plt.legend(loc='best', fontsize=9, numpoints=1)
         plt.xlim([None, 1])
         plt.ylim([0, max(-zn_dat.imag)])
         
         # Freq-Ampl
         plt.axes(ax[1])
         plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-        plt.semilogx(f, Amp_fit, 'r-', label='Fitted model')
-        plt.fill_between(f, Amp_max, Amp_min, color='dimgray', alpha=0.3)
+        plt.semilogx(f, Amp_fit, '-', label='Fitted model')
+        plt.fill_between(f, Amp_max, Amp_min, color='#7f7f7f', alpha=0.2)
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['ampl'])
-        plt.legend(loc='best', numpoints=1)
+        plt.legend(loc='best', fontsize=9, numpoints=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         plt.ylim([None,1.0])
 
         # Freq-Phas
         plt.axes(ax[0])
         plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
-        plt.loglog(f, -Pha_fit, 'r-', label='Fitted model')
+        plt.loglog(f, -Pha_fit, '-', label='Fitted model')
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color='dimgray', alpha=0.3)
+        plt.fill_between(f, -Pha_max, -Pha_min, color='#7f7f7f', alpha=0.2)
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['phas'])
-        plt.legend(loc='best', numpoints=1)
+        plt.legend(loc='best', fontsize=9, numpoints=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
 
