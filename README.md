@@ -2,16 +2,15 @@
 ## Bayesian inference of spectral induced polarization parameters (Python 2.7)
 ### Download the latest [releases](https://github.com/clberube/BISIP/releases) for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
-Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. [doi:10.1016/j.cageo.2017.05.001](https://doi.org/10.1016/j.cageo.2017.05.001)
-
 ### Contents
 **1. Using the standalone executables**  
 **2. Cloning the repository and installing dependencies**  
 **3. Starting the GUI from the command prompt**  
 **4. Calling the inversion function from another script**  
-**5. Building the standalone GUI executables**  
-**6. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**  
-**7. References**  
+**5. Validating results**  
+**6. Building the standalone GUI executables**  
+**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**  
+**8. References**  
 
 ================================================================================================================================
 
@@ -202,7 +201,18 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**5. Building the standalone GUI executables**
+**5. Validating results**
+
+High-precision data that respects K-K relationships
+![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data that respects K-K relationships")
+
+Noisy data that respects K-K relationships
+![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-MediumNoise_KKR%20respected.png "Noisy data that respects K-K relationships")
+
+Very noisy data that does not respect K-K relationships
+![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data that does not respect K-K relationships")
+
+**6. Building the standalone GUI executables**
 
 Install pyinstaller with:  
 ```sh
@@ -220,7 +230,7 @@ pyinstaller BISIP_GUI_osx.spec
 ```
 This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
-**6. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
+**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
 Install cython with:  
 ```sh
@@ -233,7 +243,7 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**7. References**
+**8. References**
 
 <sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
