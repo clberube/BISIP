@@ -46,9 +46,14 @@ sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
                  mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
                  debye_poly=4, c_exp = 1.0, keep_traces=False)
 """
+from __future__ import division
+from __future__ import print_function
 
 #==============================================================================
 # Import PyMC, Numpy, and Cython extension
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import pymc
 import numpy as np
 from BISIP_cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
@@ -61,7 +66,7 @@ from datetime import datetime
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
 def run_MCMC(function, mc_p, save_traces=False, save_where=None):
-    print "\nMCMC parameters:\n", mc_p
+    print("\nMCMC parameters:\n", mc_p)
     if save_traces:
         # If path doesn't exist, create it
         if not path.exists(save_where): makedirs(save_where)
@@ -83,7 +88,7 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
                                 scale=mc_p['prop_scale'], verbose=mc_p['verbose'])
 
     for i in range(1, mc_p['nb_chain']+1):
-        print '\n Chain #%d/%d'%(i, mc_p['nb_chain'])
+        print('\n Chain #%d/%d'%(i, mc_p['nb_chain']))
         MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'], tune_throughout=False)
     return MDL
 
@@ -96,8 +101,8 @@ def get_data(filename,headers,ph_units):
     labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
     data = {l:dat_file[:,i] for (i,l) in enumerate(labels)}
     if ph_units == "mrad":
-        data["pha"] = data["pha"]/1000                      # mrad to rad
-        data["pha_err"] = data["pha_err"]/1000              # mrad to rad
+        data["pha"] = old_div(data["pha"],1000)                      # mrad to rad
+        data["pha_err"] = old_div(data["pha_err"],1000)              # mrad to rad
     if ph_units == "deg":
         data["pha"] = np.radians(data["pha"])               # deg to rad
         data["pha_err"] = np.radians(data["pha_err"])       # deg to rad
@@ -108,7 +113,7 @@ def get_data(filename,headers,ph_units):
     data["Z_err"] = ER + 1j*EI
     # Normalization of amplitude
     data["Z_max"] = max(abs(data["Z"]))  # Maximum amplitude
-    zn, zn_e = data["Z"]/data["Z_max"], data["Z_err"]/data["Z_max"] # Normalization of impedance by max amplitude
+    zn, zn_e = old_div(data["Z"],data["Z_max"]), old_div(data["Z_err"],data["Z_max"]) # Normalization of impedance by max amplitude
     data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
     data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
     return data
@@ -126,7 +131,7 @@ def format_results(M, Z_max):
     pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
     pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
     pm.update({(k.replace("log_", ""))+"_std": np.log(10)*pm[k+"_std"]*(10**pm[k]) for k in var_keys if k.startswith("log_")})
-    pm = {k: v for (k, v) in pm.items() if "log_" not in k}
+    pm = {k: v for (k, v) in list(pm.items()) if "log_" not in k}
     return pm           # returns parameters and uncertainty
 
 #==============================================================================
@@ -169,7 +174,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
             return ColeCole_cyth1(w, R0, m, lt, c)
         # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size=(2,len(w)), observed=True)
+        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size=(2,len(w)), observed=True)
         return locals()
 
 #==============================================================================
@@ -193,15 +198,15 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
             return Shin_cyth(w, R, log_Q, n)
         @pymc.deterministic(plot=False)
         def log_tau(R=R, log_Q=log_Q, n=n):
-            return np.log10((R*(10**log_Q))**(1./n))
+            return np.log10((R*(10**log_Q))**(old_div(1.,n)))
         @pymc.deterministic(plot=False)
         def R0(R=R):
             return R[0]+R[1]
         @pymc.deterministic(plot=False)
         def m(R=R):
-            return seigle_m*( max(R) / (max(R) + min(R)))
+            return seigle_m*( old_div(max(R), (max(R) + min(R))))
         #Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2,len(w)), observed=True)
+        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2,len(w)), observed=True)
         return locals()
 
 #==============================================================================
@@ -226,7 +231,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         def zmod(R0=R0, m=m, lt=log_tau, eta=eta, delta=delta):
             return Dias_cyth(w, R0, m, lt, eta, delta)
         # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2,len(w)), observed=True)
+        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2,len(w)), observed=True)
         return locals()
 
 #==============================================================================
@@ -248,7 +253,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
 #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
 #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
 #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
-        a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
+        a = pymc.Normal('a', mu=0, tau=old_div(1.,(0.01**2)), value=p0["a"], size=decomp_poly+1)
 
         # Deterministics
 #        @pymc.deterministic(plot=False)
@@ -265,9 +270,9 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
             return np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)])
         @pymc.deterministic(plot=False)
         def log_mean_tau(m_=m_, total_m=total_m, a=a):
-            return np.log10(np.exp(np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)]*np.log(10**log_tau[(log_tau >= -3)&(log_tau <= max(log_tau)-1)]))/total_m))
+            return np.log10(np.exp(old_div(np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)]*np.log(10**log_tau[(log_tau >= -3)&(log_tau <= max(log_tau)-1)])),total_m)))
         # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=1.0/(data["zn_err"]**2), value=data["zn"], size = (2, len(w)), observed=True)
+        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2, len(w)), observed=True)
 #        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
         return locals()
 
@@ -278,12 +283,12 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
 #==============================================================================
     # Importing data
     data = get_data(filename, headers, ph_units)
-    seigle_m = ((data["amp"][-1] - data["amp"][0]) / data["amp"][-1] ) # Estimating Seigel chargeability
+    seigle_m = (old_div((data["amp"][-1] - data["amp"][0]), data["amp"][-1]) ) # Estimating Seigel chargeability
     w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
     n_freq = len(w)
-    n_decades = np.ceil(max(np.log10(1.0/w))) - np.floor(min(np.log10(1.0/w)))
+    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
-    log_tau = np.linspace(np.floor(min(np.log10(1.0/w))-1), np.floor(max(np.log10(1.0/w))+1), n_freq)
+    log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), n_freq)
     log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
     tau_10 = 10**log_tau # Accelerates sampling
     data["tau"] = tau_10 # Put relaxation times in data dictionary

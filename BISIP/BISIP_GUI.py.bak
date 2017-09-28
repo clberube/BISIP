@@ -34,21 +34,10 @@ https://github.com/clberube/bisip
 This python script builds the graphical user interface may be used to call the
 Bayesian inversion module of all SIP models (BISIP_models.py)
 """
-from __future__ import division
-from __future__ import print_function
 
 #==============================================================================
 # System imports
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import str
-from builtins import map
-from builtins import range
-from past.builtins import basestring
-from builtins import object
-from past.utils import old_div
-print("\nLoading Python modules")
+print "\nLoading Python modules"
 from sys import argv, stdout
 stdout.flush()
 from platform import system
@@ -57,11 +46,10 @@ from json import load as jload, dump as jdump
 from warnings import filterwarnings
 filterwarnings('ignore') # Ignore some tkinter warnings
 # GUI imports
-import tkinter as tk
-from sys import version_info
-if version_info[0] < 3:
-    import FixTk # To avoid pyinstaller error
-import tkinter.filedialog, tkinter.messagebox, tkinter.font
+import Tkinter as tk
+import FixTk
+import tkFileDialog, tkMessageBox
+import FileDialog, tkFont # These 2 only to avoid pyinstaller error
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.pyplot import rcParams
 from itertools import combinations
@@ -70,18 +58,18 @@ from collections import OrderedDict
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
 # Get directory
-print("All modules successfully loaded")
+print "All modules successfully loaded"
 stdout.flush()
 #==============================================================================
 # Fonts
 if "Darwin" in system():
-    print("OS X detected")
+    print "OS X detected"
     fontsize = 12
     pad_radio = 3
     but_size = -2
     res_size = -1
 else:
-    print("Windows detected")
+    print "Windows detected"
     fontsize = 10
     pad_radio = 0
     but_size = -2
@@ -108,7 +96,7 @@ def flatten(x):
 # Parameters are saved in root_ini file in the executable's directory
 # To reset and use default parameters, delete root_ini in local directory
 
-class MainApplication(object):
+class MainApplication:
     working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
     def __init__(self, master, fontz):
         self.save_options = {"Save all hexbins (will make error)":            tk.BooleanVar(),
@@ -171,11 +159,11 @@ class MainApplication(object):
                             "Freq dep"              : 1.0,
                             "Nb modes"              : 2,
                             }
-        for k, v in list(self.save_options.items()):
+        for k, v in self.save_options.items():
             self.default_root[k] = v.get()
-        for k, v in list(self.mcmc_vars.items()):
+        for k, v in self.mcmc_vars.items():
             self.default_root[k] = v[1]
-        for k, v in list(self.run_options.items()):
+        for k, v in self.run_options.items():
             self.default_root[k] = v.get()
         return self.default_root
 
@@ -216,40 +204,40 @@ class MainApplication(object):
         except: pass
         self.sel_files = [str(self.open_files[i]) for i in self.text_files.curselection()]
         if len(self.sel_files) == 0:
-            tkinter.messagebox.showwarning("Inversion error",
+            tkMessageBox.showwarning("Inversion error",
                                      "No data selected for inversion \nSelect at least one data file in the left panel", parent=self.master)
         if len(self.sel_files) >= 1:
             try:
                 self.Inversion()
                 stdout.flush()
             except:
-                tkinter.messagebox.showerror("Inversion error", "Error\nMake sure all fields are OK\nMake sure data file is correctly formatted",
+                tkMessageBox.showerror("Inversion error", "Error\nMake sure all fields are OK\nMake sure data file is correctly formatted",
                                              parent=self.master)
         return
 
     def Inversion(self):
-        print("\n")
-        print("=====================")
-        print("Starting inversion...")
-        print("=====================")
+        print "\n"
+        print "====================="
+        print "Starting inversion..."
+        print "====================="
 
-        print("Model:", self.model.get())
+        print "Model:", self.model.get()
         if self.model.get() == "ColeCole":
-            print("Cole-Cole modes:", self.modes_n.get())
+            print "Cole-Cole modes:", self.modes_n.get()
         if self.model.get() == "PDecomp":
-            print("Polynomial order:", self.poly_n.get())
+            print "Polynomial order:", self.poly_n.get()
             if self.c_exp.get() == 1.0:
                 decomp_type = "(Debye)"
             elif self.c_exp.get() == 0.5:
                 decomp_type = "(Warburg)"
             else:
                 decomp_type = "(Cole-Cole)"
-            print("Frequency dependence:", self.c_exp.get(), decomp_type)
-        print("Units:", self.units.get())
-        print("Paths:")
+            print "Frequency dependence:", self.c_exp.get(), decomp_type
+        print "Units:", self.units.get()
+        print "Paths:"
         for i in self.sel_files:
-            print(i)
-        print("Skipping", self.head.get(), "header lines")
+            print i
+        print "Skipping", self.head.get(), "header lines"
         self.files = [self.sel_files[i].split("/")[-1].split(".")[0] for i in range(len((self.sel_files)))]
 
         self.mcmc_params = {"adaptive"   : self.adaptive.get(),
@@ -270,7 +258,7 @@ class MainApplication(object):
         self.draw_drop_down()
         self.var_review.set("Working...")
         for (i, self.f_n) in enumerate(self.files):
-            print("=====================")
+            print "====================="
             self.activity()
             self.var_review.set(self.f_n)
             self.sol = mcmcSIPinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
@@ -297,15 +285,9 @@ class MainApplication(object):
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
                     iR.plot_KDE(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save histograms"].get():
-                try:
-                    iR.plot_histo(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
-                except:
-                    pass
+                iR.plot_histo(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save traces"].get():
-#                try:
                 iR.plot_traces(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
-#                except:
-#                    pass
             if self.save_options["Save summaries"].get():
                 iR.plot_summary(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save autocorrelations"].get():
@@ -318,7 +300,7 @@ class MainApplication(object):
                 self.activity(done=True)
                 self.diagn_buttons()
                 self.write_output_path()
-                print("=====================")
+                print "====================="
 
 #==============================================================================
 # Result frame
@@ -370,10 +352,10 @@ class MainApplication(object):
     def merge_csv_files(self):
         if len(self.files) > 1:
             iR.merge_results(self.sol, self.files)
-            print("=====================")
+            print "====================="
         else:
-            print("Can't merge csv files: Only 1 file inverted in last batch")
-            print("=====================")
+            print "Can't merge csv files: Only 1 file inverted in last batch"
+            print "====================="
         stdout.flush()
 
     def RLD_diagnostic(self):
@@ -383,7 +365,7 @@ class MainApplication(object):
         try:
             keys = [x.__name__ for x in MDL.stochastics]
             for (i, k) in enumerate(keys):
-                vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
+                vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
                 if vect > 1:
                  keys[i] = [k+"%d"%n for n in range(1+adj,vect+1+adj)]
             keys = list(reversed(sorted(flatten(keys))))
@@ -418,7 +400,7 @@ class MainApplication(object):
             text_RLD['yscrollcommand'] = s.set
             top_RLD.resizable(width=tk.FALSE, height=tk.FALSE)
         except:
-            tkinter.messagebox.showwarning("Diagnostic error",
+            tkMessageBox.showwarning("Diagnostic error",
                                      "Error\nRun inversion first", parent=self.master)
 
     def popup_bivar(self, bivar_type):
@@ -510,7 +492,7 @@ class MainApplication(object):
         self.frame_optimal = tk.Frame(self.frame_results)
         self.frame_optimal.grid(row=2, column=0, sticky=tk.E+tk.W, padx=10, pady=10)
         self.frame_optimal.columnconfigure(0, weight=1)
-        keys = sorted([x for x in list(pm.keys()) if "_std" not in x])
+        keys = sorted([x for x in pm.keys() if "_std" not in x])
         try:
             keys.remove("m_")
         except:
@@ -537,7 +519,7 @@ class MainApplication(object):
         items2 = [" %.3e " %x for x in values]
         items3 = ["+/- %.0e" %x for x in errors]
         items4 = [" (%.2f%%)" %(abs(100*e/v)) for v,e in zip(values,errors)]
-        all_items = list(map(str.__add__,list(map(str.__add__,list(map(str.__add__,items,items2)),items3)),items4))
+        all_items = map(str.__add__,map(str.__add__,map(str.__add__,items,items2),items3),items4)
         items = '\n'.join(all_items)
         text_res.insert("1.0", items)
 
@@ -636,10 +618,10 @@ class MainApplication(object):
 
         # Select all or none functions
         def select_all(): # self expl
-            for v in list(self.save_options.values()):
+            for v in self.save_options.values():
                 v.set(True)
         def select_none(): # self expl
-            for v in list(self.save_options.values()):
+            for v in self.save_options.values():
                 v.set(False)
         if not from_root:
             self.top_checkbox = tk.Toplevel(self.master)
@@ -661,11 +643,11 @@ class MainApplication(object):
 #==============================================================================
     def set_plot_par(self): # Setting up plotting parameters
         try:
-            print("\nLoading plot parameters")
+            print "\nLoading plot parameters"
             rcParams.update(iR.plot_par())
-            print("Plot parameters successfully loaded")
+            print "Plot parameters successfully loaded"
         except:
-            print("Plot parameters not found, using default values")
+            print "Plot parameters not found, using default values"
         stdout.flush()
 
     def preview_data(self):
@@ -676,7 +658,7 @@ class MainApplication(object):
                 fig_data = iR.plot_data(sel, self.head.get(), self.units.get())
                 self.plot_window(fig_data, "Data preview: "+fn)
         except:
-            tkinter.messagebox.showwarning("Preview error",
+            tkMessageBox.showwarning("Preview error",
                                      "Can't draw data\nImport and select at least one data file first", parent=self.master)
 
     def plot_diagnostic(self, which):
@@ -716,7 +698,7 @@ class MainApplication(object):
                 self.plot_window(kde_plot, "Bivariate KDE: "+f_n)
             stdout.flush()
         except:
-            tkinter.messagebox.showwarning("Error analyzing results", "Error\nProblem with inversion results\nTry adding iterations",
+            tkMessageBox.showwarning("Error analyzing results", "Error\nProblem with inversion results\nTry adding iterations",
                                      parent=self.master)
 
     def plot_window(self, fig, name=""):
@@ -772,7 +754,7 @@ class MainApplication(object):
             tk.Radiobutton(self.frame_import, text=u, variable=self.units, command=None, value=u).grid(row=i+2, column=1, sticky=tk.W, padx=(10,10), pady=pad_radio)
 
     def get_file_list(self):
-        files = tkinter.filedialog.askopenfilenames(parent=self.master,title='Choose a file')
+        files = tkFileDialog.askopenfilenames(parent=self.master,title='Choose a file')
         self.open_files = sorted(list(files))
         self.draw_file_list()
 
@@ -821,13 +803,13 @@ class MainApplication(object):
 #==============================================================================
 
     def load(self):
-        print("\nLoading root_ini from:\n", self.working_path)
+        print "\nLoading root_ini from:\n", self.working_path
         try:
             with open(self.working_path+'root_ini') as f:
                 self.root_ini = jload(f)
-            print("root_ini successfully loaded")
+            print "root_ini successfully loaded"
         except:
-            print("root_ini not found, using default values")
+            print "root_ini not found, using default values"
             self.root_ini = self.use_default_root_ini()
         stdout.flush()
 
@@ -843,18 +825,18 @@ class MainApplication(object):
                         "Nb modes"              : self.modes_n.get(),
                     }
 
-        for k, v in list(self.mcmc_vars.items()):
+        for k, v in self.mcmc_vars.items():
             root_save[k] = v[0].get()
-        for k, v in list(self.save_options.items()):
+        for k, v in self.save_options.items():
             root_save[k] = v.get()
-        for k, v in list(self.run_options.items()):
+        for k, v in self.run_options.items():
             root_save[k] = v.get()
 
-        print("\nSaving root_ini")
+        print "\nSaving root_ini"
         with open(self.working_path+'root_ini', 'w') as f:
             jdump(root_save, f)
-        print("root_ini successfully saved in:\n", self.working_path)
-        print("\n=========END=========")
+        print "root_ini successfully saved in:\n", self.working_path
+        print "\n=========END========="
 
 #==============================================================================
 # Build menubar File, Help
@@ -881,7 +863,7 @@ class MainApplication(object):
 #==============================================================================
 # Class for popup messages
 #==============================================================================
-class TextMessage(object):
+class TextMessage:
 
     data_template = """DATA FILE TEMPLATE
 

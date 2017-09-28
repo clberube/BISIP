@@ -8,11 +8,16 @@ Created on Tue Apr 21 12:05:22 2015
 Copyright (c) 2015-2016 Charles L. Bérubé
 
 """
+from __future__ import print_function
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import numpy as np
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
-import cPickle as pickle
+import pickle as pickle
 
 def save_object(obj, filename):
     with open(filename, 'wb') as output:
@@ -95,7 +100,7 @@ for noise in [1]:
     #for i, fn in enumerate(filename):
     for i in range(repeat):
         fn = filename[0]
-        print '\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename))
+        print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
         sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=3, cc_modes=2, c_exp=0.5, keep_traces=False))
     
         """Plot fit and data ?"""
@@ -126,7 +131,7 @@ for noise in [1]:
             fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
 # For further use in Python
-saved_sol = [{key: value for key, value in s.items() if key not in ["pymc_model"]} for s in sol]
+saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
 #save_object(saved_sol, save_as)
 #print "Solutions saved in list under", save_as
 

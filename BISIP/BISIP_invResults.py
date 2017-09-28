@@ -32,8 +32,15 @@ https://github.com/clberube/bisip
 
 This Python module contains functions to visualize the Bayesian inversion results
 """
+from __future__ import division
+from __future__ import print_function
 
 #==============================================================================
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from past.utils import old_div
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.ticker as mticker
@@ -77,15 +84,15 @@ def print_resul(sol):
 #==============================================================================
     # Impression des résultats
     pm, model, filename = sol["params"], sol["SIP_model"], sol["path"]
-    print '\n\nInversion success!'
-    print 'Name of file:', filename
-    print 'Model used:', model
-    e_keys = sorted([s for s in pm.keys() if "_std" in s])
+    print('\n\nInversion success!')
+    print('Name of file:', filename)
+    print('Model used:', model)
+    e_keys = sorted([s for s in list(pm.keys()) if "_std" in s])
     v_keys = [e.replace("_std", "") for e in e_keys]
     labels = ["{:<8}".format(x+":") for x in v_keys]
     np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
     for l, v, e in zip(labels, v_keys, e_keys):
-        print l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v]))
+        print(l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
 
 def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     if save_as_png:
@@ -102,7 +109,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     except:
         pass
     for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
         if vect > 1:
             if "Decomp" in model:
                 keys[i] = [k+"%d"%n for n in range(0,vect)]
@@ -134,7 +141,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
                 actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
                 save_path = actual_path+save_where
                 if c == 0:
-                    print "\nSaving histogram figures in:\n", save_path
+                    print("\nSaving histogram figures in:\n", save_path)
                 if not path.exists(save_path):
                     makedirs(save_path)
                 fig.savefig(save_path+'Histo-%s-%s-%s.%s'%(model,filename,k,save_as), bbox_inches='tight')
@@ -162,8 +169,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             plt.locator_params(axis = 'x', nbins = 7)
             plt.xlabel(k)
             hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='black', linewidth=1.0, color="white")
-            xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in xrange(len(hist[1])-1)]
-            binwidth = (max(xh) - min(xh)) / len(hist[1])
+            xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in range(len(hist[1])-1)]
+            binwidth = old_div((max(xh) - min(xh)), len(hist[1]))
             fit *= len(data) * binwidth
             plt.plot(data, fit, "-", linewidth=1.5)
             plt.grid('off')
@@ -179,7 +186,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             save_where = '/Figures/Histograms/'
             actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
             save_path = actual_path+save_where
-            print "\nSaving parameter histograms in:\n", save_path
+            print("\nSaving parameter histograms in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
             fig.savefig(save_path+'Histo-%s-%s.%s'%(model,filename,save_as), bbox_inches='tight')
@@ -258,7 +265,7 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
             save_where = '/Figures/Bivariate KDE/%s/' %filename
             actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
             save_path = actual_path+save_where
-            print "\nSaving KDE figure in:\n", save_path
+            print("\nSaving KDE figure in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
             fig.savefig(save_path+'KDE-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as), dpi=200)
@@ -280,7 +287,7 @@ def plot_all_KDE(sol):
     except:
         pass
     for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
         if vect > 1:
             keys[i] = [k+"%d"%n for n in range(0,vect)]
     keys = list(flatten(keys))
@@ -296,7 +303,7 @@ def plot_all_KDE(sol):
             if j<i:
                 var1 = keys[j]
                 var2 = keys[i]
-                print (var1, var2)
+                print((var1, var2))
                 ax = plt.subplot2grid((plotz-1, plotz-1), (i-1,j))
                 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,1))
                 ax.ticklabel_format(axis='x', style='sci', scilimits=(0,1))
@@ -434,7 +441,7 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
         save_where = '/Figures/Hexbins/%s/' %filename
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving hexbin figure in:\n", save_path
+        print("\nSaving hexbin figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'Bivar-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as))
@@ -457,7 +464,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
     except:
         pass
     for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
         if vect > 1:
             if "Decomp" in model:
                 keys[i] = [k+"%d"%n for n in range(0,vect)]
@@ -489,7 +496,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
                 actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
                 save_path = actual_path+save_where
                 if c == 0:
-                    print "\nSaving traces figure in:\n", save_path
+                    print("\nSaving traces figure in:\n", save_path)
                 if not path.exists(save_path):
                     makedirs(save_path)
                 fig.savefig(save_path+'Trace-%s-%s-%s.%s'%(model,filename,k,save_as))
@@ -538,7 +545,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             save_where = '/Figures/Traces/'
             actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
             save_path = actual_path+save_where
-            print "\nSaving trace figures in:\n", save_path
+            print("\nSaving trace figures in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
             fig.savefig(save_path+'Trace-%s-%s.%s'%(model,filename,save_as))
@@ -560,13 +567,13 @@ def plot_summary(sol, save=False, save_as_png=True):
     except:
         pass
     for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
         if vect > 1:
          keys[i] = [k+"%d"%n for n in range(1,vect+1)]
     keys = list(reversed(sorted(flatten(keys))))
     try:    r_hat = gelman_rubin(MDL)
     except:
-        print "\nTwo or more chains of equal length required for Gelman-Rubin convergence"
+        print("\nTwo or more chains of equal length required for Gelman-Rubin convergence")
     fig, axes = plt.subplots(figsize=(8,5))
     gs2 = gridspec.GridSpec(3, 3)
     ax1 = plt.subplot(gs2[:, :-1])
@@ -591,8 +598,8 @@ def plot_summary(sol, save=False, save_as_png=True):
                     [abs(hpd_l-val_m)]]
             if ch_n % 2 != 0:   o_s = 0
             else:               o_s = 0.5
-            ax1.scatter(val, i - (ch_n/2)*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), color="DeepSkyBlue", marker="o", s=50, edgecolors='k')
-            ax1.errorbar(val, i - (ch_n/2)*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), xerr=err, color="k", fmt=" ", zorder=0)
+            ax1.scatter(val, i - (old_div(ch_n,2))*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), color="DeepSkyBlue", marker="o", s=50, edgecolors='k')
+            ax1.errorbar(val, i - (old_div(ch_n,2))*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), xerr=err, color="k", fmt=" ", zorder=0)
         if ch_n >= 2:
             R = np.array(r_hat[k[:imp]])
             R[R > 3] = 3
@@ -602,7 +609,7 @@ def plot_summary(sol, save=False, save_as_png=True):
                 ax2.scatter(R[int(k[-1])-1], i, color="b", marker="s", s=50, edgecolors='k')
     
     ax1.set_ylim([-1, len(keys)])
-    ax1.set_yticks(range(0,len(keys)))
+    ax1.set_yticks(list(range(0,len(keys))))
     ax1.set_yticklabels(keys)
     plt.setp(ax2.get_yticklabels(), visible=False)
     ax2.set_xlim([0.5, 3.5])
@@ -614,7 +621,7 @@ def plot_summary(sol, save=False, save_as_png=True):
         save_where = '/Figures/Summaries/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving summary figure in:\n", save_path
+        print("\nSaving summary figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'Summary-%s-%s.%s'%(model,filename,save_as))
@@ -638,7 +645,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
     except:
         pass
     for (i, k) in enumerate(keys):
-        vect = (MDL.trace(k)[:].size)/(len(MDL.trace(k)[:]))
+        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
         if vect > 1:
          keys[i] = [k+"%d"%n for n in range(1,vect+1)]
     keys = list(flatten(keys))
@@ -657,7 +664,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
         plt.yticks(fontsize=12)
         plt.xticks(fontsize=12)
         plt.ylabel(k, fontsize=12)
-        to_thin = len(data)/50
+        to_thin = old_div(len(data),50)
         if to_thin != 0: plt.xlabel("Lags / %d"%to_thin, fontsize=12)
         else: plt.xlabel("Lags", fontsize=12)
         max_lags = None
@@ -671,7 +678,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
         save_where = '/Figures/Autocorrelations/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving autocorrelation figure in:\n", save_path
+        print("\nSaving autocorrelation figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'Autocorr-%s-%s.%s'%(model,filename,save_as))
@@ -701,13 +708,14 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         plt.yticks(fontsize=14), plt.xticks(fontsize=14)
         plt.xscale("log")
         plt.xlim([10**xmin, 10**xmax])
+        plt.ylim([0, None])
         plt.legend(numpoints=1, fontsize=14, loc="best")
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving relaxation time distribution figure in:\n", save_path
+        print("\nSaving relaxation time distribution figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'Polynomial-RTD-%s-%s.%s'%(model, filename,save_as))
@@ -724,7 +732,7 @@ def save_resul(sol):
     save_where = '/Results/'
     actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
     save_path = actual_path+save_where+"%s/"%sample_name
-    print "\nSaving csv file in:\n", save_path
+    print("\nSaving csv file in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
     if model == 'Debye': tag = 0
@@ -758,7 +766,7 @@ def merge_results(sol,files):
     save_where = '/Batch results/'
     actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
     save_path = actual_path+save_where
-    print "\nMerging csv files"
+    print("\nMerging csv files")
     if not path.exists(save_path):
         makedirs(save_path)
     to_merge = actual_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
@@ -769,7 +777,7 @@ def merge_results(sol,files):
     rows = np.array(files, dtype=str)[:, np.newaxis]
     hd = ",".join(["ID"] + list(headers))
     np.savetxt(save_path+"Merged_%s_%s_TO_%s.csv" %(model,files[0],files[-1]), np.hstack((rows, merged_inv_results)), delimiter=",", header=hd, fmt="%s")
-    print "Batch file successfully saved in:\n", save_path
+    print("Batch file successfully saved in:\n", save_path)
 
 def plot_data(filename, headers, ph_units):
     data = get_data(filename,headers,ph_units)
@@ -778,12 +786,12 @@ def plot_data(filename, headers, ph_units):
     dZ = data["Z_err"]
     f = data["freq"]
     Zr0 = max(abs(Z))
-    zn_dat = Z/Zr0
-    zn_err = dZ/Zr0
+    zn_dat = old_div(Z,Zr0)
+    zn_err = old_div(dZ,Zr0)
     Pha_dat = 1000*data["pha"]
     Pha_err = 1000*data["pha_err"]
-    Amp_dat = data["amp"]/Zr0
-    Amp_err = data["amp_err"]/Zr0
+    Amp_dat = old_div(data["amp"],Zr0)
+    Amp_err = old_div(data["amp_err"],Zr0)
 
     fig, ax = plt.subplots(3, 1, figsize=(6,8))
     for t in ax:
@@ -842,7 +850,7 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True):
         save_where = '/Figures/ModelDeviance/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving model deviance figure in:\n", save_path
+        print("\nSaving model deviance figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'ModelDeviance-%s-%s.%s'%(model,filename,save_as))
@@ -860,7 +868,7 @@ def logp_trace(model):
     n_samples = db.trace('deviance').length()
     logp = np.empty(n_samples, np.double)
     #loop over all samples
-    for i_sample in xrange(n_samples):
+    for i_sample in range(n_samples):
         #set the value of all stochastic to their 'i_sample' value
         for stochastic in model.stochastics:
             try:
@@ -868,7 +876,7 @@ def logp_trace(model):
                 stochastic.value = value
 
             except KeyError:
-                print "No trace available for %s. " % stochastic.__name__
+                print("No trace available for %s. " % stochastic.__name__)
 
         #get logp
         logp[i_sample] = model.logp
@@ -896,7 +904,7 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True):
         save_where = '/Figures/LogLikelihood/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving logp trace figure in:\n", save_path
+        print("\nSaving logp trace figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'LogLikelihood-%s-%s.%s'%(model,filename,save_as))
@@ -918,21 +926,21 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
     # Graphiques du fit
     f = data["freq"]
     Zr0 = max(abs(data["Z"]))
-    zn_dat = data["Z"]/Zr0
-    zn_err = data["Z_err"]/Zr0
-    zn_fit = fit["best"]/Zr0
-    zn_min = fit["lo95"]/Zr0
-    zn_max = fit["up95"]/Zr0
+    zn_dat = old_div(data["Z"],Zr0)
+    zn_err = old_div(data["Z_err"],Zr0)
+    zn_fit = old_div(fit["best"],Zr0)
+    zn_min = old_div(fit["lo95"],Zr0)
+    zn_max = old_div(fit["up95"],Zr0)
     Pha_dat = 1000*data["pha"]
     Pha_err = 1000*data["pha_err"]
     Pha_fit = 1000*np.angle(fit["best"])
     Pha_min = 1000*np.angle(fit["lo95"])
     Pha_max = 1000*np.angle(fit["up95"])
-    Amp_dat = data["amp"]/Zr0
-    Amp_err = data["amp_err"]/Zr0
-    Amp_fit = abs(fit["best"])/Zr0
-    Amp_min = abs(fit["lo95"])/Zr0
-    Amp_max = abs(fit["up95"])/Zr0
+    Amp_dat = old_div(data["amp"],Zr0)
+    Amp_err = old_div(data["amp_err"],Zr0)
+    Amp_fit = old_div(abs(fit["best"]),Zr0)
+    Amp_min = old_div(abs(fit["lo95"]),Zr0)
+    Amp_max = old_div(abs(fit["up95"]),Zr0)
     if draw or save:
         fig, ax = plt.subplots(1, 3, figsize=(11,3))
 #        for t in ax:
@@ -982,7 +990,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         save_where = '/Figures/Fit figures/'
         actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
         save_path = actual_path+save_where
-        print "\nSaving fit figure in:\n", save_path
+        print("\nSaving fit figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as), bbox_inches='tight')
