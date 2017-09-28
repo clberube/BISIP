@@ -210,7 +210,7 @@ Or
 ```sh
 pyinstaller BISIP_GUI_osx.spec
 ```
-On Windows this works best with pyinstaller 3.1, setuptools 19.2, pymc 2.3.5 and numpy 1.11.3.
+This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
 **6. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
@@ -266,3 +266,6 @@ python cython_setup.py build_ext --inplace
 
 <sub>Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
+  
+<sub>Weigand, M., Kemna, A., 2016. Debye decomposition of time-lapse spectral induced polarisation data. Computers & Geosciences 86, 34–45. doi:10.1016/j.cageo.2015.09.021
+
