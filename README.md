@@ -212,14 +212,12 @@ Noisy data that respects K-K relationships
 Very noisy data that does not respect K-K relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data that does not respect K-K relationships")
 
-The solution is Gaussian
-![Alt text](https://github.com/clberube/BISIP/blob/master/Screenshots/Normal.png)
 
-Normal bivariate KDE
-![Alt text](https://github.com/clberube/BISIP/blob/master/Screenshots/KDE.png)
+[A Gaussian solution](https://github.com/clberube/BISIP/blob/master/Screenshots/Normal.png)
 
-Stable traces
-![Alt text](https://github.com/clberube/BISIP/blob/master/Screenshots/converged.png)
+[Normal bivariate KDE](https://github.com/clberube/BISIP/blob/master/Screenshots/KDE.png)
+
+[Stable traces](https://github.com/clberube/BISIP/blob/master/Screenshots/converged.png)
 
 **6. Building the standalone GUI executables**
 
