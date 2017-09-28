@@ -20,11 +20,13 @@ Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Ba
   No Python installation is needed to run, the applications are standalone  
   Executables were compiled on OS X 10.11.6 and Windows 10
   
-  On MAC OS : If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
+  On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
+  
+  On Windows: The first time you launch the application you will get a warning. Click "More info" then "Run anyway".
   
     a. Extract the BISIP Workplace folder to a local directory  
     b. Launch the executable in BISIP Workplace  
-    c. A terminal window will open (Allow a few seconds/minutes to load Python if using Windows)
+    c. A terminal window will open (Allow a few seconds to load Python if using Windows)
     d. Import example data files and launch inversions using the default MCMC parameters  
     e. Results are saved in subfolders inside the BISIP Workplace folder
 
