@@ -65,6 +65,12 @@ Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Ba
     sol = mcmcSIPinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
                       headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=True,  
                       debye_poly=4, c_exp = 1.0, keep_traces=False)
+
+  Example for Warburg decomposition: 
+    
+    sol = mcmcSIPinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
+                      headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=True,  
+                      debye_poly=3, c_exp = 0.5, keep_traces=False)
                       
   Example for Cole-Cole inversion:
     
@@ -72,18 +78,18 @@ Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Ba
                       headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=False,  
                       cc_modes=2, keep_traces=False)
   
-  Where `mcmc_params` is a python dictionary.
+  Where `mcmc_params` is a python dictionary. The settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
     
     mcmc_p = {"adaptive"   : True,
               "nb_chain"   : 1,
-              "nb_iter"    : 500000,
-              "nb_burn"    : 400000,
+              "nb_iter"    : 100000,
+              "nb_burn"    : 80000,
               "thin"       : 1,
               "tune_inter" : 10000,    # Only used when mcmc_p["adaptive"]=False
               "prop_scale" : 1.0,      # Only used when mcmc_p["adaptive"]=False
               "verbose"    : False,
-              "cov_inter"  : 50000,    # Only used when mcmc_p["adaptive"]=True
-              "cov_delay"  : 50000,    # Only used when mcmc_p["adaptive"]=True
+              "cov_inter"  : 10000,    # Only used when mcmc_p["adaptive"]=True
+              "cov_delay"  : 10000,    # Only used when mcmc_p["adaptive"]=True
               }
                   
   And `sol` is a self-explanatory python dictionary containing the results:
