@@ -267,7 +267,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
             return np.sum((a*log_taus.T).T, axis=0)
         @pymc.deterministic(plot=False)
         def total_m(m_=m_):
-            return np.sum(m_[(log_tau >= log_min_tau)&(m_ >= 0)])
+            return np.sum(m_[(log_tau >= log_min_tau)&(m_ >= 0)&(log_tau <= max(log_tau)-1)])
         @pymc.deterministic(plot=False)
         def log_half_tau(m_=m_):
             return log_tau[cond][np.where(np.cumsum(m_[cond])/np.sum(m_[cond]) > 0.5)[0][0]]
@@ -275,7 +275,8 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
         def log_peak_tau(m_=m_):
             cond = np.r_[True, m_[1:] > m_[:-1]] & np.r_[m_[:-1] > m_[1:], True]
             cond[0] = False
-            return log_tau[cond][0]
+            try: return log_tau[cond][0]
+            except: return log_tau[0]
         @pymc.deterministic(plot=False)
         def log_mean_tau(m_=m_):
             return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
@@ -293,10 +294,10 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     data = get_data(filename, headers, ph_units)
     seigle_m = (old_div((data["amp"][-1] - data["amp"][0]), data["amp"][-1]) ) # Estimating Seigel chargeability
     w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
-    n_freq = len(w)
+#    n_freq = len(w)
 #    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
-    log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 100)
+    log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
     cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
     log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
     tau_10 = 10**log_tau # Accelerates sampling

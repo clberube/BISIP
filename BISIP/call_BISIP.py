@@ -41,12 +41,12 @@ model = "PDecomp"
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
           "nb_iter"    : 150000,
-          "nb_burn"    : 120000,
+          "nb_burn"    : 130000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 10000,
+          "cov_inter"  : 5000,
           "cov_delay"  : 10000,
           }
 sol = []
@@ -71,7 +71,7 @@ for noise in [1]:
     reflist = [x for x in reflist if "AVG" in x]
     reflist = [x for x in reflist if "Reciprocals" in x]
     
-    reflist = [reflist[0]]
+#    reflist = [reflist[0]]
     
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     

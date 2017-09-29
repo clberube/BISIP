@@ -106,6 +106,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     try:
         keys.remove("zmod")
         keys.remove("m_")
+
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -709,7 +710,8 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         cond[0] = False
         peak = pymc.stats()["log_peak_tau"]['mean']
         peak_unc = pymc.stats()["log_peak_tau"]['standard deviation']
-        plt.errorbar(peak,y[cond][0]+0.2*y[cond][0],None,peak_unc,"v",c="#d62728",label=r"$\tau_{peak}$")
+        try: plt.errorbar(peak,y[cond][0]+0.2*y[cond][0],None,peak_unc,"v",c="#d62728",label=r"$\tau_{peak}$")
+        except: print("No peak detected")
         plt.vlines(pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$")
         plt.vlines(pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$")
         plt.errorbar(x, y, None, None, "-", color="#7f7f7f", linewidth=2, label="RTD")  
