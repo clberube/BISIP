@@ -1,7 +1,7 @@
 # **BISIP**
 ## **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
 ### Compatible with Python 2.7 and 3.6
-### Get the last [releases](https://github.com/clberube/BISIP/releases)
+### Get the latest [releases](https://github.com/clberube/BISIP/releases)
 ### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
 ### Contents
