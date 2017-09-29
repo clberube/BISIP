@@ -205,13 +205,13 @@ Scientific or standard notation is OK
 
 **5. Validating results**
 
-High-precision data that respects K-K relationships
+High-precision data that respects Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data that respects Kramers-Kronig relationships")
 
-Noisy data that respects K-K relationships
+Noisy data that respects Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-MediumNoise_KKR%20respected.png "Noisy data that respects Kramers-Kronig relationships")
 
-Very noisy data that does not respect K-K relationships
+Very noisy data that does not respect Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data that does not respect Kramers-Kronig relationships")
 
 
