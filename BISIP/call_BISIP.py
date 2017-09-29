@@ -40,14 +40,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 100000,
-          "nb_burn"    : 80000,
+          "nb_iter"    : 10000,
+          "nb_burn"    : 8000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 10000,
-          "cov_delay"  : 10000,
+          "cov_inter"  : 1000,
+          "cov_delay"  : 1000,
           }
 sol = []
 
@@ -70,6 +70,8 @@ for noise in [1]:
     reflist = [x for x in reflist if not x.startswith('.')]
     reflist = [x for x in reflist if "AVG" in x]
     reflist = [x for x in reflist if "Reciprocals" in x]
+    
+    reflist = [reflist[0]]
     
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     

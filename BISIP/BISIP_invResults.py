@@ -704,8 +704,20 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         xmin = min(x)+1
         x = np.linspace(xmin, xmax,100)
         y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol["params"]["a"])], axis=0)
-        plt.errorbar(10**x, y, None, None, "-", linewidth=2, label="Debye RTD")  
-        ax.fill_between(10**x, 0, y, where=x >= -3, color='#7f7f7f', alpha=0.3)
+        pymc = sol["pymc_model"]
+        cond = np.r_[True, y[1:] > y[:-1]] & np.r_[y[:-1] > y[1:], True]
+        cond[0] = False
+        peak = pymc.stats()["log_peak_tau"]['mean']
+        peak_unc = pymc.stats()["log_peak_tau"]['standard deviation']
+        plt.errorbar(10**peak,y[cond][0]+0.2*y[cond][0],None,(peak_unc/peak)*(10**peak),"v",c="#d62728",label=r"$\tau_{peak}$")
+        plt.vlines(10**pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$")
+        plt.vlines(10**pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$")
+        plt.errorbar(10**x, y, None, None, "-", color="#7f7f7f", linewidth=2, label="RTD")  
+        inter = pymc.stats()["log_mean_tau"]['95% HPD interval']
+        ax.axvspan(10**inter[0], 10**inter[1], alpha=0.2, color="#2ca02c")
+        inter = pymc.stats()["log_half_tau"]['95% HPD interval']
+        ax.axvspan(10**inter[0], 10**inter[1], alpha=0.2, color='#1f77b4')
+        ax.fill_between(10**x, 0, y, where=x >= sol["fastcharg"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
 #        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
         plt.xlabel("Relaxation time (s)", fontsize=12)
         plt.ylabel("Chargeability (%)", fontsize=12)
@@ -713,8 +725,8 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         plt.xscale("log")
         plt.xlim([10**xmin, 10**xmax])
         plt.grid('on')
-        plt.ylim([0, None])
-        plt.legend(numpoints=1, fontsize=11, loc="best")
+        plt.ylim([0, max(y)])
+        plt.legend(numpoints=1, fontsize=10, loc="best",labelspacing=0.1)
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'

@@ -130,7 +130,7 @@ def format_results(M, Z_max):
     pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
     pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
     pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
-    pm.update({(k.replace("log_", ""))+"_std": np.log(10)*pm[k+"_std"]*(10**pm[k]) for k in var_keys if k.startswith("log_")})
+    pm.update({(k.replace("log_", ""))+"_std": abs(pm[k+"_std"]/pm[k])*(10**pm[k]) for k in var_keys if k.startswith("log_")})
     pm = {k: v for (k, v) in list(pm.items()) if "log_" not in k}
     return pm           # returns parameters and uncertainty
 
@@ -152,7 +152,7 @@ mcmc_params = {"adaptive"   : False,
                 }
 
 def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
-               ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, keep_traces=False):
+               ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, fastcharg=1e-2, keep_traces=False):
 
 #==============================================================================
     """Cole-Cole Bayesian Model"""
@@ -267,10 +267,18 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
             return np.sum((a*log_taus.T).T, axis=0)
         @pymc.deterministic(plot=False)
         def total_m(m_=m_):
-            return np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)])
+            return np.sum(m_[(log_tau >= fastcharg)&(log_tau <= max(log_tau)-1)])
         @pymc.deterministic(plot=False)
-        def log_mean_tau(m_=m_, total_m=total_m, a=a):
-            return np.log10(np.exp(old_div(np.sum(m_[(log_tau >= -3)&(log_tau <= max(log_tau)-1)]*np.log(10**log_tau[(log_tau >= -3)&(log_tau <= max(log_tau)-1)])),total_m)))
+        def log_half_tau(m_=m_):
+            return log_tau[cond][np.where(np.cumsum(m_[cond])/np.sum(m_[cond]) > 0.5)[0][0]]
+        @pymc.deterministic(plot=False)
+        def log_peak_tau(m_=m_):
+            cond = np.r_[True, m_[1:] > m_[:-1]] & np.r_[m_[:-1] > m_[1:], True]
+            cond[0] = False
+            return log_tau[cond][0]
+        @pymc.deterministic(plot=False)
+        def log_mean_tau(m_=m_):
+            return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
         # Likelihood
         obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2, len(w)), observed=True)
 #        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
@@ -286,9 +294,10 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     seigle_m = (old_div((data["amp"][-1] - data["amp"][0]), data["amp"][-1]) ) # Estimating Seigel chargeability
     w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
     n_freq = len(w)
-    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
+#    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
     # Relaxation times associated with the measured frequencies (Debye decomposition only)
-    log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), n_freq)
+    log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 100)
+    cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
     log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
     tau_10 = 10**log_tau # Accelerates sampling
     data["tau"] = tau_10 # Put relaxation times in data dictionary
@@ -335,7 +344,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
 
     # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"c_exp": c_exp, "decomp_polyn": decomp_poly, "cc_modes": cc_modes}}
+    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "fastcharg":fastcharg, "mcmc": mcmc, "model_type": {"c_exp": c_exp, "decomp_polyn": decomp_poly, "cc_modes": cc_modes}}
     # End of inversion
 
 
