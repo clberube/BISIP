@@ -34,11 +34,18 @@ https://github.com/clberube/bisip
 This python script builds the graphical user interface may be used to call the
 Bayesian inversion module of all SIP models (BISIP_models.py)
 """
+
 from __future__ import division
 from __future__ import print_function
+#from __future__ import unicode_literals
 
 #==============================================================================
 # System imports
+
+from sys import version_info
+print("Running Python %d.%d.%d"%version_info[0:3])
+
+print("\nFuture imports")
 from future import standard_library
 standard_library.install_aliases()
 from builtins import zip
@@ -48,7 +55,8 @@ from builtins import range
 from past.builtins import basestring
 from builtins import object
 from past.utils import old_div
-print("\nLoading Python modules")
+
+print("System imports")
 from sys import argv, stdout
 stdout.flush()
 from platform import system
@@ -56,32 +64,38 @@ from os.path import dirname as osp_dirname, realpath as osp_realpath
 from json import load as jload, dump as jdump
 from warnings import filterwarnings
 filterwarnings('ignore') # Ignore some tkinter warnings
-# GUI imports
-import tkinter as tk
-from sys import version_info
+
+print("GUI imports")
 if version_info[0] < 3:
+    import Tkinter as tk
     import FixTk # To avoid pyinstaller error
+else:
+    import tkinter as tk
 import tkinter.filedialog, tkinter.messagebox, tkinter.font
+
+print("BISIP imports")
+from BISIP_models import mcmcSIPinv
+import BISIP_invResults as iR
+
+print("Other imports")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.pyplot import rcParams
 from itertools import combinations
 from collections import OrderedDict
-# SIP imports
-from BISIP_models import mcmcSIPinv
-import BISIP_invResults as iR
-# Get directory
+
 print("All modules successfully loaded")
 stdout.flush()
+
 #==============================================================================
 # Fonts
 if "Darwin" in system():
-    print("OS X detected")
+    print("\nOS X detected")
     fontsize = 12
     pad_radio = 3
     but_size = -2
     res_size = -1
 else:
-    print("Windows detected")
+    print("\nWindows detected")
     fontsize = 10
     pad_radio = 0
     but_size = -2
@@ -280,7 +294,10 @@ class MainApplication(object):
 
             self.all_results[self.f_n] = {"pm":self.sol["params"],"MDL":self.sol["pymc_model"],"data":self.sol["data"],"fit":self.sol["fit"], "sol":self.sol}
 #           Impression ou non des résultats, graphiques, histogrammes
-            self.update_results()
+            try:            
+                self.update_results()        
+            except:
+                print("PROBLEM")
             if self.run_options["Print results in console"].get():
                 iR.print_resul(self.sol)
             if self.run_options["Save CSV results"].get():
@@ -302,10 +319,7 @@ class MainApplication(object):
                 except:
                     pass
             if self.save_options["Save traces"].get():
-#                try:
                 iR.plot_traces(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
-#                except:
-#                    pass
             if self.save_options["Save summaries"].get():
                 iR.plot_summary(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save autocorrelations"].get():
@@ -314,6 +328,8 @@ class MainApplication(object):
                 iR.plot_deviance(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save loglikelihood"].get():
                 iR.plot_logp(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+
+            
             if self.files.index(self.f_n)+1 == len(self.files):
                 self.activity(done=True)
                 self.diagn_buttons()
@@ -537,7 +553,7 @@ class MainApplication(object):
         items2 = [" %.3e " %x for x in values]
         items3 = ["+/- %.0e" %x for x in errors]
         items4 = [" (%.2f%%)" %(abs(100*e/v)) for v,e in zip(values,errors)]
-        all_items = list(map(str.__add__,list(map(str.__add__,list(map(str.__add__,items,items2)),items3)),items4))
+        all_items = [a_+b_+c_+d_ for a_,b_,c_,d_ in zip(items,items2,items3,items4)]
         items = '\n'.join(all_items)
         text_res.insert("1.0", items)
 

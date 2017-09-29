@@ -14,7 +14,6 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
-import numpy as np
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
 import pickle as pickle
@@ -39,14 +38,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 30000,
-          "nb_burn"    : 00000,
+          "nb_iter"    : 100000,
+          "nb_burn"    : 80000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 5000,
-          "cov_delay"  : 5000,
+          "cov_inter"  : 10000,
+          "cov_delay"  : 10000,
           }
 sol = []
 
@@ -77,7 +76,7 @@ for noise in [1]:
     #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
     #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
     #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-                "/Users/Charles/Documents/Github/BISIP/Example data/SIP-K389176_avg.dat",
+                "C:/Users/Charles/Desktop/SIP dat files/AVG_SIP-K389006.dat",
 #                "/Users/Charles/Documents/Python Scripts/BISIP/Example data/SIP-K389176_avg.dat",
 #                "/Users/Charles/Documents/Python/Fuchs data processing/tripleCC-2_noise%dmrad.dat"%noise,
 #                "/Users/Charles/Documents/Python/Fuchs data processing/doubleCC_01_01_noise%dmrad.dat"%noise,
@@ -101,7 +100,7 @@ for noise in [1]:
     for i in range(repeat):
         fn = filename[0]
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
-        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=3, cc_modes=2, c_exp=0.5, keep_traces=False))
+        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=0.5, keep_traces=False))
     
         """Plot fit and data ?"""
         if False:

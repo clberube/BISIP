@@ -129,10 +129,10 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
                 data = sorted(MDL.trace(stoc)[:][:,stoc_num[0]-1])
             except:
                 data = sorted(MDL.trace(stoc)[:])
-            fit = norm.pdf(data, np.mean(data), np.std(data))
             plt.xlabel("%s value"%k)
             plt.ylabel("Probability density")
             hist = plt.hist(data, bins=20, normed=True, linewidth=1.0, color="white")
+            fit = norm.pdf(data, np.mean(data), np.std(data))
             plt.plot(data, fit, "-", label="Fitted PDF", linewidth=1.5)
             plt.legend(loc='best')
             plt.grid('off')
@@ -163,16 +163,19 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
                 data = sorted(MDL.trace(stoc)[:][:,stoc_num[0]-1])
             except:
                 data = sorted(MDL.trace(stoc)[:])
-            fit = norm.pdf(data, np.mean(data), np.std(data))
             plt.axes(a)
             plt.locator_params(axis = 'y', nbins = 8)
             plt.locator_params(axis = 'x', nbins = 7)
             plt.xlabel(k)
-            hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='black', linewidth=1.0, color="white")
-            xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in range(len(hist[1])-1)]
-            binwidth = old_div((max(xh) - min(xh)), len(hist[1]))
-            fit *= len(data) * binwidth
-            plt.plot(data, fit, "-", linewidth=1.5)
+            try:
+                hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='#1f77b4', linewidth=1.0, color='#1f77b4', alpha=0.3)
+                fit = norm.pdf(data, np.mean(data), np.std(data))                
+                xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in range(len(hist[1])-1)]
+                binwidth = old_div((max(xh) - min(xh)), len(hist[1]))
+                fit *= len(data) * binwidth
+                plt.plot(data, fit, "-", color='#ff7f0e', linewidth=1.5)
+            except:
+                print("File %s: could not plot %s histogram. Parameter is unstable (see trace)." %(filename,k))
             plt.grid('off')
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
         
