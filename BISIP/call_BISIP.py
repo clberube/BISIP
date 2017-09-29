@@ -40,14 +40,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 10000,
-          "nb_burn"    : 8000,
+          "nb_iter"    : 150000,
+          "nb_burn"    : 120000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 1000,
-          "cov_delay"  : 1000,
+          "cov_inter"  : 10000,
+          "cov_delay"  : 10000,
           }
 sol = []
 
@@ -92,7 +92,7 @@ for noise in [1]:
 #    for i in range(repeat):
 #        fn = filename[0]
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
-        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, keep_traces=False))
+        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, keep_traces=False))
     
         """Plot fit and data ?"""
         if True:
@@ -107,7 +107,7 @@ for noise in [1]:
             fig_RTD = iR.plot_debye(sol[i], save=True, draw=False)
     
         """Print numerical results ?"""
-        if True:
+        if False:
             iR.print_resul(sol[i])
     
         """Plot parameter histograms ?"""

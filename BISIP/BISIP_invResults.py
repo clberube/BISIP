@@ -709,21 +709,20 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         cond[0] = False
         peak = pymc.stats()["log_peak_tau"]['mean']
         peak_unc = pymc.stats()["log_peak_tau"]['standard deviation']
-        plt.errorbar(10**peak,y[cond][0]+0.2*y[cond][0],None,(peak_unc/peak)*(10**peak),"v",c="#d62728",label=r"$\tau_{peak}$")
-        plt.vlines(10**pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$")
-        plt.vlines(10**pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$")
-        plt.errorbar(10**x, y, None, None, "-", color="#7f7f7f", linewidth=2, label="RTD")  
+        plt.errorbar(peak,y[cond][0]+0.2*y[cond][0],None,peak_unc,"v",c="#d62728",label=r"$\tau_{peak}$")
+        plt.vlines(pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$")
+        plt.vlines(pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$")
+        plt.errorbar(x, y, None, None, "-", color="#7f7f7f", linewidth=2, label="RTD")  
         inter = pymc.stats()["log_mean_tau"]['95% HPD interval']
-        ax.axvspan(10**inter[0], 10**inter[1], alpha=0.2, color="#2ca02c")
+        ax.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
         inter = pymc.stats()["log_half_tau"]['95% HPD interval']
-        ax.axvspan(10**inter[0], 10**inter[1], alpha=0.2, color='#1f77b4')
-        ax.fill_between(10**x, 0, y, where=x >= sol["fastcharg"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
+        ax.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
+        ax.fill_between(x, 0, y, where=x >= sol["log_min_tau"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
 #        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
-        plt.xlabel("Relaxation time (s)", fontsize=12)
+        plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)", fontsize=12)
         plt.ylabel("Chargeability (%)", fontsize=12)
         plt.yticks(fontsize=12), plt.xticks(fontsize=12)
-        plt.xscale("log")
-        plt.xlim([10**xmin, 10**xmax])
+        plt.xlim([xmin, xmax])
         plt.grid('on')
         plt.ylim([0, max(y)])
         plt.legend(numpoints=1, fontsize=10, loc="best",labelspacing=0.1)

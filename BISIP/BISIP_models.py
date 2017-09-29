@@ -152,7 +152,7 @@ mcmc_params = {"adaptive"   : False,
                 }
 
 def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
-               ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, fastcharg=1e-2, keep_traces=False):
+               ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, keep_traces=False):
 
 #==============================================================================
     """Cole-Cole Bayesian Model"""
@@ -267,7 +267,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
             return np.sum((a*log_taus.T).T, axis=0)
         @pymc.deterministic(plot=False)
         def total_m(m_=m_):
-            return np.sum(m_[(log_tau >= fastcharg)&(log_tau <= max(log_tau)-1)])
+            return np.sum(m_[(log_tau >= log_min_tau)&(m_ >= 0)])
         @pymc.deterministic(plot=False)
         def log_half_tau(m_=m_):
             return log_tau[cond][np.where(np.cumsum(m_[cond])/np.sum(m_[cond]) > 0.5)[0][0]]
@@ -344,7 +344,7 @@ def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
     fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
 
     # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "fastcharg":fastcharg, "mcmc": mcmc, "model_type": {"c_exp": c_exp, "decomp_polyn": decomp_poly, "cc_modes": cc_modes}}
+    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "log_min_tau":log_min_tau, "mcmc": mcmc, "model_type": {"c_exp": c_exp, "decomp_polyn": decomp_poly, "cc_modes": cc_modes}}
     # End of inversion
 
 
