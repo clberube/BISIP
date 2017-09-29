@@ -1,10 +1,17 @@
 # **BISIP**
-## **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
+## Fast + robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
+####    Generalized Cole-Cole/Warburg/Debye decomposition scheme 
+####    Simple single/double/triple Pelton and Dias models
+
+### Good for batch inversion, propagating SIP data uncertainty to model parameter uncertainty
 ### Compatible with Python 2.7 and 3.6
+
 ### Get the latest [releases](https://github.com/clberube/BISIP/releases)
 ### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
-### Contents
+![Alt text](Screenshots/K3894.png "Fit!")
+
+#### Contents
 **1. Using the standalone executables**  
 **2. Cloning the repository and installing dependencies**  
 **3. Starting the GUI from the command prompt**  
@@ -205,15 +212,14 @@ Scientific or standard notation is OK
 
 **5. Validating results**
 
-High-precision data that respects Kramers-Kronig relationships
+High-precision data respecting Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data respecting Kramers-Kronig relationships")
 
-Noisy data that respects Kramers-Kronig relationships
+Noisy data that respecting Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-MediumNoise_KKR%20respected.png "Noisy data that respecting Kramers-Kronig relationships")
 
-Very noisy data that does not respect Kramers-Kronig relationships
+Very noisy data not respecting Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data not respecting Kramers-Kronig relationships")
-
 
 [A Gaussian solution](https://github.com/clberube/BISIP/blob/master/Screenshots/Normal.png)
 
