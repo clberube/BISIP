@@ -14,9 +14,11 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
+
 from BISIP_models import mcmcSIPinv
 import BISIP_invResults as iR
 import pickle as pickle
+import os
 
 def save_object(obj, filename):
     with open(filename, 'wb') as output:
@@ -63,30 +65,18 @@ for noise in [1]:
     #==============================================================================
     """ 3.
         Paths to files ?"""
-    filename = [
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389005_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389019_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389046_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389055_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389058_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389062_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389077_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389198_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389214_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389216_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389219_stable.dat",
-    #            "/Users/Charles/Documents/SIP dat files/SIP-MLA12_K389227_stable.dat",
-                "C:/Users/Charles/Desktop/SIP dat files/AVG_SIP-K389006.dat",
-#                "/Users/Charles/Documents/Python Scripts/BISIP/Example data/SIP-K389176_avg.dat",
-#                "/Users/Charles/Documents/Python/Fuchs data processing/tripleCC-2_noise%dmrad.dat"%noise,
-#                "/Users/Charles/Documents/Python/Fuchs data processing/doubleCC_01_01_noise%dmrad.dat"%noise,
-#                "/Users/Charles/Documents/Python/Fuchs data processing/doubleCC_04_04_noise%dmrad.dat"%noise,
-                ]
+        
+    reflist = os.listdir("/Users/Charles/Documents/SIP dat files")
+    reflist = [x for x in reflist if not x.startswith('.')]
+    reflist = [x for x in reflist if "AVG" in x]
+    reflist = [x for x in reflist if "Reciprocals" in x]
+    
+    filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
-    skip_header = 1
+    skip_header = 3
     
     #==============================================================================
     """ 5.
@@ -96,38 +86,41 @@ for noise in [1]:
     
     #==============================================================================
     # Call to the inversion function for every file
-    #for i, fn in enumerate(filename):
-    for i in range(repeat):
-        fn = filename[0]
+    for i, fn in enumerate(filename):
+#    for i in range(repeat):
+#        fn = filename[0]
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
-        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=0.5, keep_traces=False))
+        sol.append(mcmcSIPinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, keep_traces=False))
     
         """Plot fit and data ?"""
-        if False:
-            fig_fit = iR.plot_fit(sol, save=False)
+        if True:
+            fig_fit = iR.plot_fit(sol[i], save=True)
     
         """Save results ?"""
-        if False:
-            iR.save_resul(sol)
+        if True:
+            iR.save_resul(sol[i])
     
         """Plot Debye relaxation time distribution ?"""
-        if False:
-            fig_RTD = iR.plot_debye(sol, save=True, draw=True)
+        if True:
+            fig_RTD = iR.plot_debye(sol[i], save=True, draw=False)
     
         """Print numerical results ?"""
-        if False:
-            iR.print_resul(sol)
+        if True:
+            iR.print_resul(sol[i])
     
         """Plot parameter histograms ?"""
-        if False:
-            fig_histo = iR.plot_histo(sol, save=False)
+        if True:
+            fig_histo = iR.plot_histo(sol[i], save=True)
     
-        if False:
-            fig_trace = iR.plot_traces(sol, save=False)
+        if True:
+            fig_trace = iR.plot_traces(sol[i], save=True)
     
         """Plot parameter summary and Gelman-Rubin convergence test ?"""
         if False:
             fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
+
+
+iR.merge_results(sol[0], [x.split(".")[0] for x in reflist])
 
 # For further use in Python
 saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
