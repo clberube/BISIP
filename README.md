@@ -1,6 +1,8 @@
-# BISIP
-## Bayesian inference of spectral induced polarization parameters (Python 2.7)
-### Download the latest [releases](https://github.com/clberube/BISIP/releases) for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
+# **BISIP**
+## **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
+### Compatible with Python 2.7 and 3.6
+### Get the last [releases](https://github.com/clberube/BISIP/releases)
+### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
 ### Contents
 **1. Using the standalone executables**  
@@ -204,13 +206,13 @@ Scientific or standard notation is OK
 **5. Validating results**
 
 High-precision data that respects K-K relationships
-![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data that respects K-K relationships")
+![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data that respects Kramers-Kronig relationships")
 
 Noisy data that respects K-K relationships
-![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-MediumNoise_KKR%20respected.png "Noisy data that respects K-K relationships")
+![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-MediumNoise_KKR%20respected.png "Noisy data that respects Kramers-Kronig relationships")
 
 Very noisy data that does not respect K-K relationships
-![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data that does not respect K-K relationships")
+![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data that does not respect Kramers-Kronig relationships")
 
 
 [A Gaussian solution](https://github.com/clberube/BISIP/blob/master/Screenshots/Normal.png)
@@ -239,12 +241,15 @@ This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
 **7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
+If you are running into problems loading the .pyd or .so files you might need to build them on your computer.  
+On Windows make sure you have Visual Studio 2008 if using Python 2.7 or Visual C++ Build Tools 2015 if using Python 3.6.
+
 Install cython with:  
 ```sh
 conda install cython  
 ```
 
-Open a terminal to the directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
+Open a terminal to the BISIP directory where `BISIP_cython_funcs.pyx` and `cython_setup.py` are located  
 Enter the following:  
 ```sh
 python cython_setup.py build_ext --inplace
