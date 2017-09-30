@@ -1,0 +1,12 @@
+Metadata-Version: 1.0
+Name: bisip
+Version: 0.0.6
+Summary: Bayesian inversion of SIP data
+Home-page: https://github.com/clberube/BISIP
+Author: Charles L. Berube
+Author-email: cberube@ageophysics.com
+License: MIT
+Description-Content-Type: UNKNOWN
+Description: README.md
+Keywords: testing,logging,example
+Platform: UNKNOWN
