@@ -34,15 +34,14 @@ This python module may be used to import SIP data, run MCMC inversion and
 return the results.
 
 It is imported as:
-                    from BISIP_models import mcmcSIPinv
 
 Call with minimal arguments:
 
-sol = mcmcSIPinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
 
 Call with all optional arguments:
 
-sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
+sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
                  mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
                  debye_poly=4, c_exp = 1.0, keep_traces=False)
 """
@@ -56,7 +55,7 @@ from builtins import range
 from past.utils import old_div
 import pymc
 import numpy as np
-from BISIP_cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
+from bisip.cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
 # Imports to save things
 from os import path, makedirs
 from sys import argv
@@ -137,7 +136,7 @@ def format_results(M, Z_max):
 #==============================================================================
 # Main inversion function.
 # Import in script using
-# from BISIP_models import mcmcSIPinv
+# from bisip import mcmcinv
 # Default MCMC parameters:
 mcmc_params = {"adaptive"   : False,
                "nb_chain"   : 1,
@@ -151,7 +150,7 @@ mcmc_params = {"adaptive"   : False,
                "cov_delay"  : 10000,
                 }
 
-def mcmcSIPinv(model, filename, mcmc=mcmc_params, headers=1,
+def mcmcinv(model, filename, mcmc=mcmc_params, headers=1,
                ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, keep_traces=False):
 
 #==============================================================================

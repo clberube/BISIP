@@ -60,7 +60,7 @@ print("System imports")
 from sys import argv, stdout
 stdout.flush()
 from platform import system
-from os.path import dirname as osp_dirname, realpath as osp_realpath
+from os.path import realpath as osp_realpath
 from json import load as jload, dump as jdump
 from warnings import filterwarnings
 filterwarnings('ignore') # Ignore some tkinter warnings
@@ -74,8 +74,8 @@ else:
 import tkinter.filedialog, tkinter.messagebox, tkinter.font
 
 print("BISIP imports")
-from BISIP_models import mcmcSIPinv
-import BISIP_invResults as iR
+from bisip.models import mcmcinv
+import bisip.invResults as iR
 
 print("Other imports")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
@@ -123,7 +123,7 @@ def flatten(x):
 # To reset and use default parameters, delete root_ini in local directory
 
 class MainApplication(object):
-    working_path = str(osp_dirname(osp_realpath(argv[0]))).replace("\\", "/")+"/"
+    working_path = str(osp_realpath(argv[0])).replace("\\", "/")+"/"
     def __init__(self, master, fontz):
         self.save_options = {"Save all hexbins (will make error)":            tk.BooleanVar(),
                              "Save all bivariate KDE (will make error)":      tk.BooleanVar(),
@@ -287,7 +287,7 @@ class MainApplication(object):
             print("=====================")
             self.activity()
             self.var_review.set(self.f_n)
-            self.sol = mcmcSIPinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
+            self.sol = mcmcinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
                                 headers=self.head.get(), ph_units=self.units.get(),
                                 cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
                                 c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get())
@@ -1058,7 +1058,7 @@ https://github.com/clberube/bisip
         tk.Label(top,
                   text="""Contact:""",
                   justify = tk.CENTER).grid(row=2, column=0,columnspan=1, pady=(10,10), padx=(10,10))
-        about_message = """charleslberube@gmail.com"""
+        about_message = """cberube@ageophysics.com"""
         msg = tk.Text(top, height=1, width=27)
         msg.grid(row=2,column=1,padx=(10,10), pady=(10,10))
         msg.insert("1.0", about_message)
@@ -1069,7 +1069,7 @@ https://github.com/clberube/bisip
 #==============================================================================
 # Main function
 #==============================================================================
-def main():
+def launch():
     root = tk.Tk()
     root.wm_title("Bayesian inversion of SIP data")
     root.option_add("*Font", window_font)
@@ -1083,5 +1083,5 @@ def main():
     app = MainApplication(root, fontz)
     root.mainloop()
     app.save()
-if __name__ == '__main__':
-    main()
+if __name__ == '__launch__':
+    launch()

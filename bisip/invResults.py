@@ -50,7 +50,7 @@ from sys import argv
 from math import ceil
 from pymc import raftery_lewis, gelman_rubin, geweke
 from scipy.stats import norm, gaussian_kde
-from BISIP_models import get_data
+from bisip.models import get_data
 #==============================================================================
 
 sym_labels = dict([('resi', r"$\rho\/(\Omega\cdot m)$"),
@@ -139,7 +139,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             plt.grid('off')
             if save:
                 save_where = '/Figures/Histograms/%s/' %filename
-                actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+                actual_path = str(path.realpath(argv[0])).replace("\\", "/")
                 save_path = actual_path+save_where
                 if c == 0:
                     print("\nSaving histogram figures in:\n", save_path)
@@ -188,7 +188,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             a.set_visible(False)
         if save:
             save_where = '/Figures/Histograms/'
-            actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+            actual_path = str(path.realpath(argv[0])).replace("\\", "/")
             save_path = actual_path+save_where
             print("\nSaving parameter histograms in:\n", save_path)
             if not path.exists(save_path):
@@ -267,7 +267,7 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
     #    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
         if save:
             save_where = '/Figures/Bivariate KDE/%s/' %filename
-            actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+            actual_path = str(path.realpath(argv[0])).replace("\\", "/")
             save_path = actual_path+save_where
             print("\nSaving KDE figure in:\n", save_path)
             if not path.exists(save_path):
@@ -443,7 +443,7 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
     plt.xlabel("%s" %var1, fontsize=14)
     if save:
         save_where = '/Figures/Hexbins/%s/' %filename
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving hexbin figure in:\n", save_path)
         if not path.exists(save_path):
@@ -498,7 +498,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             plt.grid('on')
             if save:
                 save_where = '/Figures/Traces/%s/' %filename
-                actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+                actual_path = str(path.realpath(argv[0])).replace("\\", "/")
                 save_path = actual_path+save_where
                 if c == 0:
                     print("\nSaving traces figure in:\n", save_path)
@@ -548,7 +548,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             
         if save:
             save_where = '/Figures/Traces/'
-            actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+            actual_path = str(path.realpath(argv[0])).replace("\\", "/")
             save_path = actual_path+save_where
             print("\nSaving trace figures in:\n", save_path)
             if not path.exists(save_path):
@@ -624,7 +624,7 @@ def plot_summary(sol, save=False, save_as_png=True):
 
     if save:
         save_where = '/Figures/Summaries/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving summary figure in:\n", save_path)
         if not path.exists(save_path):
@@ -681,7 +681,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
         a.set_visible(False)
     if save:
         save_where = '/Figures/Autocorrelations/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving autocorrelation figure in:\n", save_path)
         if not path.exists(save_path):
@@ -731,7 +731,7 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving relaxation time distribution figure in:\n", save_path)
         if not path.exists(save_path):
@@ -748,7 +748,7 @@ def save_resul(sol):
     model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     save_where = '/Results/'
-    actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+    actual_path = str(path.realpath(argv[0])).replace("\\", "/")
     save_path = actual_path+save_where+"%s/"%sample_name
     print("\nSaving csv file in:\n", save_path)
     if not path.exists(save_path):
@@ -782,7 +782,7 @@ def save_resul(sol):
 def merge_results(sol,files):
     model = get_model_type(sol)
     save_where = '/Batch results/'
-    actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+    actual_path = str(path.realpath(argv[0])).replace("\\", "/")
     save_path = actual_path+save_where
     print("\nMerging csv files")
     if not path.exists(save_path):
@@ -866,7 +866,7 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True):
         fig.tight_layout()
     if save:
         save_where = '/Figures/ModelDeviance/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving model deviance figure in:\n", save_path)
         if not path.exists(save_path):
@@ -920,7 +920,7 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True):
         fig.tight_layout()
     if save:
         save_where = '/Figures/LogLikelihood/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving logp trace figure in:\n", save_path)
         if not path.exists(save_path):
@@ -1009,7 +1009,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         
     if save:
         save_where = '/Figures/Fit figures/'
-        actual_path = str(path.dirname(path.realpath(argv[0]))).replace("\\", "/")
+        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
         save_path = actual_path+save_where
         print("\nSaving fit figure in:\n", save_path)
         if not path.exists(save_path):
