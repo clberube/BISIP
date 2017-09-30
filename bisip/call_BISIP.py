@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Apr 21 12:05:22 2015
-
 @author:    charleslberube@gmail.com
             École Polytechnique Montréal
-
 Copyright (c) 2015-2016 Charles L. Bérubé
-
 """
 from __future__ import print_function
 
@@ -15,8 +12,8 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 
-#from bisip.models import mcmcinv
-#import bisip.invResults as iR
+from bisip.models import mcmcinv
+import bisip.invResults as iR
 import pickle as pickle
 import os
 
@@ -71,7 +68,7 @@ for noise in [1]:
     reflist = [x for x in reflist if "AVG" in x]
     reflist = [x for x in reflist if "Reciprocals" in x]
     
-#    reflist = [reflist[0]]
+    reflist = [reflist[0]]
     
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     
@@ -104,7 +101,7 @@ for noise in [1]:
     
         """Plot Debye relaxation time distribution ?"""
         if True:
-            fig_RTD = iR.plot_debye(sol[i], save=True, draw=False)
+            fig_RTD = iR.plot_rtd(sol[i], save=True, draw=False)
     
         """Print numerical results ?"""
         if False:
@@ -142,9 +139,7 @@ Les unités de l'amplitude peuvent être des Ohm ou Ohm-m
 (À spécifier dans la section plus haut, ici dans l'exemple skip_header = 1)
 La colonne 'Courant (A)' n'est pas obligatoire
 Les données doivent être sous le format suivant :
-
 =============================================================================
-
 Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg), Current (A)
 9.600e+03, 1.02676e+05, -1.29148e+02, 1.398449e+02, 1.361356e+00, 1.57806e-05
 6.000e+03, 1.05713e+05, -9.52791e+01, 2.790833e+01, 2.635447e-01, 1.54739e-05
@@ -156,7 +151,6 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg), Current (A)
 7.584e-02, 1.23939e+05, -1.37357e+01, 3.042719e+02, 2.455678e+00, 8.20719e-06
 4.740e-02, 1.24433e+05, -1.35053e+01, 4.442275e+01, 3.577924e-01, 7.94366e-06
 2.962e-02, 1.24935e+05, -1.30672e+01, 4.100396e+02, 3.281218e+00, 6.95748e-06
-
 =============================================================================
 """
 

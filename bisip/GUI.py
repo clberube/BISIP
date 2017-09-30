@@ -61,6 +61,7 @@ from sys import argv, stdout
 stdout.flush()
 from platform import system
 from os.path import realpath as osp_realpath
+from os import getcwd
 from json import load as jload, dump as jdump
 from warnings import filterwarnings
 filterwarnings('ignore') # Ignore some tkinter warnings
@@ -123,7 +124,8 @@ def flatten(x):
 # To reset and use default parameters, delete root_ini in local directory
 
 class MainApplication(object):
-    working_path = str(osp_realpath(argv[0])).replace("\\", "/")+"/"
+#    working_path = str(osp_realpath(argv[0])).replace("\\", "/")+"/"
+    working_path = getcwd().replace("\\", "/")+"/"
     def __init__(self, master, fontz):
         self.save_options = {"Save all hexbins (will make error)":            tk.BooleanVar(),
                              "Save all bivariate KDE (will make error)":      tk.BooleanVar(),
@@ -306,7 +308,7 @@ class MainApplication(object):
             if self.run_options["Auto draw fit"].get():
                 self.plot_window(fig_fit, "Inversion results: "+self.f_n)
             if self.model.get() == "PDecomp":
-                iR.plot_debye(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get())
+                iR.plot_rtd(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save all hexbins (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
                     iR.plot_hexbin(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
@@ -760,7 +762,7 @@ class MainApplication(object):
 
     def plot_rtd_now(self):
         f_n = self.var_review.get()
-        fig_debye = iR.plot_debye(self.all_results[f_n]["sol"], save=False, draw=True)
+        fig_debye = iR.plot_rtd(self.all_results[f_n]["sol"], save=False, draw=True)
         self.plot_window(fig_debye, "Debye RTD: "+f_n)
 
 #==============================================================================

@@ -46,6 +46,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.ticker as mticker
 import numpy as np
 from os import path, makedirs
+from os import getcwd
 from sys import argv
 from math import ceil
 from pymc import raftery_lewis, gelman_rubin, geweke
@@ -139,8 +140,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             plt.grid('off')
             if save:
                 save_where = '/Figures/Histograms/%s/' %filename
-                actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-                save_path = actual_path+save_where
+                working_path = getcwd().replace("\\", "/")+"/"
+                save_path = working_path+save_where
                 if c == 0:
                     print("\nSaving histogram figures in:\n", save_path)
                 if not path.exists(save_path):
@@ -188,8 +189,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             a.set_visible(False)
         if save:
             save_where = '/Figures/Histograms/'
-            actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-            save_path = actual_path+save_where
+            working_path = getcwd().replace("\\", "/")+"/"
+            save_path = working_path+save_where
             print("\nSaving parameter histograms in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
@@ -267,8 +268,8 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
     #    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
         if save:
             save_where = '/Figures/Bivariate KDE/%s/' %filename
-            actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-            save_path = actual_path+save_where
+            working_path = getcwd().replace("\\", "/")+"/"
+            save_path = working_path+save_where
             print("\nSaving KDE figure in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
@@ -443,8 +444,8 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
     plt.xlabel("%s" %var1, fontsize=14)
     if save:
         save_where = '/Figures/Hexbins/%s/' %filename
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
         print("\nSaving hexbin figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
@@ -498,8 +499,8 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             plt.grid('on')
             if save:
                 save_where = '/Figures/Traces/%s/' %filename
-                actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-                save_path = actual_path+save_where
+                working_path = getcwd().replace("\\", "/")+"/"
+                save_path = working_path+save_where
                 if c == 0:
                     print("\nSaving traces figure in:\n", save_path)
                 if not path.exists(save_path):
@@ -548,8 +549,8 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             
         if save:
             save_where = '/Figures/Traces/'
-            actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-            save_path = actual_path+save_where
+            working_path = getcwd().replace("\\", "/")+"/"
+            save_path = working_path+save_where
             print("\nSaving trace figures in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
@@ -624,8 +625,8 @@ def plot_summary(sol, save=False, save_as_png=True):
 
     if save:
         save_where = '/Figures/Summaries/'
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
         print("\nSaving summary figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
@@ -681,8 +682,8 @@ def plot_autocorr(sol, save=False, save_as_png=True):
         a.set_visible(False)
     if save:
         save_where = '/Figures/Autocorrelations/'
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
         print("\nSaving autocorrelation figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
@@ -691,7 +692,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
     except: pass
     return fig
 
-def plot_debye(sol, save=False, draw=False, save_as_png=True):
+def plot_rtd(sol, save=False, draw=False, save_as_png=True):
     if save_as_png:
         save_as = 'png'
     else:
@@ -719,7 +720,7 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         ax.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
         inter = pymc.stats()["log_half_tau"]['95% HPD interval']
         ax.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
-        ax.fill_between(x, 0, y, where=x >= sol["log_min_tau"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
+        ax.fill_between(x, 0, y, where=x >= sol["model_type"]["log_min_tau"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
 #        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
         plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)", fontsize=12)
         plt.ylabel("Chargeability (%)", fontsize=12)
@@ -731,8 +732,9 @@ def plot_debye(sol, save=False, draw=False, save_as_png=True):
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+
+        save_path = working_path+save_where
         print("\nSaving relaxation time distribution figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
@@ -748,8 +750,9 @@ def save_resul(sol):
     model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     save_where = '/Results/'
-    actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-    save_path = actual_path+save_where+"%s/"%sample_name
+    working_path = getcwd().replace("\\", "/")+"/"
+
+    save_path = working_path+save_where+"%s/"%sample_name
     print("\nSaving csv file in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
@@ -782,16 +785,16 @@ def save_resul(sol):
 def merge_results(sol,files):
     model = get_model_type(sol)
     save_where = '/Batch results/'
-    actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-    save_path = actual_path+save_where
+    working_path = getcwd().replace("\\", "/")+"/"
+    save_path = working_path+save_where
     print("\nMerging csv files")
     if not path.exists(save_path):
         makedirs(save_path)
-    to_merge = actual_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
+    to_merge = working_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
     headers = np.genfromtxt(to_merge, delimiter=",", dtype=str, skip_footer=1)
     merged_inv_results = np.empty((len(files), len(headers)))
     for i, f in enumerate(files):
-        merged_inv_results[i] = np.loadtxt(actual_path+"/Results/%s/INV_%s_%s.csv" %(f,model,f), delimiter=",", skiprows=1)
+        merged_inv_results[i] = np.loadtxt(working_path+"/Results/%s/INV_%s_%s.csv" %(f,model,f), delimiter=",", skiprows=1)
     rows = np.array(files, dtype=str)[:, np.newaxis]
     hd = ",".join(["ID"] + list(headers))
     np.savetxt(save_path+"Merged_%s_%s_TO_%s.csv" %(model,files[0],files[-1]), np.hstack((rows, merged_inv_results)), delimiter=",", header=hd, fmt="%s")
@@ -866,8 +869,8 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True):
         fig.tight_layout()
     if save:
         save_where = '/Figures/ModelDeviance/'
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
         print("\nSaving model deviance figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
@@ -920,8 +923,8 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True):
         fig.tight_layout()
     if save:
         save_where = '/Figures/LogLikelihood/'
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
         print("\nSaving logp trace figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
@@ -1009,8 +1012,8 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         
     if save:
         save_where = '/Figures/Fit figures/'
-        actual_path = str(path.realpath(argv[0])).replace("\\", "/")
-        save_path = actual_path+save_where
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
         print("\nSaving fit figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)

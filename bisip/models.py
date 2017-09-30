@@ -58,6 +58,7 @@ import numpy as np
 from bisip.cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
 # Imports to save things
 from os import path, makedirs
+from os import getcwd
 from sys import argv
 from datetime import datetime
 
@@ -304,11 +305,12 @@ def mcmcinv(model, filename, mcmc=mcmc_params, headers=1,
 
     # Time and date (for saving traces)
     sample_name = filename.replace("\\", "/").split("/")[-1].split(".")[0]
-    actual_path = str(path.dirname(path.realpath(argv[0])))
+#    actual_path = str(path.dirname(path.realpath(argv[0])))
+    working_path = getcwd().replace("\\", "/")+"/"
     now = datetime.now()
     save_time = now.strftime('%Y%m%d_%H%M%S')
     save_date = now.strftime('%Y%m%d')
-    out_path = '%s/Txt traces/%s/%s/%s-%s-%s/'%(actual_path, save_date,
+    out_path = '%s/Txt traces/%s/%s/%s-%s-%s/'%(working_path, save_date,
                                                  sample_name, model,
                                                  sample_name, save_time)
 
@@ -344,7 +346,7 @@ def mcmcinv(model, filename, mcmc=mcmc_params, headers=1,
     fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
 
     # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "log_min_tau":log_min_tau, "mcmc": mcmc, "model_type": {"c_exp": c_exp, "decomp_polyn": decomp_poly, "cc_modes": cc_modes}}
+    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
     # End of inversion
 
 
