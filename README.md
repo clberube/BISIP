@@ -3,30 +3,50 @@
 ####    Generalized Cole-Cole/Warburg/Debye decomposition scheme 
 ####    Simple single/double/triple Pelton and Dias models
 
-### Good for batch inversion, propagating SIP data uncertainty to model parameter uncertainty
-### Compatible with Python 2.7 and 3.6
+#### Good for batch inversion, propagating SIP data uncertainty to model parameter uncertainty
+#### Compatible with Python 2.7 and 3.6
 
-### Get the latest [releases](https://github.com/clberube/BISIP/releases)
-### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
+#### [Latest releases](https://github.com/clberube/BISIP/releases)
+#### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
 ![Alt text](Screenshots/K3894.png "Fit!")
 
-#### Contents
-**1. Using the standalone executables**  
-**2. Cloning the repository and installing dependencies**  
-**3. Starting the GUI from the command prompt**  
-**4. Calling the inversion function from another script**  
-**5. Validating results**  
-**6. Building the standalone GUI executables**  
-**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**  
-**8. References**  
-
 ==================================================================================================================================================================
 
-**1. Using the standalone executables**
+**1. Installation**
+
+  Simply enter the following line in the terminal:
   
-  No Python installation is needed to run, the applications are standalone  
-  Executables were compiled on OS X 10.11.6 and Windows 10
+```sh
+pip install bisip
+```  
+    
+  The lastest release of BISIP and PyMC 2.3.6 will install.
+  If you run into problems installing PyMC with `pip` then try installing it first with either:
+
+```sh
+conda install pymc
+pip install git+git://github.com/pymc-devs/pymc
+easy_install pymc
+```  
+ 
+  Then run `pip install bisip` after PyMC has been installed.
+  The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended.
+  
+**2. Starting the GUI for quick use**
+   
+  Open a Python interpreter and type:
+ 
+    from bisip import GUI
+    GUI.launch()
+    
+  Results will be saved in the working directory.
+  
+**2. Using the standalone executables**
+  
+  If you are not familiar with Python then you may download the standalones executables.
+  These were compiled on OS X 10.11.6 and Windows 10. 
+  Standalone applications will not be updated as nearly as often as the Python package install through `pip`.
   
   On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
   
@@ -37,70 +57,57 @@
     c. A terminal window will open (Allow a few seconds to load Python if using Windows)
     d. Import example data files and launch inversions using the default MCMC parameters  
     e. Results are saved in subfolders inside the BISIP Workplace folder
-
-**2. Cloning the repository and installing dependencies**
-
-  Clone or Download repository to local folder  
-  Dependencies: Python 2.7, NumPy, matplotlib, SciPy, PyMC, Tkinter  
-  PyMC (<https://github.com/pymc-devs/pymc>) is installed with any of the following:
-  
-    conda install pymc
-    pip install git+git://github.com/pymc-devs/pymc
-    easy_install pymc
-  
-  Other dependencies are automatically installed with most Python distributions
-      
-**3. Starting the GUI from the command prompt**
-   
-  Open a terminal to the local BISIP directory and enter:
- 
-    python BISIP_GUI.py
   
 **4. Calling the inversion function from another script**
 
   Import only the inversion function using:
   
-    from BISIP_models import mcmcSIPinv
+    from bisip import mcmcinv
   
   And obtain results using all default arguments and MCMC parameters with:
   
-    sol = mcmcSIPinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+    sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
   
   To call the function with optional arguments:
   
   Example for Debye decomposition: 
     
-    sol = mcmcSIPinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
-                      headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=True,  
-                      debye_poly=4, c_exp = 1.0, keep_traces=False)
+    sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
+                   headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
+                   debye_poly=4, c_exp = 1.0, keep_traces=False)
 
   Example for Warburg decomposition: 
     
-    sol = mcmcSIPinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
-                      headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=True,  
-                      debye_poly=3, c_exp = 0.5, keep_traces=False)
+    sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat', 
+                   headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
+                   debye_poly=3, c_exp = 0.5, keep_traces=False)
                       
   Example for Cole-Cole inversion:
     
-    sol = mcmcSIPinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
-                      headers=1, ph_units='mrad', mcmc=mcmc_params, adaptive=False,  
-                      cc_modes=2, keep_traces=False)
+    sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat', 
+                   headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=False,  
+                   cc_modes=2, keep_traces=False)
   
-  Where `mcmc_params` is a python dictionary. The settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
+ 
+**Choosing the MCMC parameters**
+
+  MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
     
-    mcmc_p = {"adaptive"   : True,
-              "nb_chain"   : 1,
-              "nb_iter"    : 100000,
-              "nb_burn"    : 80000,
-              "thin"       : 1,
-              "tune_inter" : 10000,    # Only used when mcmc_p["adaptive"]=False
-              "prop_scale" : 1.0,      # Only used when mcmc_p["adaptive"]=False
-              "verbose"    : False,
-              "cov_inter"  : 10000,    # Only used when mcmc_p["adaptive"]=True
-              "cov_delay"  : 10000,    # Only used when mcmc_p["adaptive"]=True
-              }
-                  
-  And `sol` is a self-explanatory python dictionary containing the results:
+    mcmc_dict = { "adaptive"   : True,
+                  "nb_chain"   : 1,
+                  "nb_iter"    : 100000,
+                  "nb_burn"    : 80000,
+                  "thin"       : 1,
+                  "tune_inter" : 10000,    # Only used when mcmc_p["adaptive"]=False
+                  "prop_scale" : 1.0,      # Only used when mcmc_p["adaptive"]=False
+                  "verbose"    : False,
+                  "cov_inter"  : 10000,    # Only used when mcmc_p["adaptive"]=True
+                  "cov_delay"  : 10000,    # Only used when mcmc_p["adaptive"]=True
+                  }
+     
+**Getting results from `sol`**
+     
+  The `mcmcinv` function has one output. `sol` is a self-explanatory python dictionary containing the results:
   
     In []: sol.keys()
     Out[]: ['pymc_model',
@@ -177,15 +184,25 @@ To return the raw data:
     plt.plot(sol['data']['Z'].real, sol['data']['Z'].imag)
     plt.plot(sol['fit']['best'].real, sol['fit']['best'].imag)
 
+  BISIP comes with a bunch of plotting functions too
+  Try them out with:
+  
+    from bisip.invResults import plot_fit, plot rtd
+    from bisip.invResults import plot_traces, plot_histo
+    
+    plot_fit(sol, draw=False, save=True)
+    plot_traces(sol, draw=True, save=False)
+
   The inversion function also returns the full PyMC object:
   
     In []: sol['pymc_model']
     Out[]: <pymc.MCMC.MCMC at 0x11e37a110>
   
-  See run_BISIP.py for an example script on how to use the inversion function and plot results  
   See the PyMC documentation (<https://pymc-devs.github.io/pymc/>) to extract information from the PyMC object
 
-**Data must be formatted using the following template:**  
+**5. Data format**
+
+*Data must be formatted using the following template:*
 
     Frequency, Amplitude  , Phase shift , Amplit error, Phase error  
     6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02  
