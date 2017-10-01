@@ -2,3 +2,6 @@ In development branch:
 - Finish simplifying object-oriented inversion results
 - Change invResults module to accept new mcmcinv class
 - Update GUI functions to accept new mcmcinv class
+
+In master branch:
+- Add jupyter notebook example
