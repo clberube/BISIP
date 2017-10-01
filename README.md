@@ -46,7 +46,7 @@ easy_install pymc
   
   If you are not familiar with Python then you may download the standalones executables.
   These were compiled on OS X 10.11.6 and Windows 10. 
-  Standalone applications will not be updated as nearly as often as the Python package install through `pip`.
+  Standalone applications will NOT be updated often. For latest versions use the Python package installed through `pip`.
   
   On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
   
