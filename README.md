@@ -42,11 +42,11 @@ easy_install pymc
     
   Results will be saved in the working directory.
   
-**2. Using the standalone executables**
+**3. Using the standalone executables**
   
-  If you are not familiar with Python then you may download the standalones executables.
+  If you are not familiar with Python then you may download the binaries.
   These were compiled on OS X 10.11.6 and Windows 10. 
-  Standalone applications will NOT be updated often. For latest versions use the Python package installed through `pip`.
+  **Binaries will **NOT** be updated frequently. For latest versions use the Python package installed through `pip`.
   
   On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
   
@@ -227,7 +227,7 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**5. Validating results**
+**6. Validating results**
 
 High-precision data respecting Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data respecting Kramers-Kronig relationships")
@@ -244,7 +244,7 @@ Very noisy data not respecting Kramers-Kronig relationships
 
 [Stable traces](https://github.com/clberube/BISIP/blob/master/Screenshots/converged.png)
 
-**6. Building the standalone GUI executables**
+**7. Building the standalone GUI executables**
 
 Install pyinstaller with:  
 ```sh
@@ -262,7 +262,7 @@ pyinstaller BISIP_GUI_osx.spec
 ```
 This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
-**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
+**8. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
 If you are running into problems loading the .pyd or .so files you might need to build them on your computer.  
 On Windows make sure you have Visual Studio 2008 if using Python 2.7 or Visual C++ Build Tools 2015 if using Python 3.6.
@@ -278,7 +278,7 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**8. References**
+**9. References**
 
 <sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
