@@ -63,6 +63,22 @@ from sys import argv
 from datetime import datetime
 
 #==============================================================================
+# To extract important information from the model (MDL)
+# Used at the end of inversion routine
+# Arguments: model <pymc model object>, maximum amplitude measured <float>
+def format_results(M, Z_max):
+    var_keys = [s.__name__ for s in M.stochastics] + [d.__name__ for d in M.deterministics]
+    var_keys = [s for s in var_keys if s not in ["zmod", "mp"]]
+    Mst = M.stats(chain=-1)
+    pm = {k: Mst[k]["mean"] for k in var_keys}
+    pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
+    pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
+    pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
+    pm.update({(k.replace("log_", ""))+"_std": abs(pm[k+"_std"]/pm[k])*(10**pm[k]) for k in var_keys if k.startswith("log_")})
+    pm = {k: v for (k, v) in list(pm.items()) if "log_" not in k}
+    return pm           # returns parameters and uncertainty
+    
+#==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
 def run_MCMC(function, mc_p, save_traces=False, save_where=None):
@@ -92,262 +108,259 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
         MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'], tune_throughout=False)
     return MDL
 
-#==============================================================================
-# To import data
-# Arguments: file name, number of header lines to skip, phase units
-def get_data(filename,headers,ph_units):
-    # Importation des données .DAT
-    dat_file = np.loadtxt("%s"%(filename),skiprows=headers,delimiter=',')
-    labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
-    data = {l:dat_file[:,i] for (i,l) in enumerate(labels)}
-    if ph_units == "mrad":
-        data["pha"] = old_div(data["pha"],1000)                      # mrad to rad
-        data["pha_err"] = old_div(data["pha_err"],1000)              # mrad to rad
-    if ph_units == "deg":
-        data["pha"] = np.radians(data["pha"])               # deg to rad
-        data["pha_err"] = np.radians(data["pha_err"])       # deg to rad
-    data["phase_range"] = abs(max(data["pha"])-min(data["pha"])) # Range of phase measurements (used in NRMS error calculation)
-    data["Z"]  = data["amp"]*(np.cos(data["pha"]) + 1j*np.sin(data["pha"]))
-    EI = np.sqrt(((data["amp"]*np.cos(data["pha"])*data["pha_err"])**2)+(np.sin(data["pha"])*data["amp_err"])**2)
-    ER = np.sqrt(((data["amp"]*np.sin(data["pha"])*data["pha_err"])**2)+(np.cos(data["pha"])*data["amp_err"])**2)
-    data["Z_err"] = ER + 1j*EI
-    # Normalization of amplitude
-    data["Z_max"] = max(abs(data["Z"]))  # Maximum amplitude
-    zn, zn_e = old_div(data["Z"],data["Z_max"]), old_div(data["Z_err"],data["Z_max"]) # Normalization of impedance by max amplitude
-    data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
-    data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
-    return data
+class mcmcinv(object):
+    # Default MCMC parameters:
+    default_mcmc = {"adaptive"   : True,
+                   "nb_chain"   : 1,
+                   "nb_iter"    : 100000,
+                   "nb_burn"    : 80000,
+                   "thin"       : 1,
+                   "tune_inter" : 10000,
+                   "prop_scale" : 1.0,
+                   "verbose"    : False,
+                   "cov_inter"  : 10000,
+                   "cov_delay"  : 10000,
+                    }
+    def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
+                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, keep_traces=False):
+        self.model = model
+        self.filename = filename 
+        self.mcmc = mcmc
+        self.headers = headers
+        self.ph_units = ph_units
+        self.cc_modes = cc_modes
+        self.decomp_poly = decomp_poly
+        self.c_exp = c_exp
+        self.log_min_tau = log_min_tau
+        self.keep_traces = keep_traces
+        self.start()
 
-#==============================================================================
-# To extract important information from the model (MDL)
-# Used at the end of inversion routine
-# Arguments: model <pymc model object>, maximum amplitude measured <float>
-def format_results(M, Z_max):
-    var_keys = [s.__name__ for s in M.stochastics] + [d.__name__ for d in M.deterministics]
-    var_keys = [s for s in var_keys if s not in ["zmod", "mp"]]
-    Mst = M.stats(chain=-1)
-    pm = {k: Mst[k]["mean"] for k in var_keys}
-    pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
-    pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
-    pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
-    pm.update({(k.replace("log_", ""))+"_std": abs(pm[k+"_std"]/pm[k])*(10**pm[k]) for k in var_keys if k.startswith("log_")})
-    pm = {k: v for (k, v) in list(pm.items()) if "log_" not in k}
-    return pm           # returns parameters and uncertainty
 
-#==============================================================================
-# Main inversion function.
-# Import in script using
-# from bisip import mcmcinv
-# Default MCMC parameters:
-mcmc_params = {"adaptive"   : False,
-               "nb_chain"   : 1,
-               "nb_iter"    : 100000,
-               "nb_burn"    : 80000,
-               "thin"       : 1,
-               "tune_inter" : 10000,
-               "prop_scale" : 1.0,
-               "verbose"    : False,
-               "cov_inter"  : 10000,
-               "cov_delay"  : 10000,
-                }
-
-def mcmcinv(model, filename, mcmc=mcmc_params, headers=1,
-               ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, keep_traces=False):
-
-#==============================================================================
-    """Cole-Cole Bayesian Model"""
-#==============================================================================
-    def ColeColeModel(cc_modes):
-        # Initial guesses
-        p0 = {'R0'       : 1.0,
-              'm'        : None,
-              'log_tau'  : None,
-              'c'        : None,
-              }
-        # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.7, upper=1.3 , value=p0["R0"])
-        m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0["m"], size=cc_modes)
-        log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=4.0, value=p0['log_tau'], size=cc_modes)
-        c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'], size=cc_modes)
-        # Deterministics
-        @pymc.deterministic(plot=False)
-        def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
-            return ColeCole_cyth1(w, R0, m, lt, c)
-        # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size=(2,len(w)), observed=True)
-        return locals()
-
-#==============================================================================
-    """Shin Bayesian Model"""
-#==============================================================================
-    def ShinModel():
-        # Initial guesses
-        p0 = {'R'      : [0.5, 0.5],
-              'log_Q'  : [0,-4],
-              'n'      : [0.5, 0.5],
-              'log_tau': None,
-              'm'      : None,
-              }
-        # Stochastics
-        R = pymc.Uniform('R', lower=0.0, upper=1.0, value=p0["R"], size=2)
-        log_Q = pymc.Uniform('log_Q', lower=-7, upper=2, value=p0["log_Q"], size=2)
-        n = pymc.Uniform('n', lower=0.0, upper=1.0, value=p0["n"], size=2)
-        # Deterministics
-        @pymc.deterministic(plot=False)
-        def zmod(R=R, log_Q=log_Q, n=n):
-            return Shin_cyth(w, R, log_Q, n)
-        @pymc.deterministic(plot=False)
-        def log_tau(R=R, log_Q=log_Q, n=n):
-            return np.log10((R*(10**log_Q))**(old_div(1.,n)))
-        @pymc.deterministic(plot=False)
-        def R0(R=R):
-            return R[0]+R[1]
-        @pymc.deterministic(plot=False)
-        def m(R=R):
-            return seigle_m*( old_div(max(R), (max(R) + min(R))))
-        #Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2,len(w)), observed=True)
-        return locals()
-
-#==============================================================================
-    """Dias Bayesian Model"""
-#==============================================================================
-    def DiasModel():
-        # Initial guesses
-        p0 = {'R0'     :  1.0,
-              'm'      :  seigle_m,
-              'log_tau':  None,
-              'eta'    :  None,
-              'delta'  :  None,
-              }
-        # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1 , value=1)
-        m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0['m'])
-        log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=0.0, value=p0['log_tau'])
-        eta = pymc.Uniform('eta', lower=0.0, upper=50.0, value=p0['eta'])
-        delta = pymc.Uniform('delta', lower=0.0, upper=1.0, value=p0['delta'])
-        # Deterministics
-        @pymc.deterministic(plot=False)
-        def zmod(R0=R0, m=m, lt=log_tau, eta=eta, delta=delta):
-            return Dias_cyth(w, R0, m, lt, eta, delta)
-        # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2,len(w)), observed=True)
-        return locals()
-
-#==============================================================================
-    """Debye, Warburg, Cole-Cole decomposition Bayesian Model"""
-#==============================================================================
-    def PolyDecompModel(decomp_poly, c_exp):
-        # Initial guesses
-        p0 = {'R0'         : 1.0,
-              'a'          : None,
-#              'a'          : ([0.01, -0.01, -0.01, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
-              'log_tau_hi' : -5.0,
-              'm_hi'       : 0.5,
-              'TotalM'     : None,
-              'log_MeanTau': None,
-              'U'          : None,
-              }
-        # Stochastics
-        R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
-#        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
-#        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
-#        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
-        a = pymc.Normal('a', mu=0, tau=old_div(1.,(0.01**2)), value=p0["a"], size=decomp_poly+1)
-
-        # Deterministics
-#        @pymc.deterministic(plot=False)
-#        def m_hi(mp_hi=mp_hi):
-#            return 10**mp_hi / (1 + 10**mp_hi)
-        @pymc.deterministic(plot=False)
-        def zmod(R0=R0, a=a):
-            return Decomp_cyth(w, tau_10, log_taus, c_exp, R0, a)
-        @pymc.deterministic(plot=False)
-        def m_(a=a):
-            return np.sum((a*log_taus.T).T, axis=0)
-        @pymc.deterministic(plot=False)
-        def total_m(m_=m_):
-            return np.sum(m_[(log_tau >= log_min_tau)&(m_ >= 0)&(log_tau <= max(log_tau)-1)])
-        @pymc.deterministic(plot=False)
-        def log_half_tau(m_=m_):
-            return log_tau[cond][np.where(np.cumsum(m_[cond])/np.sum(m_[cond]) > 0.5)[0][0]]
-        @pymc.deterministic(plot=False)
-        def log_peak_tau(m_=m_):
-            cond = np.r_[True, m_[1:] > m_[:-1]] & np.r_[m_[:-1] > m_[1:], True]
-            cond[0] = False
-            try: return log_tau[cond][0]
-            except: return log_tau[0]
-        @pymc.deterministic(plot=False)
-        def log_mean_tau(m_=m_):
-            return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
-        # Likelihood
-        obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(data["zn_err"]**2)), value=data["zn"], size = (2, len(w)), observed=True)
-#        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
-        return locals()
-
-#==============================================================================
-    """
-    Main section
-    """
-#==============================================================================
-    # Importing data
-    data = get_data(filename, headers, ph_units)
-    seigle_m = (old_div((data["amp"][-1] - data["amp"][0]), data["amp"][-1]) ) # Estimating Seigel chargeability
-    w = 2*np.pi*data["freq"] # Frequencies measured in rad/s
-#    n_freq = len(w)
-#    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
-    # Relaxation times associated with the measured frequencies (Debye decomposition only)
-    log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
-    cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
-    log_taus = np.array([log_tau**i for i in range(0,decomp_poly+1,1)]) # Polynomial approximation for the RTD
-    tau_10 = 10**log_tau # Accelerates sampling
-    data["tau"] = tau_10 # Put relaxation times in data dictionary
-
-    # Time and date (for saving traces)
-    sample_name = filename.replace("\\", "/").split("/")[-1].split(".")[0]
-#    actual_path = str(path.dirname(path.realpath(argv[0])))
-    working_path = getcwd().replace("\\", "/")+"/"
-    now = datetime.now()
-    save_time = now.strftime('%Y%m%d_%H%M%S')
-    save_date = now.strftime('%Y%m%d')
-    out_path = '%s/Txt traces/%s/%s/%s-%s-%s/'%(working_path, save_date,
-                                                 sample_name, model,
-                                                 sample_name, save_time)
-
-    """
-    #==========================================================================
-    Call to run_MCMC function
-    #==========================================================================
-    """
-    # "ColeCole", "Dias", "Debye" or "Shin"
-    sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [cc_modes]          },
-                "Dias":     {"func": DiasModel,         "args": []                  },
-                "PDecomp":  {"func": PolyDecompModel,   "args": [decomp_poly, c_exp]},
-                "Shin":     {"func": ShinModel,         "args": []                  },
-#                "Custom":   {"func": YourModel,     "args": [opt_args]   },
-                }
-    simulation = sim_dict[model] # Pick entries for the selected model
-    MDL = run_MCMC(simulation["func"](*simulation["args"]), mcmc, save_traces=keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
-#    if not keep_traces: rmtree(out_path)   # Deletes the traces if not wanted
-
-    """
-    #==========================================================================
-    Results
-    #==========================================================================
-    """
-    pm = format_results(MDL, data["Z_max"]) # Format output
-    zmodstats = MDL.stats(chain=-1)["zmod"] # Take last chain
-    zn_avg = zmodstats["mean"]
-    zn_l95 = zmodstats["95% HPD interval"][0]
-    zn_u95 = zmodstats["95% HPD interval"][1]
-    avg = data["Z_max"]*(zn_avg[0] + 1j*zn_avg[1]) # (In complex notation, de-normalized)
-    l95 = data["Z_max"]*(zn_l95[0] + 1j*zn_l95[1]) # (In complex notation, de-normalized)
-    u95 = data["Z_max"]*(zn_u95[0] + 1j*zn_u95[1]) # (In complex notation, de-normalized)
-    fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
-
-    # Output
-    return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
-    # End of inversion
+    
+    #==============================================================================
+    # To import data
+    # Arguments: file name, number of header lines to skip, phase units
+    def get_data(self, filename,headers,ph_units):
+        # Importation des données .DAT
+        dat_file = np.loadtxt("%s"%(filename),skiprows=headers,delimiter=',')
+        labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
+        data = {l:dat_file[:,i] for (i,l) in enumerate(labels)}
+        if ph_units == "mrad":
+            data["pha"] = old_div(data["pha"],1000)                      # mrad to rad
+            data["pha_err"] = old_div(data["pha_err"],1000)              # mrad to rad
+        if ph_units == "deg":
+            data["pha"] = np.radians(data["pha"])               # deg to rad
+            data["pha_err"] = np.radians(data["pha_err"])       # deg to rad
+        data["phase_range"] = abs(max(data["pha"])-min(data["pha"])) # Range of phase measurements (used in NRMS error calculation)
+        data["Z"]  = data["amp"]*(np.cos(data["pha"]) + 1j*np.sin(data["pha"]))
+        EI = np.sqrt(((data["amp"]*np.cos(data["pha"])*data["pha_err"])**2)+(np.sin(data["pha"])*data["amp_err"])**2)
+        ER = np.sqrt(((data["amp"]*np.sin(data["pha"])*data["pha_err"])**2)+(np.cos(data["pha"])*data["amp_err"])**2)
+        data["Z_err"] = ER + 1j*EI
+        # Normalization of amplitude
+        data["Z_max"] = max(abs(data["Z"]))  # Maximum amplitude
+        zn, zn_e = old_div(data["Z"],data["Z_max"]), old_div(data["Z_err"],data["Z_max"]) # Normalization of impedance by max amplitude
+        data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
+        data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
+        return data
+    
+    #==============================================================================
+    # Main inversion function.
+    def start(self):
+    
+    #==============================================================================
+        """Cole-Cole Bayesian Model"""
+    #==============================================================================
+        def ColeColeModel(cc_modes):
+            # Initial guesses
+            p0 = {'R0'       : 1.0,
+                  'm'        : None,
+                  'log_tau'  : None,
+                  'c'        : None,
+                  }
+            # Stochastics
+            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3 , value=p0["R0"])
+            m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0["m"], size=cc_modes)
+            log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=4.0, value=p0['log_tau'], size=cc_modes)
+            c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'], size=cc_modes)
+            # Deterministics
+            @pymc.deterministic(plot=False)
+            def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
+                return ColeCole_cyth1(w, R0, m, lt, c)
+            # Likelihood
+            obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size=(2,len(w)), observed=True)
+            return locals()
+    
+    #==============================================================================
+        """Shin Bayesian Model"""
+    #==============================================================================
+        def ShinModel():
+            # Initial guesses
+            p0 = {'R'      : [0.5, 0.5],
+                  'log_Q'  : [0,-4],
+                  'n'      : [0.5, 0.5],
+                  'log_tau': None,
+                  'm'      : None,
+                  }
+            # Stochastics
+            R = pymc.Uniform('R', lower=0.0, upper=1.0, value=p0["R"], size=2)
+            log_Q = pymc.Uniform('log_Q', lower=-7, upper=2, value=p0["log_Q"], size=2)
+            n = pymc.Uniform('n', lower=0.0, upper=1.0, value=p0["n"], size=2)
+            # Deterministics
+            @pymc.deterministic(plot=False)
+            def zmod(R=R, log_Q=log_Q, n=n):
+                return Shin_cyth(w, R, log_Q, n)
+            @pymc.deterministic(plot=False)
+            def log_tau(R=R, log_Q=log_Q, n=n):
+                return np.log10((R*(10**log_Q))**(old_div(1.,n)))
+            @pymc.deterministic(plot=False)
+            def R0(R=R):
+                return R[0]+R[1]
+            @pymc.deterministic(plot=False)
+            def m(R=R):
+                return seigle_m*( old_div(max(R), (max(R) + min(R))))
+            #Likelihood
+            obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2,len(w)), observed=True)
+            return locals()
+    
+    #==============================================================================
+        """Dias Bayesian Model"""
+    #==============================================================================
+        def DiasModel():
+            # Initial guesses
+            p0 = {'R0'     :  1.0,
+                  'm'      :  seigle_m,
+                  'log_tau':  None,
+                  'eta'    :  None,
+                  'delta'  :  None,
+                  }
+            # Stochastics
+            R0 = pymc.Uniform('R0', lower=0.9, upper=1.1 , value=1)
+            m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0['m'])
+            log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=0.0, value=p0['log_tau'])
+            eta = pymc.Uniform('eta', lower=0.0, upper=50.0, value=p0['eta'])
+            delta = pymc.Uniform('delta', lower=0.0, upper=1.0, value=p0['delta'])
+            # Deterministics
+            @pymc.deterministic(plot=False)
+            def zmod(R0=R0, m=m, lt=log_tau, eta=eta, delta=delta):
+                return Dias_cyth(w, R0, m, lt, eta, delta)
+            # Likelihood
+            obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2,len(w)), observed=True)
+            return locals()
+    
+    #==============================================================================
+        """Debye, Warburg, Cole-Cole decomposition Bayesian Model"""
+    #==============================================================================
+        def PolyDecompModel(decomp_poly, c_exp):
+            # Initial guesses
+            p0 = {'R0'         : 1.0,
+                  'a'          : None,
+    #              'a'          : ([0.01, -0.01, -0.01, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
+                  'log_tau_hi' : -5.0,
+                  'm_hi'       : 0.5,
+                  'TotalM'     : None,
+                  'log_MeanTau': None,
+                  'U'          : None,
+                  }
+            # Stochastics
+            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
+    #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
+    #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
+    #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
+            a = pymc.Normal('a', mu=0, tau=old_div(1.,(0.01**2)), value=p0["a"], size=decomp_poly+1)
+    
+            # Deterministics
+    #        @pymc.deterministic(plot=False)
+    #        def m_hi(mp_hi=mp_hi):
+    #            return 10**mp_hi / (1 + 10**mp_hi)
+            @pymc.deterministic(plot=False)
+            def zmod(R0=R0, a=a):
+                return Decomp_cyth(w, tau_10, log_taus, c_exp, R0, a)
+            @pymc.deterministic(plot=False)
+            def m_(a=a):
+                return np.sum((a*log_taus.T).T, axis=0)
+            @pymc.deterministic(plot=False)
+            def total_m(m_=m_):
+                return np.sum(m_[(log_tau >= self.log_min_tau)&(m_ >= 0)&(log_tau <= max(log_tau)-1)])
+            @pymc.deterministic(plot=False)
+            def log_half_tau(m_=m_):
+                return log_tau[cond][np.where(np.cumsum(m_[cond])/np.sum(m_[cond]) > 0.5)[0][0]]
+            @pymc.deterministic(plot=False)
+            def log_peak_tau(m_=m_):
+                cond = np.r_[True, m_[1:] > m_[:-1]] & np.r_[m_[:-1] > m_[1:], True]
+                cond[0] = False
+                try: return log_tau[cond][0]
+                except: return log_tau[0]
+            @pymc.deterministic(plot=False)
+            def log_mean_tau(m_=m_):
+                return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
+            # Likelihood
+            obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2, len(w)), observed=True)
+    #        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
+            return locals()
+    
+    #==============================================================================
+        """
+        Main section
+        """
+    #==============================================================================
+        # Importing data
+        self.data = self.get_data(self.filename, self.headers, self.ph_units)
+        seigle_m = (old_div((self.data["amp"][-1] - self.data["amp"][0]), self.data["amp"][-1]) ) # Estimating Seigel chargeability
+        w = 2*np.pi*self.data["freq"] # Frequencies measured in rad/s
+    #    n_freq = len(w)
+    #    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
+        # Relaxation times associated with the measured frequencies (Debye decomposition only)
+        log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
+        cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
+        log_taus = np.array([log_tau**i for i in range(0,self.decomp_poly+1,1)]) # Polynomial approximation for the RTD
+        tau_10 = 10**log_tau # Accelerates sampling
+        self.data["tau"] = tau_10 # Put relaxation times in data dictionary
+    
+        # Time and date (for saving traces)
+        sample_name = self.filename.replace("\\", "/").split("/")[-1].split(".")[0]
+    #    actual_path = str(path.dirname(path.realpath(argv[0])))
+        working_path = getcwd().replace("\\", "/")+"/"
+        now = datetime.now()
+        save_time = now.strftime('%Y%m%d_%H%M%S')
+        save_date = now.strftime('%Y%m%d')
+        out_path = '%s/Txt traces/%s/%s/%s-%s-%s/'%(working_path, save_date,
+                                                     sample_name, self.model,
+                                                     sample_name, save_time)
+    
+        """
+        #==========================================================================
+        Call to run_MCMC function
+        #==========================================================================
+        """
+        # "ColeCole", "Dias", "Debye" or "Shin"
+        sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [self.cc_modes]          },
+                    "Dias":     {"func": DiasModel,         "args": []                  },
+                    "PDecomp":  {"func": PolyDecompModel,   "args": [self.decomp_poly, self.c_exp]},
+                    "Shin":     {"func": ShinModel,         "args": []                  },
+    #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
+                    }
+        simulation = sim_dict[self.model] # Pick entries for the selected model
+        self.MDL = run_MCMC(simulation["func"](*simulation["args"]), self.mcmc, save_traces=self.keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
+    #    if not keep_traces: rmtree(out_path)   # Deletes the traces if not wanted
+    
+        """
+        #==========================================================================
+        Results
+        #==========================================================================
+        """
+        self.pm = format_results(self.MDL, self.data["Z_max"]) # Format output
+        zmodstats = self.MDL.stats(chain=-1)["zmod"] # Take last chain
+        zn_avg = zmodstats["mean"]
+        zn_l95 = zmodstats["95% HPD interval"][0]
+        zn_u95 = zmodstats["95% HPD interval"][1]
+        avg = self.data["Z_max"]*(zn_avg[0] + 1j*zn_avg[1]) # (In complex notation, de-normalized)
+        l95 = self.data["Z_max"]*(zn_l95[0] + 1j*zn_l95[1]) # (In complex notation, de-normalized)
+        u95 = self.data["Z_max"]*(zn_u95[0] + 1j*zn_u95[1]) # (In complex notation, de-normalized)
+        self.fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
+        self.model_type = {"log_min_tau":self.log_min_tau, "c_exp":self.c_exp, "decomp_polyn":self.decomp_poly, "cc_modes":self.cc_modes}
+        # Output
+#        return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
+        # End of inversion
 
 
 #==============================================================================
