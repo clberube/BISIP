@@ -135,8 +135,6 @@ class mcmcinv(object):
         self.keep_traces = keep_traces
         self.start()
 
-
-    
     #==============================================================================
     # To import data
     # Arguments: file name, number of header lines to skip, phase units
