@@ -71,11 +71,11 @@ def flatten(x):
     return result
 
 def get_model_type(sol):
-    model = sol["SIP_model"]
+    model = sol.model
     if model == "PDecomp":
-        if sol["model_type"]["c_exp"] == 0.5:
+        if sol.model_type["c_exp"] == 0.5:
             model = "WarburgDecomp"
-        elif sol["model_type"]["c_exp"] == 1.0:
+        elif sol.model_type["c_exp"] == 1.0:
             model = "DebyeDecomp"
         else:
             model = "ColeColeDecomp"
@@ -100,14 +100,15 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    MDL = sol["pymc_model"]
+    MDL = sol.MDL
     model = get_model_type(sol)
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
         keys.remove("m_")
-
+        keys.remove("log_half_tau")
+#        keys.remove("log_peak_tau")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -458,14 +459,16 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    MDL = sol["pymc_model"]
+    MDL = sol.MDL
     model = get_model_type(sol)
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     sampler = MDL.get_state()["sampler"]
     try:
         keys.remove("zmod")
         keys.remove("m_")
+        keys.remove("log_half_tau")
+#        keys.remove("log_peak_tau")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -697,16 +700,16 @@ def plot_rtd(sol, save=False, draw=False, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
         fig, ax = plt.subplots(figsize=(5,3))
-        x = np.log10(sol["data"]["tau"])
+        x = np.log10(sol.data["tau"])
         xmax = max(x)-1
         xmin = min(x)+1
         x = np.linspace(xmin, xmax,100)
-        y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol["params"]["a"])], axis=0)
-        pymc = sol["pymc_model"]
+        y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol.pm["a"])], axis=0)
+        pymc = sol.MDL
         cond = np.r_[True, y[1:] > y[:-1]] & np.r_[y[:-1] > y[1:], True]
         cond[0] = False
         peak = pymc.stats()["log_peak_tau"]['mean']
@@ -720,7 +723,7 @@ def plot_rtd(sol, save=False, draw=False, save_as_png=True):
         ax.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
         inter = pymc.stats()["log_half_tau"]['95% HPD interval']
         ax.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
-        ax.fill_between(x, 0, y, where=x >= sol["model_type"]["log_min_tau"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
+        ax.fill_between(x, 0, y, where=x >= sol.model_type["log_min_tau"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
 #        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
         plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)", fontsize=12)
         plt.ylabel("Chargeability (%)", fontsize=12)
@@ -746,7 +749,7 @@ def plot_rtd(sol, save=False, draw=False, save_as_png=True):
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
-    MDL, pm, filepath = sol["pymc_model"], sol["params"], sol["path"]
+    MDL, pm, filepath = sol.MDL, sol.pm, sol.filename
     model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     save_where = '/Results/'
@@ -939,11 +942,11 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    filepath = sol["path"]
+    filepath = sol.filename
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
-    data = sol["data"]
-    fit = sol["fit"]
+    data = sol.data
+    fit = sol.fit
     # Graphiques du fit
     f = data["freq"]
     Zr0 = max(abs(data["Z"]))
@@ -968,9 +971,9 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
 #            t.tick_params(labelsize=14)
         # Real-Imag
         plt.axes(ax[2])
-        plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', label='Data')
-        plt.plot(zn_fit.real, -zn_fit.imag, '-', label='Fitted model')
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color='#7f7f7f', alpha=0.2)
+        plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', color="#1f77b4", label='Data')
+        plt.plot(zn_fit.real, -zn_fit.imag, '-', color="#ff7f0e", label='Model')
+        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color="#ff7f0e", alpha=0.2, label="95% HPD")
         plt.xlabel(sym_labels['real'])
         plt.ylabel(sym_labels['imag'])
         plt.legend(loc='best', fontsize=9, numpoints=1)
@@ -979,9 +982,9 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         
         # Freq-Ampl
         plt.axes(ax[1])
-        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-        plt.semilogx(f, Amp_fit, '-', label='Fitted model')
-        plt.fill_between(f, Amp_max, Amp_min, color='#7f7f7f', alpha=0.2)
+        plt.errorbar(f, Amp_dat, Amp_err, None, '.', color="#1f77b4", label='Data')
+        plt.semilogx(f, Amp_fit, '-', color="#ff7f0e", label='Model')
+        plt.fill_between(f, Amp_max, Amp_min, color="#ff7f0e", alpha=0.2, label="95% HPD")
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['ampl'])
         plt.legend(loc='best', fontsize=9, numpoints=1)
@@ -990,10 +993,10 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
 
         # Freq-Phas
         plt.axes(ax[0])
-        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
-        plt.loglog(f, -Pha_fit, '-', label='Fitted model')
+        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', color="#1f77b4", label='Data')
+        plt.loglog(f, -Pha_fit, '-', color="#ff7f0e", label='Model')
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color='#7f7f7f', alpha=0.2)
+        plt.fill_between(f, -Pha_max, -Pha_min, color="#ff7f0e", alpha=0.2, label="95% HPD")
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['phas'])
         plt.legend(loc='best', fontsize=9, numpoints=1)

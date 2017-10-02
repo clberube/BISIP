@@ -12,8 +12,8 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 
-#from bisip.models import mcmcinv
-#import bisip.invResults as iR
+from models import mcmcinv
+import invResults as iR
 import pickle as pickle
 import os
 
@@ -37,14 +37,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 15000,
-          "nb_burn"    : 13000,
+          "nb_iter"    : 150000,
+          "nb_burn"    : 130000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 500,
-          "cov_delay"  : 1000,
+          "cov_inter"  : 5000,
+          "cov_delay"  : 10000,
           }
 sol = []
 
@@ -63,14 +63,14 @@ for noise in [1]:
     """ 3.
         Paths to files ?"""
         
-    reflist = os.listdir("C:/Users/Charles/Desktop/SIP dat files")
+    reflist = os.listdir("/Users/Charles/Documents/SIP dat files")
     reflist = [x for x in reflist if not x.startswith('.')]
     reflist = [x for x in reflist if "AVG" in x]
     reflist = [x for x in reflist if "Reciprocals" in x]
     
-    reflist = [reflist[0]]
+    reflist = [reflist[1]]
     
-    filename = ["C:/Users/Charles/Desktop/SIP dat files/"+x for x in reflist]
+    filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     
     #==============================================================================
     """ 4.
@@ -89,8 +89,7 @@ for noise in [1]:
 #    for i in range(repeat):
 #        fn = filename[0]
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
-        from models import mcmcinv
-        sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, keep_traces=False))
+        sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False))
     
         """Plot fit and data ?"""
         if True:
@@ -119,11 +118,10 @@ for noise in [1]:
         if False:
             fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-
 iR.merge_results(sol[0], [x.split(".")[0] for x in reflist])
 
 # For further use in Python
-saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
+#saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
 #save_object(saved_sol, save_as)
 #print "Solutions saved in list under", save_as
 

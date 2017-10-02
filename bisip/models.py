@@ -79,6 +79,32 @@ def format_results(M, Z_max):
     return pm           # returns parameters and uncertainty
     
 #==============================================================================
+# To import data
+# Arguments: file name, number of header lines to skip, phase units
+def get_data(filename,headers,ph_units):
+    # Importation des données .DAT
+    dat_file = np.loadtxt("%s"%(filename),skiprows=headers,delimiter=',')
+    labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
+    data = {l:dat_file[:,i] for (i,l) in enumerate(labels)}
+    if ph_units == "mrad":
+        data["pha"] = old_div(data["pha"],1000)                      # mrad to rad
+        data["pha_err"] = old_div(data["pha_err"],1000)              # mrad to rad
+    if ph_units == "deg":
+        data["pha"] = np.radians(data["pha"])               # deg to rad
+        data["pha_err"] = np.radians(data["pha_err"])       # deg to rad
+    data["phase_range"] = abs(max(data["pha"])-min(data["pha"])) # Range of phase measurements (used in NRMS error calculation)
+    data["Z"]  = data["amp"]*(np.cos(data["pha"]) + 1j*np.sin(data["pha"]))
+    EI = np.sqrt(((data["amp"]*np.cos(data["pha"])*data["pha_err"])**2)+(np.sin(data["pha"])*data["amp_err"])**2)
+    ER = np.sqrt(((data["amp"]*np.sin(data["pha"])*data["pha_err"])**2)+(np.cos(data["pha"])*data["amp_err"])**2)
+    data["Z_err"] = ER + 1j*EI
+    # Normalization of amplitude
+    data["Z_max"] = max(abs(data["Z"]))  # Maximum amplitude
+    zn, zn_e = old_div(data["Z"],data["Z_max"]), old_div(data["Z_err"],data["Z_max"]) # Normalization of impedance by max amplitude
+    data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
+    data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
+    return data
+
+#==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
 def run_MCMC(function, mc_p, save_traces=False, save_where=None):
@@ -122,7 +148,7 @@ class mcmcinv(object):
                    "cov_delay"  : 10000,
                     }
     def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
-                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, keep_traces=False):
+                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False):
         self.model = model
         self.filename = filename 
         self.mcmc = mcmc
@@ -132,39 +158,13 @@ class mcmcinv(object):
         self.decomp_poly = decomp_poly
         self.c_exp = c_exp
         self.log_min_tau = log_min_tau
+        self.guess_noise = guess_noise
         self.keep_traces = keep_traces
         self.start()
-
-    #==============================================================================
-    # To import data
-    # Arguments: file name, number of header lines to skip, phase units
-    def get_data(self, filename,headers,ph_units):
-        # Importation des données .DAT
-        dat_file = np.loadtxt("%s"%(filename),skiprows=headers,delimiter=',')
-        labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
-        data = {l:dat_file[:,i] for (i,l) in enumerate(labels)}
-        if ph_units == "mrad":
-            data["pha"] = old_div(data["pha"],1000)                      # mrad to rad
-            data["pha_err"] = old_div(data["pha_err"],1000)              # mrad to rad
-        if ph_units == "deg":
-            data["pha"] = np.radians(data["pha"])               # deg to rad
-            data["pha_err"] = np.radians(data["pha_err"])       # deg to rad
-        data["phase_range"] = abs(max(data["pha"])-min(data["pha"])) # Range of phase measurements (used in NRMS error calculation)
-        data["Z"]  = data["amp"]*(np.cos(data["pha"]) + 1j*np.sin(data["pha"]))
-        EI = np.sqrt(((data["amp"]*np.cos(data["pha"])*data["pha_err"])**2)+(np.sin(data["pha"])*data["amp_err"])**2)
-        ER = np.sqrt(((data["amp"]*np.sin(data["pha"])*data["pha_err"])**2)+(np.cos(data["pha"])*data["amp_err"])**2)
-        data["Z_err"] = ER + 1j*EI
-        # Normalization of amplitude
-        data["Z_max"] = max(abs(data["Z"]))  # Maximum amplitude
-        zn, zn_e = old_div(data["Z"],data["Z_max"]), old_div(data["Z_err"],data["Z_max"]) # Normalization of impedance by max amplitude
-        data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
-        data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
-        return data
     
     #==============================================================================
     # Main inversion function.
     def start(self):
-    
     #==============================================================================
         """Cole-Cole Bayesian Model"""
     #==============================================================================
@@ -264,8 +264,13 @@ class mcmcinv(object):
     #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
     #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
     #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
-            a = pymc.Normal('a', mu=0, tau=old_div(1.,(0.01**2)), value=p0["a"], size=decomp_poly+1)
-    
+            a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
+#            noise = pymc.Uniform('noise', lower=0., upper=1.)
+            if self.guess_noise:
+                noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
+                noise_i = pymc.Uniform('noise_imag', lower=0., upper=1.)
+
+#            noises = pymc.Lambda('noises', lambda noise=noise: np.reshape(noise, (2,1)))
             # Deterministics
     #        @pymc.deterministic(plot=False)
     #        def m_hi(mp_hi=mp_hi):
@@ -292,8 +297,15 @@ class mcmcinv(object):
             def log_mean_tau(m_=m_):
                 return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
             # Likelihood
-            obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2, len(w)), observed=True)
-    #        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
+#            obs = pymc.Normal('obs', mu=zmod, tau=1./((self.data["zn_err"]+noise)**2), value=self.data["zn"], size = (2, len(w)), observed=True)
+#            for i in range(2):
+#                obs_i = pymc.Normal('obs_%s'%i, mu=zmod[i], tau=1./((self.data["zn_err"][i]+noise[i])**2), value=self.data["zn"][i], size = len(w), observed=True)
+            if self.guess_noise:
+                obs_r = pymc.Normal('obs_r', mu=zmod[0], tau=1./((noise_r)**2), value=self.data["zn"][0], size = len(w), observed=True)
+                obs_i = pymc.Normal('obs_i', mu=zmod[1], tau=1./((noise_i)**2), value=self.data["zn"][1], size = len(w), observed=True)
+            else:
+                obs = pymc.Normal('obs', mu=zmod, tau=1./(self.data["zn_err"]**2), value=self.data["zn"], size = (2, len(w)), observed=True)
+
             return locals()
     
     #==============================================================================
@@ -302,7 +314,9 @@ class mcmcinv(object):
         """
     #==============================================================================
         # Importing data
-        self.data = self.get_data(self.filename, self.headers, self.ph_units)
+        self.data = get_data(self.filename, self.headers, self.ph_units)
+        if (self.data["pha_err"] == 0).all():
+            self.guess_noise = True
         seigle_m = (old_div((self.data["amp"][-1] - self.data["amp"][0]), self.data["amp"][-1]) ) # Estimating Seigel chargeability
         w = 2*np.pi*self.data["freq"] # Frequencies measured in rad/s
     #    n_freq = len(w)
