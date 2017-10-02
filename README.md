@@ -16,6 +16,7 @@
 
 **1. Installation**
 
+  The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended.  
   Simply enter the following line in the terminal:
   
 ```sh
@@ -31,8 +32,11 @@ pip install git+git://github.com/pymc-devs/pymc
 easy_install pymc
 ```  
  
-  Then run `pip install bisip` after PyMC has been installed.
-  The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended.
+  Then run `pip install bisip` after PyMC has been installed.  
+  
+  BISIP wraps C functions for faster forward modelling! 
+  Make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6.  
+  In doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP.
   
 **2. Starting the GUI for quick use**
    
@@ -47,7 +51,7 @@ easy_install pymc
   
   If you are not familiar with Python then you may download the binaries.
   These were compiled on OS X 10.11.6 and Windows 10. 
-  **Binaries will **NOT** be updated frequently. For latest versions use the Python package installed through `pip`.
+  Binaries will **NOT** be updated frequently. For latest versions use the Python package installed through `pip`.
   
   On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
   
