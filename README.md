@@ -1,10 +1,11 @@
 # **BISIP**
 ## Fast + robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
+#### Compatible with Python 2.7 and 3.6
 ####    Generalized Cole-Cole/Warburg/Debye decomposition scheme 
 ####    Simple single/double/triple Pelton and Dias models
 
 #### Good for batch inversion, propagating SIP data uncertainty to model parameter uncertainty
-#### Compatible with Python 2.7 and 3.6
+#### Coming soon: estimation of the data noise if it was not determined correctly in the lab!
 
 #### [Latest releases](https://github.com/clberube/BISIP/releases)
 #### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
