@@ -63,7 +63,7 @@ easy_install pymc
     d. Import example data files and launch inversions using the default MCMC parameters  
     e. Results are saved in subfolders inside the BISIP Workplace folder
   
-**4. Calling the inversion function from another script**
+**4. Calling the `mcmcinv` inversion class from your scripts**
   
   **See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples**
 
@@ -209,7 +209,7 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**7. Building the standalone GUI executables**
+**6. Building the standalone GUI executables**
 
 Install pyinstaller with:  
 ```sh
@@ -227,7 +227,7 @@ pyinstaller BISIP_GUI_osx.spec
 ```
 This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
-**8. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
+**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
 If you are running into problems loading the .pyd or .so files you might need to build them on your computer.  
 On Windows make sure you have Visual Studio 2008 if using Python 2.7 or Visual C++ Build Tools 2015 if using Python 3.6.
@@ -243,7 +243,7 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**9. References**
+**8. References**
 
 <sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
