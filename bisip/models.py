@@ -62,6 +62,8 @@ from os import getcwd
 from sys import argv
 from datetime import datetime
 
+import invResults as iR
+
 #==============================================================================
 # To extract important information from the model (MDL)
 # Used at the end of inversion routine
@@ -147,6 +149,24 @@ class mcmcinv(object):
                    "cov_inter"  : 10000,
                    "cov_delay"  : 10000,
                     }
+    
+    print_results = iR.print_resul
+    plot_fit = iR.plot_fit
+    plot_histograms = iR.plot_histo
+    plot_traces = iR.plot_traces
+    save_results = iR.save_resul
+    merge_results = iR.merge_results
+    print_RL_diagnostic = iR.print_diagn
+    plot_log_likelihood = iR.plot_logp
+    plot_model_deviance = iR.plot_deviance
+#    plot_data = iR.plot_data
+    plot_rtd = iR.plot_rtd
+    plot_autocorrelation = iR.plot_autocorr
+    plot_summary = iR.plot_summary
+    plot_hexbin = iR.plot_hexbin
+    plot_KDE = iR.plot_KDE
+    get_model_type = iR.get_model_type
+    
     def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
                    ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False):
         self.model = model
@@ -161,6 +181,20 @@ class mcmcinv(object):
         self.guess_noise = guess_noise
         self.keep_traces = keep_traces
         self.start()
+    
+#    def print_resul(self):
+#    #==============================================================================
+#        # Impression des résultats
+#        pm, model, filename = self.pm, self.model, self.filename
+#        print('\n\nInversion success!')
+#        print('Name of file:', filename)
+#        print('Model used:', model)
+#        e_keys = sorted([s for s in list(pm.keys()) if "_std" in s])
+#        v_keys = [e.replace("_std", "") for e in e_keys]
+#        labels = ["{:<8}".format(x+":") for x in v_keys]
+#        np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
+#        for l, v, e in zip(labels, v_keys, e_keys):
+#            print(l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
     
     #==============================================================================
     # Main inversion function.
@@ -373,9 +407,9 @@ class mcmcinv(object):
         # Output
 #        return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
         # End of inversion
-
-
-#==============================================================================
+                    
+    
+    #==============================================================================
 """
 References:
 

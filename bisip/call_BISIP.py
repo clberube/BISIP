@@ -37,14 +37,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 150000,
-          "nb_burn"    : 130000,
+          "nb_iter"    : 50000,
+          "nb_burn"    : 40000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 5000,
-          "cov_delay"  : 10000,
+          "cov_inter"  : 1000,
+          "cov_delay"  : 5000,
           }
 sol = []
 
@@ -104,7 +104,7 @@ for noise in [1]:
             fig_RTD = iR.plot_rtd(sol[i], save=True, draw=False)
     
         """Print numerical results ?"""
-        if False:
+        if True:
             iR.print_resul(sol[i])
     
         """Plot parameter histograms ?"""
@@ -118,7 +118,9 @@ for noise in [1]:
         if False:
             fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-iR.merge_results(sol[0], [x.split(".")[0] for x in reflist])
+sol = sol[0]
+
+iR.merge_results(sol, [x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
