@@ -94,12 +94,12 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
 
 class mcmcinv(object):
     # Default MCMC parameters:
-    default_mcmc = {"adaptive"   : True,
+    default_mcmc = {"adaptive"  : False,
                    "nb_chain"   : 1,
-                   "nb_iter"    : 100000,
-                   "nb_burn"    : 80000,
+                   "nb_iter"    : 10000,
+                   "nb_burn"    : 8000,
                    "thin"       : 1,
-                   "tune_inter" : 10000,
+                   "tune_inter" : 500,
                    "prop_scale" : 1.0,
                    "verbose"    : False,
                    "cov_inter"  : 10000,
@@ -253,7 +253,7 @@ class mcmcinv(object):
     #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
     #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
     #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
-            a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
+            a = pymc.Normal('a', mu=0, tau=1./(0.001**2), value=p0["a"], size=decomp_poly+1)
 #            noise = pymc.Uniform('noise', lower=0., upper=1.)
             if self.guess_noise:
                 noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
