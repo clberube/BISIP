@@ -12,8 +12,8 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 
-from models import mcmcinv
-import invResults as iR
+from bisip import mcmcinv
+#import invResults as iR
 import pickle as pickle
 import os
 
@@ -92,26 +92,26 @@ for noise in [1]:
         sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False))
     
         """Plot fit and data ?"""
-        if True:
+        if False:
             fig_fit = iR.plot_fit(sol[i], save=True)
     
         """Save results ?"""
-        if True:
+        if False:
             iR.save_resul(sol[i])
     
         """Plot Debye relaxation time distribution ?"""
-        if True:
+        if False:
             fig_RTD = iR.plot_rtd(sol[i], save=True, draw=False)
     
         """Print numerical results ?"""
-        if True:
+        if False:
             iR.print_resul(sol[i])
     
         """Plot parameter histograms ?"""
-        if True:
+        if False:
             fig_histo = iR.plot_histo(sol[i], save=True)
     
-        if True:
+        if False:
             fig_trace = iR.plot_traces(sol[i], save=True)
     
         """Plot parameter summary and Gelman-Rubin convergence test ?"""
@@ -120,7 +120,7 @@ for noise in [1]:
 
 sol = sol[0]
 
-iR.merge_results(sol, [x.split(".")[0] for x in reflist])
+#iR.merge_results(sol, [x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]

@@ -42,25 +42,23 @@ from __future__ import print_function
 #==============================================================================
 # System imports
 
+from platform import system
 from sys import version_info
-print("Running Python %d.%d.%d"%version_info[0:3])
+print("Running Python %d.%d.%d"%version_info[0:3], "on", system())
 
 print("\nFuture imports")
 from future import standard_library
 standard_library.install_aliases()
 from builtins import zip
 from builtins import str
-from builtins import map
 from builtins import range
 from past.builtins import basestring
 from builtins import object
 from past.utils import old_div
 
 print("System imports")
-from sys import argv, stdout
+from sys import stdout
 stdout.flush()
-from platform import system
-from os.path import realpath as osp_realpath
 from os import getcwd
 from json import load as jload, dump as jdump
 from warnings import filterwarnings
@@ -90,13 +88,13 @@ stdout.flush()
 #==============================================================================
 # Fonts
 if "Darwin" in system():
-    print("\nOS X detected")
+#    print("\nOS X detected")
     fontsize = 12
     pad_radio = 3
     but_size = -2
     res_size = -1
 else:
-    print("\nWindows detected")
+#    print("\nWindows detected")
     fontsize = 10
     pad_radio = 0
     but_size = -2
@@ -289,49 +287,46 @@ class MainApplication(object):
             print("=====================")
             self.activity()
             self.var_review.set(self.f_n)
-            self.sol = mcmcinv(   self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
+            self.sol = mcmcinv( self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
                                 headers=self.head.get(), ph_units=self.units.get(),
                                 cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
                                 c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get())
 
-            self.all_results[self.f_n] = {"pm":self.sol["params"],"MDL":self.sol["pymc_model"],"data":self.sol["data"],"fit":self.sol["fit"], "sol":self.sol}
+            self.all_results[self.f_n] = {"pm":self.sol.pm,"MDL":self.sol.MDL,"data":self.sol.data,"fit":self.sol.fit, "sol":self.sol}
 #           Impression ou non des résultats, graphiques, histogrammes
             try:            
                 self.update_results()        
             except:
                 print("PROBLEM")
             if self.run_options["Print results in console"].get():
-                iR.print_resul(self.sol)
+                self.sol.print_results()
             if self.run_options["Save CSV results"].get():
-                iR.save_resul(self.sol)
-            fig_fit = iR.plot_fit(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get(), draw=self.run_options["Auto draw fit"].get())
+                self.sol.save_results()
+            fig_fit = self.sol.plot_fit(save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get(), draw=self.run_options["Auto draw fit"].get())
             if self.run_options["Auto draw fit"].get():
                 self.plot_window(fig_fit, "Inversion results: "+self.f_n)
             if self.model.get() == "PDecomp":
-                iR.plot_rtd(self.sol, save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get())
+                self.sol.plot_rtd(save=(self.save_options["Save Debye RTD"].get())|(self.save_options["Save fit figures"].get()), save_as_png=self.save_options["PNG figures"].get())
+            
             if self.save_options["Save all hexbins (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
-                    iR.plot_hexbin(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
+                    self.all_results[self.f_n]["sol"].plot_hexbin(v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save all bivariate KDE (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
-                    iR.plot_KDE(self.all_results[self.f_n]["sol"], v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
+                    self.all_results[self.f_n]["sol"].plot_KDE(v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save histograms"].get():
-                try:
-                    iR.plot_histo(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
-                except:
-                    pass
+                    self.all_results[self.f_n]["sol"].plot_histograms(no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save traces"].get():
-                iR.plot_traces(self.all_results[self.f_n]["sol"], no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
+                self.all_results[self.f_n]["sol"].plot_traces(no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save summaries"].get():
-                iR.plot_summary(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+                self.all_results[self.f_n]["sol"].plot_summary(save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save autocorrelations"].get():
-                iR.plot_autocorr(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+                self.all_results[self.f_n]["sol"].plot_autocorrelation(save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save deviance"].get():
-                iR.plot_deviance(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
+                self.all_results[self.f_n]["sol"].plot_model_deviance(save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save loglikelihood"].get():
-                iR.plot_logp(self.all_results[self.f_n]["sol"], save=True, save_as_png=self.save_options["PNG figures"].get())
-
-            
+                self.all_results[self.f_n]["sol"].plot_log_likelihood(save=True, save_as_png=self.save_options["PNG figures"].get())
+#            
             if self.files.index(self.f_n)+1 == len(self.files):
                 self.activity(done=True)
                 self.diagn_buttons()
@@ -387,7 +382,7 @@ class MainApplication(object):
 
     def merge_csv_files(self):
         if len(self.files) > 1:
-            iR.merge_results(self.sol, self.files)
+            self.sol.merge_results(self.files)
             print("=====================")
         else:
             print("Can't merge csv files: Only 1 file inverted in last batch")
@@ -431,7 +426,7 @@ class MainApplication(object):
             button.grid(row=1, column=0, sticky=tk.S, pady=(0,10))
 
             s = tk.Scrollbar(top_RLD, width=20)
-            s.grid(row=0, column=1, sticky=tk.E+tk.N+tk.S, padx=(0,0),pady=(10,10))
+            s.grid(row=0, column=1, sticky=tk.E+tk.N+tk.S, padx=(0,0), pady=(10,10))
             s['command'] = text_RLD.yview
             text_RLD['yscrollcommand'] = s.set
             top_RLD.resizable(width=tk.FALSE, height=tk.FALSE)
@@ -691,7 +686,7 @@ class MainApplication(object):
             for i in self.text_files.curselection():
                 sel = str(self.open_files[i])
                 fn = sel.split("/")[-1].split(".")[0]
-                fig_data = iR.plot_data(sel, self.head.get(), self.units.get())
+                fig_data = sel.plot_data(self.head.get(), self.units.get())
                 self.plot_window(fig_data, "Data preview: "+fn)
         except:
             tkinter.messagebox.showwarning("Preview error",
@@ -702,35 +697,35 @@ class MainApplication(object):
         sol = self.all_results[f_n]["sol"]
         try:
             if which == "traces":
-                trace_plot = iR.plot_traces(sol, save=False)
+                trace_plot = sol.plot_traces(save=False)
                 self.plot_window(trace_plot, "Parameter traces: "+f_n)
             if which == "histo":
-                histo_plot = iR.plot_histo(sol, save=False)
+                histo_plot = sol.plot_histograms(save=False)
                 self.plot_window(histo_plot, "Parameter histograms: "+f_n)
             if which == "autocorr":
-                autocorr_plot = iR.plot_autocorr(sol, save=False)
+                autocorr_plot = sol.plot_autocorrelation(save=False)
                 self.plot_window(autocorr_plot, "Parameter autocorrelation: "+f_n)
             if which == "geweke":
-                geweke_plot = iR.plot_scores(sol, save=False)
+                geweke_plot = sol.plot_scores(save=False)
                 self.plot_window(geweke_plot, "Geweke scores: "+f_n)
             if which == "summary":
-                summa_plot = iR.plot_summary(sol, save=False)
+                summa_plot = sol.plot_summary(save=False)
                 self.plot_window(summa_plot, "Parameter summary: "+f_n)
             if which == "deviance":
-                devi_plot = iR.plot_deviance(sol, save=False)
+                devi_plot = sol.plot_model_deviance(save=False)
                 self.plot_window(devi_plot, "Model deviance: "+f_n)
             if which == "logp":
-                logp_plot = iR.plot_logp(sol, save=False)
+                logp_plot = sol.plot_log_likelihood(save=False)
                 self.plot_window(logp_plot, "Log-likelihood: "+f_n)
             if which == "hexbin":
                 try: self.top_bivar.destroy()
                 except: pass
-                hex_plot = iR.plot_hexbin(sol, self.biv1.get(), self.biv2.get(), save=False)
+                hex_plot = sol.plot_hexbin(self.biv1.get(), self.biv2.get(), save=False)
                 self.plot_window(hex_plot, "Hexagonal binning: "+f_n)
             if which == "KDE":
                 try: self.top_bivar.destroy()
                 except: pass
-                kde_plot = iR.plot_KDE(sol, self.biv1.get(), self.biv2.get(), save=False)
+                kde_plot = sol.plot_KDE(self.biv1.get(), self.biv2.get(), save=False)
                 self.plot_window(kde_plot, "Bivariate KDE: "+f_n)
             stdout.flush()
         except:
@@ -757,12 +752,12 @@ class MainApplication(object):
     def plot_fit_now(self):
         f_n = self.var_review.get()
         sol = self.all_results[f_n]["sol"]
-        fig_fit = iR.plot_fit(sol, save=False, draw=True)
+        fig_fit = sol.plot_fit(save=False, draw=True)
         self.plot_window(fig_fit, "Inversion results: "+f_n)
 
     def plot_rtd_now(self):
         f_n = self.var_review.get()
-        fig_debye = iR.plot_rtd(self.all_results[f_n]["sol"], save=False, draw=True)
+        fig_debye = self.all_results[f_n]["sol"].plot_rtd(save=False, draw=True)
         self.plot_window(fig_debye, "Debye RTD: "+f_n)
 
 #==============================================================================

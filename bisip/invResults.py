@@ -43,16 +43,16 @@ from past.builtins import basestring
 from past.utils import old_div
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import matplotlib.ticker as mticker
 from matplotlib.pyplot import rcParams
 import numpy as np
 from os import path, makedirs
 from os import getcwd
-from sys import argv
 from math import ceil
 from pymc import raftery_lewis, gelman_rubin, geweke
 from scipy.stats import norm, gaussian_kde
-from bisip.models import get_data
+from bisip.utils import get_data
+
+
 #==============================================================================
 sym_labels = dict([('resi', r"$\rho\/(\Omega\cdot m)$"),
                    ('freq', r"Frequency $(Hz)$"),
@@ -1011,7 +1011,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
             plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
         
-        plt.tight_layout(pad=1, h_pad=0, w_pad=0)
+        plt.tight_layout(pad=1, h_pad=0, w_pad=0.5)
         
     if save:
         save_where = '/Figures/Fit figures/'

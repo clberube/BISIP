@@ -12,8 +12,8 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 
-from models import mcmcinv
-import invResults as iR
+from bisip import mcmcinv
+#import invResults as iR
 import pickle as pickle
 import os
 
@@ -37,14 +37,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 15000,
-          "nb_burn"    : 13000,
+          "nb_iter"    : 50000,
+          "nb_burn"    : 40000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
-          "cov_inter"  : 500,
-          "cov_delay"  : 1000,
+          "cov_inter"  : 1000,
+          "cov_delay"  : 5000,
           }
 sol = []
 
@@ -68,7 +68,7 @@ for noise in [1]:
     reflist = [x for x in reflist if "AVG" in x]
     reflist = [x for x in reflist if "Reciprocals" in x]
     
-    reflist = [reflist[0]]
+    reflist = [reflist[1]]
     
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     
@@ -89,19 +89,18 @@ for noise in [1]:
 #    for i in range(repeat):
 #        fn = filename[0]
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
-        from models import mcmcinv
-        sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, keep_traces=False))
+        sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False))
     
         """Plot fit and data ?"""
-        if True:
+        if False:
             fig_fit = iR.plot_fit(sol[i], save=True)
     
         """Save results ?"""
-        if True:
+        if False:
             iR.save_resul(sol[i])
     
         """Plot Debye relaxation time distribution ?"""
-        if True:
+        if False:
             fig_RTD = iR.plot_rtd(sol[i], save=True, draw=False)
     
         """Print numerical results ?"""
@@ -109,18 +108,19 @@ for noise in [1]:
             iR.print_resul(sol[i])
     
         """Plot parameter histograms ?"""
-        if True:
+        if False:
             fig_histo = iR.plot_histo(sol[i], save=True)
     
-        if True:
+        if False:
             fig_trace = iR.plot_traces(sol[i], save=True)
     
         """Plot parameter summary and Gelman-Rubin convergence test ?"""
         if False:
             fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
+sol = sol[0]
 
-iR.merge_results(sol[0], [x.split(".")[0] for x in reflist])
+#iR.merge_results(sol, [x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]

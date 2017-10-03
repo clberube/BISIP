@@ -50,59 +50,17 @@ from __future__ import print_function
 
 #==============================================================================
 # Import PyMC, Numpy, and Cython extension
-from builtins import str
 from builtins import range
 from past.utils import old_div
 import pymc
 import numpy as np
-from bisip.cython_funcs import ColeCole_cyth1, ColeCole_cyth2, Dias_cyth, Decomp_cyth, Shin_cyth
+from bisip.cython_funcs import ColeCole_cyth1, Dias_cyth, Decomp_cyth, Shin_cyth
 # Imports to save things
 from os import path, makedirs
 from os import getcwd
-from sys import argv
 from datetime import datetime
-
-#==============================================================================
-# To extract important information from the model (MDL)
-# Used at the end of inversion routine
-# Arguments: model <pymc model object>, maximum amplitude measured <float>
-def format_results(M, Z_max):
-    var_keys = [s.__name__ for s in M.stochastics] + [d.__name__ for d in M.deterministics]
-    var_keys = [s for s in var_keys if s not in ["zmod", "mp"]]
-    Mst = M.stats(chain=-1)
-    pm = {k: Mst[k]["mean"] for k in var_keys}
-    pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
-    pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
-    pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
-    pm.update({(k.replace("log_", ""))+"_std": abs(pm[k+"_std"]/pm[k])*(10**pm[k]) for k in var_keys if k.startswith("log_")})
-    pm = {k: v for (k, v) in list(pm.items()) if "log_" not in k}
-    return pm           # returns parameters and uncertainty
-    
-#==============================================================================
-# To import data
-# Arguments: file name, number of header lines to skip, phase units
-def get_data(filename,headers,ph_units):
-    # Importation des données .DAT
-    dat_file = np.loadtxt("%s"%(filename),skiprows=headers,delimiter=',')
-    labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
-    data = {l:dat_file[:,i] for (i,l) in enumerate(labels)}
-    if ph_units == "mrad":
-        data["pha"] = old_div(data["pha"],1000)                      # mrad to rad
-        data["pha_err"] = old_div(data["pha_err"],1000)              # mrad to rad
-    if ph_units == "deg":
-        data["pha"] = np.radians(data["pha"])               # deg to rad
-        data["pha_err"] = np.radians(data["pha_err"])       # deg to rad
-    data["phase_range"] = abs(max(data["pha"])-min(data["pha"])) # Range of phase measurements (used in NRMS error calculation)
-    data["Z"]  = data["amp"]*(np.cos(data["pha"]) + 1j*np.sin(data["pha"]))
-    EI = np.sqrt(((data["amp"]*np.cos(data["pha"])*data["pha_err"])**2)+(np.sin(data["pha"])*data["amp_err"])**2)
-    ER = np.sqrt(((data["amp"]*np.sin(data["pha"])*data["pha_err"])**2)+(np.cos(data["pha"])*data["amp_err"])**2)
-    data["Z_err"] = ER + 1j*EI
-    # Normalization of amplitude
-    data["Z_max"] = max(abs(data["Z"]))  # Maximum amplitude
-    zn, zn_e = old_div(data["Z"],data["Z_max"]), old_div(data["Z_err"],data["Z_max"]) # Normalization of impedance by max amplitude
-    data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
-    data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
-    return data
+import bisip.invResults as iR
+from bisip.utils import format_results, get_data
 
 #==============================================================================
 # Function to run MCMC simulation on selected model
@@ -147,8 +105,25 @@ class mcmcinv(object):
                    "cov_inter"  : 10000,
                    "cov_delay"  : 10000,
                     }
+    
+    print_results = iR.print_resul
+    plot_fit = iR.plot_fit
+    plot_histograms = iR.plot_histo
+    plot_traces = iR.plot_traces
+    save_results = iR.save_resul
+    merge_results = iR.merge_results
+    plot_log_likelihood = iR.plot_logp
+    plot_model_deviance = iR.plot_deviance
+    plot_data = iR.plot_data
+    plot_rtd = iR.plot_rtd
+    plot_autocorrelation = iR.plot_autocorr
+    plot_summary = iR.plot_summary
+    plot_hexbin = iR.plot_hexbin
+    plot_KDE = iR.plot_KDE
+    get_model_type = iR.get_model_type
+    
     def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
-                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, keep_traces=False):
+                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False):
         self.model = model
         self.filename = filename 
         self.mcmc = mcmc
@@ -158,13 +133,27 @@ class mcmcinv(object):
         self.decomp_poly = decomp_poly
         self.c_exp = c_exp
         self.log_min_tau = log_min_tau
+        self.guess_noise = guess_noise
         self.keep_traces = keep_traces
         self.start()
+    
+#    def print_resul(self):
+#    #==============================================================================
+#        # Impression des résultats
+#        pm, model, filename = self.pm, self.model, self.filename
+#        print('\n\nInversion success!')
+#        print('Name of file:', filename)
+#        print('Model used:', model)
+#        e_keys = sorted([s for s in list(pm.keys()) if "_std" in s])
+#        v_keys = [e.replace("_std", "") for e in e_keys]
+#        labels = ["{:<8}".format(x+":") for x in v_keys]
+#        np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
+#        for l, v, e in zip(labels, v_keys, e_keys):
+#            print(l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
     
     #==============================================================================
     # Main inversion function.
     def start(self):
-    
     #==============================================================================
         """Cole-Cole Bayesian Model"""
     #==============================================================================
@@ -265,7 +254,11 @@ class mcmcinv(object):
     #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
     #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
             a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
-            noise = pymc.Normal('noise', mu=[1,1], tau=[1,1], size=(2))
+#            noise = pymc.Uniform('noise', lower=0., upper=1.)
+            if self.guess_noise:
+                noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
+                noise_i = pymc.Uniform('noise_imag', lower=0., upper=1.)
+
 #            noises = pymc.Lambda('noises', lambda noise=noise: np.reshape(noise, (2,1)))
             # Deterministics
     #        @pymc.deterministic(plot=False)
@@ -293,12 +286,15 @@ class mcmcinv(object):
             def log_mean_tau(m_=m_):
                 return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
             # Likelihood
-#            obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2, len(w)), observed=True)
-            ri = ["real","imag"]
-            for i in range(2):
-                obs_i = pymc.Normal('obs_%s'%ri[i], mu=zmod[i], tau=1./(noise[i]**2), value=self.data["zn"][i], size = len(w), observed=True)
-#            obs = pymc.Normal('obs', mu=zmod, tau=1./(noise**2), value=self.data["zn"], size = (2, len(w)), observed=True)
-    #        obs = pymc.Normal('obs', mu=zmod[1], tau=1.0/(data["zn_err"][1]**2), value=data["zn"][1], size = len(w), observed=True)
+#            obs = pymc.Normal('obs', mu=zmod, tau=1./((self.data["zn_err"]+noise)**2), value=self.data["zn"], size = (2, len(w)), observed=True)
+#            for i in range(2):
+#                obs_i = pymc.Normal('obs_%s'%i, mu=zmod[i], tau=1./((self.data["zn_err"][i]+noise[i])**2), value=self.data["zn"][i], size = len(w), observed=True)
+            if self.guess_noise:
+                obs_r = pymc.Normal('obs_r', mu=zmod[0], tau=1./((noise_r)**2), value=self.data["zn"][0], size = len(w), observed=True)
+                obs_i = pymc.Normal('obs_i', mu=zmod[1], tau=1./((noise_i)**2), value=self.data["zn"][1], size = len(w), observed=True)
+            else:
+                obs = pymc.Normal('obs', mu=zmod, tau=1./(self.data["zn_err"]**2), value=self.data["zn"], size = (2, len(w)), observed=True)
+
             return locals()
     
     #==============================================================================
@@ -308,6 +304,8 @@ class mcmcinv(object):
     #==============================================================================
         # Importing data
         self.data = get_data(self.filename, self.headers, self.ph_units)
+        if (self.data["pha_err"] == 0).all():
+            self.guess_noise = True
         seigle_m = (old_div((self.data["amp"][-1] - self.data["amp"][0]), self.data["amp"][-1]) ) # Estimating Seigel chargeability
         w = 2*np.pi*self.data["freq"] # Frequencies measured in rad/s
     #    n_freq = len(w)
@@ -364,9 +362,9 @@ class mcmcinv(object):
         # Output
 #        return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
         # End of inversion
-
-
-#==============================================================================
+                    
+    
+    #==============================================================================
 """
 References:
 

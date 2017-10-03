@@ -43,17 +43,17 @@ from past.builtins import basestring
 from past.utils import old_div
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import matplotlib.ticker as mticker
+from matplotlib.pyplot import rcParams
 import numpy as np
 from os import path, makedirs
 from os import getcwd
-from sys import argv
 from math import ceil
 from pymc import raftery_lewis, gelman_rubin, geweke
 from scipy.stats import norm, gaussian_kde
-from bisip.models import get_data
-#==============================================================================
+from bisip.utils import get_data
 
+
+#==============================================================================
 sym_labels = dict([('resi', r"$\rho\/(\Omega\cdot m)$"),
                    ('freq', r"Frequency $(Hz)$"),
                    ('phas', r"-Phase (mrad)"),
@@ -84,7 +84,7 @@ def get_model_type(sol):
 def print_resul(sol):
 #==============================================================================
     # Impression des résultats
-    pm, model, filename = sol["params"], sol["SIP_model"], sol["path"]
+    pm, model, filename = sol.pm, sol.model, sol.filename
     print('\n\nInversion success!')
     print('Name of file:', filename)
     print('Model used:', model)
@@ -101,13 +101,14 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     else:
         save_as = 'pdf'
     MDL = sol.MDL
-    model = get_model_type(sol)
+    model = sol.get_model_type()
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
         keys.remove("m_")
-
+#        keys.remove("log_half_tau")
+#        keys.remove("log_peak_tau")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -211,9 +212,9 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
     else:
         if fig == None or ax == None:
             fig, ax = plt.subplots(figsize=(3,3))
-        MDL = sol["pymc_model"]
-        filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-        model = get_model_type(sol)
+        MDL = sol.MDL
+        filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
+        model = sol.get_model_type()
         if var1 == "R0":
             stoc1 = "R0"
         else:
@@ -240,7 +241,7 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
         values = np.vstack([x, y])
         kernel = gaussian_kde(values)
         kernel.set_bandwidth(bw_method='silverman')
-        kernel.set_bandwidth(bw_method=kernel.factor * 2.)
+#        kernel.set_bandwidth(bw_method=kernel.factor * 2.)
         f = np.reshape(kernel(positions).T, xx.shape)
     
         ax.set_xlim(xmin, xmax)
@@ -403,9 +404,9 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    MDL = sol["pymc_model"]
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-    model = get_model_type(sol)
+    MDL = sol.MDL
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
+    model = sol.get_model_type()
     if var1 == "R0":
         stoc1 = "R0"
     else:
@@ -466,6 +467,8 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
     try:
         keys.remove("zmod")
         keys.remove("m_")
+#        keys.remove("log_half_tau")
+#        keys.remove("log_peak_tau")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -563,9 +566,9 @@ def plot_summary(sol, save=False, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    MDL, ch_n = sol["pymc_model"], sol["mcmc"]["nb_chain"]
+    MDL, ch_n = sol.MDL, sol.mcmc["nb_chain"]
     model = get_model_type(sol)
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
@@ -580,7 +583,7 @@ def plot_summary(sol, save=False, save_as_png=True):
     try:    r_hat = gelman_rubin(MDL)
     except:
         print("\nTwo or more chains of equal length required for Gelman-Rubin convergence")
-    fig, axes = plt.subplots(figsize=(8,5))
+    fig, axes = plt.subplots(figsize=(6,4))
     gs2 = gridspec.GridSpec(3, 3)
     ax1 = plt.subplot(gs2[:, :-1])
     ax2 = plt.subplot(gs2[:, -1], sharey = ax1)
@@ -641,9 +644,9 @@ def plot_autocorr(sol, save=False, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    MDL = sol["pymc_model"]
+    MDL = sol.MDL
     model = get_model_type(sol)
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
@@ -692,7 +695,7 @@ def plot_autocorr(sol, save=False, save_as_png=True):
     except: pass
     return fig
 
-def plot_rtd(sol, save=False, draw=False, save_as_png=True):
+def plot_rtd(sol, save=False, draw=True, save_as_png=True):
     if save_as_png:
         save_as = 'png'
     else:
@@ -713,8 +716,8 @@ def plot_rtd(sol, save=False, draw=False, save_as_png=True):
         peak_unc = pymc.stats()["log_peak_tau"]['standard deviation']
         try: plt.errorbar(peak,y[cond][0]+0.2*y[cond][0],None,peak_unc,"v",c="#d62728",label=r"$\tau_{peak}$")
         except: print("No peak detected")
-        plt.vlines(pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$")
-        plt.vlines(pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$")
+        plt.vlines(pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$ (95% HPD)")
+        plt.vlines(pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$ (95% HPD)")
         plt.errorbar(x, y, None, None, "-", color="#7f7f7f", linewidth=2, label="RTD")  
         inter = pymc.stats()["log_mean_tau"]['95% HPD interval']
         ax.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
@@ -854,14 +857,14 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
-        deviance = sol["pymc_model"].trace('deviance')[:]
-        sampler_state = sol["pymc_model"].get_state()["sampler"]
+        deviance = sol.MDL.trace('deviance')[:]
+        sampler_state = sol.MDL.get_state()["sampler"]
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
-        plt.plot(x, deviance, "-b", linewidth=2, label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol["pymc_model"].DIC,sol["pymc_model"].BPIC))
+        plt.plot(x, deviance, "-b", linewidth=2, label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
         plt.xlabel("Iteration", fontsize=14)
         plt.ylabel("Deviance", fontsize=14)
         plt.yticks(fontsize=14), plt.xticks(fontsize=14)
@@ -908,12 +911,12 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True):
         save_as = 'png'
     else:
         save_as = 'pdf'
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
         fig, ax = plt.subplots(figsize=(6,4))
-        logp = logp_trace(sol["pymc_model"])
-        sampler_state = sol["pymc_model"].get_state()["sampler"]
+        logp = logp_trace(sol.MDL)
+        sampler_state = sol.MDL.get_state()["sampler"]
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
         plt.plot(x, logp, "-b", linewidth=2, label="logp")
         plt.xlabel("Iteration", fontsize=14)
@@ -970,7 +973,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         plt.axes(ax[2])
         plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', color="#1f77b4", label='Data')
         plt.plot(zn_fit.real, -zn_fit.imag, '-', color="#ff7f0e", label='Model')
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color="#ff7f0e", alpha=0.2)
+        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color="#ff7f0e", alpha=0.2, label="95% HPD")
         plt.xlabel(sym_labels['real'])
         plt.ylabel(sym_labels['imag'])
         plt.legend(loc='best', fontsize=9, numpoints=1)
@@ -979,9 +982,9 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         
         # Freq-Ampl
         plt.axes(ax[1])
-        plt.errorbar(f, Amp_dat, Amp_err, None, '.', label='Data')
-        plt.semilogx(f, Amp_fit, '-', label='Fitted model')
-        plt.fill_between(f, Amp_max, Amp_min, color='#7f7f7f', alpha=0.2)
+        plt.errorbar(f, Amp_dat, Amp_err, None, '.', color="#1f77b4", label='Data')
+        plt.semilogx(f, Amp_fit, '-', color="#ff7f0e", label='Model')
+        plt.fill_between(f, Amp_max, Amp_min, color="#ff7f0e", alpha=0.2, label="95% HPD")
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['ampl'])
         plt.legend(loc='best', fontsize=9, numpoints=1)
@@ -990,10 +993,10 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
 
         # Freq-Phas
         plt.axes(ax[0])
-        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', label='Data')
-        plt.loglog(f, -Pha_fit, '-', label='Fitted model')
+        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', color="#1f77b4", label='Data')
+        plt.loglog(f, -Pha_fit, '-', color="#ff7f0e", label='Model')
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color='#7f7f7f', alpha=0.2)
+        plt.fill_between(f, -Pha_max, -Pha_min, color="#ff7f0e", alpha=0.2, label="95% HPD")
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['phas'])
         plt.legend(loc='best', fontsize=9, numpoints=1)
@@ -1008,7 +1011,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
             plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
         
-        plt.tight_layout(pad=1, h_pad=0, w_pad=0)
+        plt.tight_layout(pad=1, h_pad=0, w_pad=0.5)
         
     if save:
         save_where = '/Figures/Fit figures/'
@@ -1027,7 +1030,6 @@ def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
 
 def plot_par():
-    from matplotlib.pyplot import rcParams
 #    rc = rcParams.items()    
     rc = {u'figure.dpi': 72.0,
           u'figure.edgecolor': 'white',
@@ -1037,5 +1039,8 @@ def plot_par():
           u'savefig.dpi': 200.0,
           u'savefig.edgecolor': u'white',
           u'savefig.facecolor': u'white',
+          u'axes.formatter.use_mathtext': True,
+          u'mathtext.default' : 'regular',
           }
     return rc
+rcParams.update(plot_par())
