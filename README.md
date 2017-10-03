@@ -1,10 +1,11 @@
 # **BISIP**
 ## Fast + robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
+#### Compatible with Python 2.7 and 3.6
 ####    Generalized Cole-Cole/Warburg/Debye decomposition scheme 
 ####    Simple single/double/triple Pelton and Dias models
 
 #### Good for batch inversion, propagating SIP data uncertainty to model parameter uncertainty
-#### Compatible with Python 2.7 and 3.6
+#### Coming soon: estimation of the data noise if it was not determined correctly in the lab!
 
 #### [Latest releases](https://github.com/clberube/BISIP/releases)
 #### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
@@ -15,6 +16,7 @@
 
 **1. Installation**
 
+  The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended.  
   Simply enter the following line in the terminal:
   
 ```sh
@@ -30,8 +32,11 @@ pip install git+git://github.com/pymc-devs/pymc
 easy_install pymc
 ```  
  
-  Then run `pip install bisip` after PyMC has been installed.
-  The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended.
+  Then run `pip install bisip` after PyMC has been installed.  
+  
+  BISIP wraps C functions for faster forward modelling! 
+  Make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6.  
+  In doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP.
   
 **2. Starting the GUI for quick use**
    
@@ -42,11 +47,11 @@ easy_install pymc
     
   Results will be saved in the working directory.
   
-**2. Using the standalone executables**
+**3. Using the standalone executables**
   
-  If you are not familiar with Python then you may download the standalones executables.
+  If you are not familiar with Python then you may download the binaries.
   These were compiled on OS X 10.11.6 and Windows 10. 
-  Standalone applications will not be updated as nearly as often as the Python package install through `pip`.
+  Binaries will **NOT** be updated frequently. For latest versions use the Python package installed through `pip`.
   
   On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
   
@@ -98,15 +103,16 @@ easy_install pymc
                   "nb_iter"    : 100000,
                   "nb_burn"    : 80000,
                   "thin"       : 1,
-                  "tune_inter" : 10000,    # Only used when mcmc_p["adaptive"]=False
-                  "prop_scale" : 1.0,      # Only used when mcmc_p["adaptive"]=False
+                  "tune_inter" : 10000,    # Only used when "adaptive" = False
+                  "prop_scale" : 1.0,      # Only used when "adaptive" = False
                   "verbose"    : False,
-                  "cov_inter"  : 10000,    # Only used when mcmc_p["adaptive"]=True
-                  "cov_delay"  : 10000,    # Only used when mcmc_p["adaptive"]=True
+                  "cov_inter"  : 10000,    # Only used when "adaptive" = True
+                  "cov_delay"  : 10000,    # Only used when "adaptive" = True
                   }
      
 **Getting results from `sol`**
      
+  *Currently working on improving this with a class that stores all results and plot methods*
   The `mcmcinv` function has one output. `sol` is a self-explanatory python dictionary containing the results:
   
     In []: sol.keys()
@@ -227,7 +233,7 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**5. Validating results**
+**6. Validating results**
 
 High-precision data respecting Kramers-Kronig relationships
 ![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data respecting Kramers-Kronig relationships")
@@ -244,7 +250,7 @@ Very noisy data not respecting Kramers-Kronig relationships
 
 [Stable traces](https://github.com/clberube/BISIP/blob/master/Screenshots/converged.png)
 
-**6. Building the standalone GUI executables**
+**7. Building the standalone GUI executables**
 
 Install pyinstaller with:  
 ```sh
@@ -262,7 +268,7 @@ pyinstaller BISIP_GUI_osx.spec
 ```
 This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
-**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
+**8. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
 If you are running into problems loading the .pyd or .so files you might need to build them on your computer.  
 On Windows make sure you have Visual Studio 2008 if using Python 2.7 or Visual C++ Build Tools 2015 if using Python 3.6.
@@ -278,7 +284,7 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**8. References**
+**9. References**
 
 <sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
