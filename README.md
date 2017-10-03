@@ -36,9 +36,9 @@ easy_install pymc
   
   BISIP wraps C functions for faster forward modelling! 
   Make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6.  
-  In doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP.
+  If in doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP.
   
-**2. Starting the GUI for quick use**
+**2. Starting the GUI (only recommended for quick use or if not familiar with Python)**
    
   Open a Python interpreter and type:
  
@@ -51,7 +51,7 @@ easy_install pymc
   
   If you are not familiar with Python then you may download the binaries.
   These were compiled on OS X 10.11.6 and Windows 10. 
-  Binaries will **NOT** be updated frequently. For latest versions use the Python package installed through `pip`.
+  Binaries will **NOT** be maintained and will most likely stay on v1.0. For latest versions it is recommended to use the Python package installed through `pip`.
   
   On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
   
@@ -63,7 +63,9 @@ easy_install pymc
     d. Import example data files and launch inversions using the default MCMC parameters  
     e. Results are saved in subfolders inside the BISIP Workplace folder
   
-**4. Calling the inversion function from another script**
+**4. Calling the `mcmcinv` inversion class from your scripts**
+  
+  **See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples**
 
   Import only the inversion function using:
   
@@ -110,24 +112,13 @@ easy_install pymc
                   "cov_delay"  : 10000,    # Only used when "adaptive" = True
                   }
      
-**Getting results from `sol`**
-     
-  *Currently working on improving this with a class that stores all results and plot methods*
-  The `mcmcinv` function has one output. `sol` is a self-explanatory python dictionary containing the results:
-  
-    In []: sol.keys()
-    Out[]: ['pymc_model',
-           'params',
-           'fit',
-           'model_type',
-           'path',
-           'data',
-           'mcmc',
-           'SIP_model']
+**Getting results from `mcmcinv` class**
+
+    sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
   
   For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
   
-    In []: sol['params']
+    In []: sol.pm
     Out[]: {'R0': 51467.05483286261,
            'R0_std': 126.18837609979391,
            'c': array([2.127E-01, 5.805E-01]),
@@ -137,12 +128,12 @@ easy_install pymc
            'tau': array([1.267E+01, 1.692E-06]),
            'tau_std': array([7.253E-01, 2.692E-08])}
   
-    In []: sol['params']['c']
+    In []: sol.pm['c']
     Out[]: array([2.127E-01, 5.805E-01])
   
   To return the MCMC parameters that were used in the inversion:
   
-    In []: sol["mcmc"]
+    In []: sol.mcmc
     Out[]: {'adaptive': True,
            'cov_delay': 5000,
            'cov_inter': 5000,
@@ -156,7 +147,7 @@ easy_install pymc
   
   To return the most probable fit:
   
-    In []: sol['fit']['best']
+    In []: sol.fit['best']
     Out[]: array([ 74597.52558689-51642.13051532j,   93161.78463202-47966.09987357j,
                   114306.00769672-40047.86385792j,  130011.45140055-31266.24589905j,
                   141037.77202291-23556.40715467j,  148726.78729011-17693.58212181j,
@@ -171,7 +162,7 @@ easy_install pymc
 
 To return the raw data:
 
-    In []: sol['data']['Z']
+    In []: sol.data['Z']
     Out[]: array([ 70409.92224316-59566.43355993j,   92155.36514813-51271.53207947j,
                   112377.54681250-38393.49877798j,  125216.20900653-28188.83940559j,
                   134110.39775196-21264.63487700j,  140950.11273197-16854.94020560j,
@@ -184,24 +175,9 @@ To return the raw data:
                   217279.66579033 -9154.96275503j,  225820.90718799 -6727.65204251j,
                   232480.53201552 -5313.6790781j ,  242925.22993713 -4502.38295756j])
   
-  Plotting the comparison
-  
-    import matplotlib.pyplot as plt
-    plt.plot(sol['data']['Z'].real, sol['data']['Z'].imag)
-    plt.plot(sol['fit']['best'].real, sol['fit']['best'].imag)
-
-  BISIP comes with a bunch of plotting functions too
-  Try them out with:
-  
-    from bisip.invResults import plot_fit, plot rtd
-    from bisip.invResults import plot_traces, plot_histo
-    
-    plot_fit(sol, draw=False, save=True)
-    plot_traces(sol, draw=True, save=False)
-
   The inversion function also returns the full PyMC object:
   
-    In []: sol['pymc_model']
+    In []: sol.MDL
     Out[]: <pymc.MCMC.MCMC at 0x11e37a110>
   
   See the PyMC documentation (<https://pymc-devs.github.io/pymc/>) to extract information from the PyMC object
@@ -233,24 +209,7 @@ In this example Nb header lines = 1
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**6. Validating results**
-
-High-precision data respecting Kramers-Kronig relationships
-![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-LowNoise_KKR_respected.png "High-precision data respecting Kramers-Kronig relationships")
-
-Noisy data that respecting Kramers-Kronig relationships
-![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-MediumNoise_KKR%20respected.png "Noisy data that respecting Kramers-Kronig relationships")
-
-Very noisy data not respecting Kramers-Kronig relationships
-![Alt text](https://github.com/clberube/BISIP/blob/master/Example%20results/Figures/Fit%20figures/FIT-DebyeDecomp-NOISY-DATA-KKR%20not%20respected.png "Very noisy data not respecting Kramers-Kronig relationships")
-
-[A Gaussian solution](https://github.com/clberube/BISIP/blob/master/Screenshots/Normal.png)
-
-[Normal bivariate KDE](https://github.com/clberube/BISIP/blob/master/Screenshots/KDE.png)
-
-[Stable traces](https://github.com/clberube/BISIP/blob/master/Screenshots/converged.png)
-
-**7. Building the standalone GUI executables**
+**6. Building the standalone GUI executables**
 
 Install pyinstaller with:  
 ```sh
@@ -268,7 +227,7 @@ pyinstaller BISIP_GUI_osx.spec
 ```
 This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
-**8. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
+**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
 
 If you are running into problems loading the .pyd or .so files you might need to build them on your computer.  
 On Windows make sure you have Visual Studio 2008 if using Python 2.7 or Visual C++ Build Tools 2015 if using Python 3.6.
@@ -284,7 +243,7 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**9. References**
+**8. References**
 
 <sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
 
