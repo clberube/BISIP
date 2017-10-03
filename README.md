@@ -103,15 +103,16 @@ easy_install pymc
                   "nb_iter"    : 100000,
                   "nb_burn"    : 80000,
                   "thin"       : 1,
-                  "tune_inter" : 10000,    # Only used when mcmc_p["adaptive"]=False
-                  "prop_scale" : 1.0,      # Only used when mcmc_p["adaptive"]=False
+                  "tune_inter" : 10000,    # Only used when "adaptive" = False
+                  "prop_scale" : 1.0,      # Only used when "adaptive" = False
                   "verbose"    : False,
-                  "cov_inter"  : 10000,    # Only used when mcmc_p["adaptive"]=True
-                  "cov_delay"  : 10000,    # Only used when mcmc_p["adaptive"]=True
+                  "cov_inter"  : 10000,    # Only used when "adaptive" = True
+                  "cov_delay"  : 10000,    # Only used when "adaptive" = True
                   }
      
 **Getting results from `sol`**
      
+  *Currently working on improving this with a class that stores all results and plot methods*
   The `mcmcinv` function has one output. `sol` is a self-explanatory python dictionary containing the results:
   
     In []: sol.keys()
