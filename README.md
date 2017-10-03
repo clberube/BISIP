@@ -4,13 +4,14 @@
 ####    Generalized Cole-Cole/Warburg/Debye decomposition scheme 
 ####    Simple single/double/triple Pelton and Dias models
 
-#### Good for batch inversion, propagating SIP data uncertainty to model parameter uncertainty
-#### Coming soon: estimation of the data noise if it was not determined correctly in the lab!
+#### Good for batch inversion of laboratory data and propagating SIP data uncertainty to model parameter uncertainty
+#### This code is not designed for large-scale production!
+#### It is best used to learn about the SIP parameters and to evaluate the quality of your laboratory data
 
 #### [Latest releases](https://github.com/clberube/BISIP/releases)
 #### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
-![Alt text](Screenshots/K3894.png "Fit!")
+![Alt text](screenshots/K3894.png "Fit!")
 
 ==================================================================================================================================================================
 
