@@ -14,7 +14,7 @@ import numpy as np
 # Arguments: model <pymc model object>, maximum amplitude measured <float>
 def format_results(M, Z_max):
     var_keys = [s.__name__ for s in M.stochastics] + [d.__name__ for d in M.deterministics]
-    var_keys = [s for s in var_keys if s not in ["zmod", "mp"]]
+    var_keys = [s for s in var_keys if s not in ["zmod", "mp", "cond", ]]
     Mst = M.stats(chain=-1)
     pm = {k: Mst[k]["mean"] for k in var_keys}
     pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})

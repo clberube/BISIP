@@ -83,7 +83,18 @@ from itertools import combinations
 from collections import OrderedDict
 
 print("All modules successfully loaded")
+
+try: 
+    import lib_dd.config.cfg_single as cfg_single
+    print("CCDtools available")
+except: 
+    pass
+
 stdout.flush()
+
+import matplotlib as mpl
+#mpl.rc_file_defaults()
+mpl.rcdefaults()
 
 #==============================================================================
 # Fonts
@@ -184,6 +195,7 @@ class MainApplication(object):
                             "Polyn order"           : 4,
                             "Freq dep"              : 1.0,
                             "Nb modes"              : 2,
+                            "Lambda"                : 10,
                             }
         for k, v in list(self.save_options.items()):
             self.default_root[k] = v.get()
@@ -250,6 +262,11 @@ class MainApplication(object):
         print("Model:", self.model.get())
         if self.model.get() == "ColeCole":
             print("Cole-Cole modes:", self.modes_n.get())
+        if self.model.get() == "CCD":
+            print("CCD lambda:", self.lamb_da.get())
+            self.ccdt_config = cfg_single.cfg_single()
+            self.ccdt_config['fixed_lambda'] = self.lamb_da.get()
+            self.ccdt_config['norm'] = 10          
         if self.model.get() == "PDecomp":
             print("Polynomial order:", self.poly_n.get())
             if self.c_exp.get() == 1.0:
@@ -290,7 +307,8 @@ class MainApplication(object):
             self.sol = mcmcinv( self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
                                 headers=self.head.get(), ph_units=self.units.get(),
                                 cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
-                                c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get())
+                                c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get(),
+                                ccdt_priors='auto', ccdt_cfg=self.ccdt_config)
 
             self.all_results[self.f_n] = {"pm":self.sol.pm,"MDL":self.sol.MDL,"data":self.sol.data,"fit":self.sol.fit, "sol":self.sol}
 #           Impression ou non des résultats, graphiques, histogrammes
@@ -305,8 +323,9 @@ class MainApplication(object):
             fig_fit = self.sol.plot_fit(save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get(), draw=self.run_options["Auto draw fit"].get())
             if self.run_options["Auto draw fit"].get():
                 self.plot_window(fig_fit, "Inversion results: "+self.f_n)
-            if self.model.get() == "PDecomp":
-                self.sol.plot_rtd(save=(self.save_options["Save Debye RTD"].get())|(self.save_options["Save fit figures"].get()), save_as_png=self.save_options["PNG figures"].get())
+            if self.model.get() in ["PDecomp", "CCD"]:
+                if (self.save_options["Save Debye RTD"].get())|(self.save_options["Save fit figures"].get()):
+                    self.sol.plot_rtd(save=True, save_as_png=self.save_options["PNG figures"].get(), draw=False)
             
             if self.save_options["Save all hexbins (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
@@ -391,7 +410,7 @@ class MainApplication(object):
 
     def RLD_diagnostic(self):
         MDL = self.all_results[self.var_review.get()]["MDL"]
-        if self.model.get() == "Debye": adj = -1
+        if self.model.get() == "PDecomp": adj = -1
         else: adj = 0
         try:
             keys = [x.__name__ for x in MDL.stochastics]
@@ -495,7 +514,7 @@ class MainApplication(object):
         but_aut = tk.Button(self.frame_diagn_but, height=1, width=1, text = "Autocorrelation", fg='black', bg='gray97',
                             command = lambda: self.plot_diagnostic("autocorr"), font=fontz["normal_small"], relief=tk.GROOVE)
         but_aut.grid(row=6, column=2, sticky=tk.W+tk.E+tk.S, padx=(5,0), pady=(5,0))
-        if self.model.get() == "PDecomp":
+        if self.model.get() in ["PDecomp", "CCD"]:
             but_rtd = tk.Button(self.frame_diagn_but, height=1, text = "Relaxation time distribution", fg='black', bg='gray97',
                                 command = self.plot_rtd_now, font=fontz["normal_small"], relief=tk.GROOVE)
             but_rtd.grid(row=5, column=0, columnspan=3, sticky=tk.W+tk.E+tk.S, pady=(5,0))
@@ -525,13 +544,16 @@ class MainApplication(object):
         self.frame_optimal.columnconfigure(0, weight=1)
         keys = sorted([x for x in list(pm.keys()) if "_std" not in x])
         try:
-            keys.remove("m_")
+            keys.remove("m_i")
+            keys.remove("tau_i")
         except:
             pass
+        
         if model == "PDecomp":
             adj = -1
         else:
             adj = 0
+        noise_where = [i for i, k in enumerate(keys) if "noise" in k]
         values = flatten([pm[k] for k in sorted(keys)])
         errors = flatten([pm[k+"_std"] for k in sorted(keys)])
         for (i, k) in enumerate(keys):
@@ -550,6 +572,10 @@ class MainApplication(object):
         items2 = [" %.3e " %x for x in values]
         items3 = ["+/- %.0e" %x for x in errors]
         items4 = [" (%.2f%%)" %(abs(100*e/v)) for v,e in zip(values,errors)]
+        
+        for n in noise_where:
+            items4[n]=" (-.--%)"
+        
         all_items = [a_+b_+c_+d_ for a_,b_,c_,d_ in zip(items,items2,items3,items4)]
         items = '\n'.join(all_items)
         text_res.insert("1.0", items)
@@ -595,9 +621,12 @@ class MainApplication(object):
         # Available models
         models = [("Pelton \nCole-Cole","ColeCole"),
                   ("Dias \nmodel","Dias"),
-                  ("Debye / Warburg \ndecomposition","PDecomp"),]
-        self.modes_n, self.poly_n, self.c_exp = tk.IntVar(), tk.IntVar(), tk.DoubleVar()
+                  ("Polynomial decomposition","PDecomp"),
+                  ("Stochastic CCDtools", "CCD"),
+                  ]
+        self.lamb_da, self.modes_n, self.poly_n, self.c_exp = tk.DoubleVar(), tk.IntVar(), tk.IntVar(), tk.DoubleVar()
         self.modes_n.set(self.root_ini["Nb modes"]), self.poly_n.set(self.root_ini["Polyn order"]), self.c_exp.set(self.root_ini["Freq dep"])
+        self.lamb_da.set(self.root_ini["Lambda"])
 
         ### Model choice
         self.model = tk.StringVar()
@@ -628,6 +657,12 @@ class MainApplication(object):
             modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
             modes_scale = tk.Scale(self.mod_opt_frame, variable=self.modes_n, width=10, length=70, from_=1, to=3, font=fontz["normal_small"], orient=tk.HORIZONTAL)
             modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+        if self.model.get() == "CCD":
+            modes_lab = tk.Label(self.mod_opt_frame, text=u"\u03BB", justify = tk.LEFT, font=fontz["normal_small"])
+            modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
+            modes_scale = tk.Entry(self.mod_opt_frame, textvariable=self.lamb_da, width=10)
+            modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+
 
 #==============================================================================
 # Run Exit Options
@@ -854,6 +889,7 @@ class MainApplication(object):
                         "Polyn order"           : self.poly_n.get(),
                         "Freq dep"              : self.c_exp.get(),
                         "Nb modes"              : self.modes_n.get(),
+                        "Lambda"                : self.lamb_da.get(),
                     }
 
         for k, v in list(self.mcmc_vars.items()):

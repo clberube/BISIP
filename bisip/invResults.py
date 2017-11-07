@@ -44,6 +44,7 @@ from past.utils import old_div
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.pyplot import rcParams
+from matplotlib.ticker import MaxNLocator
 import numpy as np
 from os import path, makedirs
 from os import getcwd
@@ -55,7 +56,7 @@ from bisip.utils import get_data
 
 #==============================================================================
 sym_labels = dict([('resi', r"$\rho\/(\Omega\cdot m)$"),
-                   ('freq', r"Frequency $(Hz)$"),
+                   ('freq', r"Frequency (Hz)"),
                    ('phas', r"-Phase (mrad)"),
                    ('ampl', r"$|\rho|$ (normalized)"),
                    ('real', r"$\rho$' (normalized)"),
@@ -72,13 +73,16 @@ def flatten(x):
 
 def get_model_type(sol):
     model = sol.model
-    if model == "PDecomp":
+    if model in ["PDecomp", "CCD"]:
         if sol.model_type["c_exp"] == 0.5:
             model = "WarburgDecomp"
         elif sol.model_type["c_exp"] == 1.0:
             model = "DebyeDecomp"
         else:
             model = "ColeColeDecomp"
+        
+        model = ''.join([c for c in model if c.isupper()])
+        
     return model
 
 def print_resul(sol):
@@ -88,14 +92,24 @@ def print_resul(sol):
     print('\n\nInversion success!')
     print('Name of file:', filename)
     print('Model used:', model)
+    try:
+        pm.pop("cond_std")
+        pm.pop("tau_i_std")
+        pm.pop("m_i_std")
+    except:
+        pass
     e_keys = sorted([s for s in list(pm.keys()) if "_std" in s])
+
     v_keys = [e.replace("_std", "") for e in e_keys]
     labels = ["{:<8}".format(x+":") for x in v_keys]
     np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
     for l, v, e in zip(labels, v_keys, e_keys):
-        print(l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
-
-def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
+        if "noise" not in l:
+            print(l, np.atleast_1d(pm[v]), '+/-', np.atleast_1d(pm[e]), np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
+        else:
+            print(l, np.atleast_1d(pm[v]), '+/-', np.atleast_1d(pm[e]))
+            
+def plot_histo(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -106,7 +120,9 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
-        keys.remove("m_")
+        keys.remove("log_m_i")
+        keys.remove("log_tau_i")
+        keys.remove("cond")
 #        keys.remove("log_half_tau")
 #        keys.remove("log_peak_tau")
     except:
@@ -167,8 +183,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             except:
                 data = sorted(MDL.trace(stoc)[:])
             plt.axes(a)
-            plt.locator_params(axis = 'y', nbins = 8)
-            plt.locator_params(axis = 'x', nbins = 7)
+            plt.locator_params(axis = 'y', nbins = 7)
+            plt.locator_params(axis = 'x', nbins = 6)
             plt.xlabel(k)
             try:
                 hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='#1f77b4', linewidth=1.0, color='#1f77b4', alpha=0.3)
@@ -195,12 +211,12 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True):
             print("\nSaving parameter histograms in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
-            fig.savefig(save_path+'Histo-%s-%s.%s'%(model,filename,save_as), bbox_inches='tight')
+            fig.savefig(save_path+'Histo-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
         try:    plt.close(fig)
         except: pass
         return fig
 
-def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
+def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True, fig_dpi=144):
     if True:
         save_as = 'png'
     else:
@@ -274,132 +290,11 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True):
             print("\nSaving KDE figure in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
-            fig.savefig(save_path+'KDE-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as), dpi=200)
+            fig.savefig(save_path+'KDE-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as), dpi=fig_dpi, bbox_inches='tight')
         plt.close(fig)
         return fig
 
-def plot_all_KDE(sol):
-    MDL = sol["pymc_model"]
-    model = get_model_type(sol)
-    filename = sol["path"].replace("\\", "/").split("/")[-1].split(".")[0]
-    keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
-    sampler = MDL.get_state()["sampler"]
-    try:
-        keys.remove("zmod")
-        keys.remove("m_")
-        keys.remove("log_mean_tau")
-        keys.remove("total_m")
-
-    except:
-        pass
-    for (i, k) in enumerate(keys):
-        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
-        if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(0,vect)]
-    keys = list(flatten(keys))
-    ncols = len(keys)
-    nrows = len(keys)
-#    fig, ax = plt.subplots(nrows, ncols, figsize=(10,10))
-    
-    fig = plt.figure(figsize=(10,10))
-#    plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-    plotz = len(keys)    
-    for i in range(plotz):
-        for j in range(plotz):
-            if j<i:
-                var1 = keys[j]
-                var2 = keys[i]
-                print((var1, var2))
-                ax = plt.subplot2grid((plotz-1, plotz-1), (i-1,j))
-                ax.ticklabel_format(axis='y', style='sci', scilimits=(0,1))
-                ax.ticklabel_format(axis='x', style='sci', scilimits=(0,1))
-                
-                if var1 == "R0":
-                    stoc1 = "R0"
-                else:
-                    stoc1 =  ''.join([k for k in var1 if not k.isdigit()])
-                    stoc_num1 = [int(k) for k in var1 if k.isdigit()]
-                try:
-                    x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
-                except:
-                    x = MDL.trace(stoc1)[:]
-                if var2 == "R0":
-                    stoc2 = "R0"
-                else:
-                    stoc2 =  ''.join([k for k in var2 if not k.isdigit()])
-                    stoc_num2 = [int(k) for k in var2 if k.isdigit()]
-                try:
-                    y = MDL.trace(stoc2)[:,stoc_num2[0]-1]
-                except:
-                    y = MDL.trace(stoc2)[:]
-                xmin, xmax = min(x), max(x)
-                ymin, ymax = min(y), max(y) 
-                # Peform the kernel density estimate
-                xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-                positions = np.vstack([xx.ravel(), yy.ravel()])
-                values = np.vstack([x, y])
-                kernel = gaussian_kde(values)
-                kernel.set_bandwidth(bw_method='silverman')
-                kernel.set_bandwidth(bw_method=kernel.factor * 2.)
-                f = np.reshape(kernel(positions).T, xx.shape)
-            
-                ax.set_xlim(xmin, xmax)
-                ax.set_ylim(ymin, ymax)
-                plt.axes(ax)
-                # Contourf plot
-                plt.grid(None)
-                ax.scatter(x, y, color='k', s=1)
-                plt.xticks(rotation=90)
-                plt.locator_params(axis = 'y', nbins = 7)
-                plt.locator_params(axis = 'x', nbins = 7)
-                cfset = ax.contourf(xx, yy, f, cmap=plt.cm.Blues, alpha=0.7)
-                ## Or kernel density estimate plot instead of the contourf plot
-        #        ax.imshow(np.rot90(f), cmap='Blues', extent=[xmin, xmax, ymin, ymax])
-                # Contour plot
-        #        cset = ax.contour(xx, yy, f, levels=cfset.levels[2::2], colors='k', alpha=0.8)
-                # Label plot
-            #    ax.clabel(cset, cset.levels[::1], inline=1, fmt='%.1E', fontsize=10)
-                plt.yticks(fontsize=14)
-                plt.xticks(fontsize=14)
-                if j == 0:
-                    plt.ylabel("%s" %var2, fontsize=14)
-                if i == len(keys)-1:
-                    plt.xlabel("%s" %var1, fontsize=14)
-                if j != 0:
-                    ax.yaxis.set_ticklabels([])
-                if i != len(keys)-1:
-                    ax.xaxis.set_ticklabels([])
-                plt.suptitle("Adaptive Metropolis step method", fontsize=14)
-    
-    
-    
-    
-#    for v1 in range(len(keys)):
-#        for v2 in range(len(keys)):
-#            if v1 < v2:
-#            
-##                if v1 == v2:
-##                    if keys[v1] == "R0":
-##                        stoc1 = "R0"
-##                    else:
-##                        stoc1 =  ''.join([i for i in keys[v1] if not i.isdigit()])
-##                        stoc_num1 = [int(i) for i in keys[v1] if i.isdigit()]
-##                    try:
-##                        x = MDL.trace(stoc1)[:,stoc_num1[0]-1]
-##                    except:
-##                        x = MDL.trace(stoc1)[:]
-##                        ax[v1,v2].hist(x)
-#                
-#                fig = plot_KDE(sol, keys[v1], keys[v2], fig, ax[v2, v1])
-#                print v1, v2
-##            ax[i,j] = axs
-#            fig = plot_axes(axs, fig)
-#            fig.axes.append(axs)
-
-    fig.tight_layout(pad=0, w_pad=1.0, h_pad=0.1)         
-    return fig
-
-def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
+def plot_hexbin(sol, var1, var2, save=False, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -450,11 +345,11 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True):
         print("\nSaving hexbin figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Bivar-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as))
+        fig.savefig(save_path+'Bivar-%s-%s_%s_%s.%s'%(model,filename,var1,var2,save_as), dpi=fig_dpi, bbox_inches='tight')
     plt.close(fig)
     return fig
 
-def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
+def plot_traces(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -463,12 +358,13 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
     model = get_model_type(sol)
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
+#    keys = sorted([x.__name__ for x in MDL.stochastics])
     sampler = MDL.get_state()["sampler"]
     try:
         keys.remove("zmod")
-        keys.remove("m_")
-#        keys.remove("log_half_tau")
-#        keys.remove("log_peak_tau")
+        keys.remove("log_m_i")
+        keys.remove("log_tau_i")
+        keys.remove("cond")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -498,7 +394,13 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
             plt.ylabel("%s value" %k)
             plt.xlabel("Iteration number")
-            plt.plot(x, data, '-', label=k, linewidth=2.0)
+            
+            if sampler["_burn"] == 0:
+                plt.xscale('log')
+            else:
+                plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+                
+            plt.plot(x, data, '-', label=k)
             plt.grid('on')
             if save:
                 save_where = '/Figures/Traces/%s/' %filename
@@ -530,7 +432,8 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
             plt.locator_params(axis = 'y', nbins = 6)
             plt.ylabel(k)
-            plt.plot(x, data, '-', label=filename, linewidth=1.0)
+            plt.plot(x, data, '-')
+#            plt.xscale('log')
             plt.grid('on')
             
         plt.tight_layout(pad=0.1, w_pad=0., h_pad=-2)
@@ -557,11 +460,11 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True):
             print("\nSaving trace figures in:\n", save_path)
             if not path.exists(save_path):
                 makedirs(save_path)
-            fig.savefig(save_path+'Trace-%s-%s.%s'%(model,filename,save_as))
+            fig.savefig(save_path+'Trace-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
         plt.close(fig)
         return fig
 
-def plot_summary(sol, save=False, save_as_png=True):
+def plot_summary(sol, save=False, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -572,7 +475,9 @@ def plot_summary(sol, save=False, save_as_png=True):
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
-        keys.remove("m_")
+        keys.remove("log_m_i")
+        keys.remove("log_tau_i")
+        keys.remove("cond")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -588,7 +493,7 @@ def plot_summary(sol, save=False, save_as_png=True):
     ax1 = plt.subplot(gs2[:, :-1])
     ax2 = plt.subplot(gs2[:, -1], sharey = ax1)
     ax2.set_xlabel("R-hat")
-    ax2.plot([1,1], [-1,len(keys)], "--b")
+    ax2.plot([1,1], [-1,len(keys)], "--", color="C7", zorder=0)
     for (i, k) in enumerate(keys):
         test = k[-1] not in ["%d"%d for d in range(1,8)] or k == "R0"
         for c in range(ch_n):
@@ -607,15 +512,15 @@ def plot_summary(sol, save=False, save_as_png=True):
                     [abs(hpd_l-val_m)]]
             if ch_n % 2 != 0:   o_s = 0
             else:               o_s = 0.5
-            ax1.scatter(val, i - (old_div(ch_n,2))*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), color="DeepSkyBlue", marker="o", s=50, edgecolors='k')
-            ax1.errorbar(val, i - (old_div(ch_n,2))*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), xerr=err, color="k", fmt=" ", zorder=0)
+            ax1.scatter(val, i - (old_div(ch_n,2))*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), color="C0", marker="o", s=50, edgecolors='C7',alpha=0.7)
+            ax1.errorbar(val, i - (old_div(ch_n,2))*(1./ch_n/1.4) + (1./ch_n/1.4)*(c+o_s), xerr=err, color="C7", fmt=" ", zorder=0)
         if ch_n >= 2:
             R = np.array(r_hat[k[:imp]])
             R[R > 3] = 3
             if test:
-                ax2.scatter(R, i, color="b", marker="s", s=50, edgecolors='k')
+                ax2.scatter(R, i, color="C1", marker="<", s=50, alpha=0.7)
             else:
-                ax2.scatter(R[int(k[-1])-1], i, color="b", marker="s", s=50, edgecolors='k')
+                ax2.scatter(R[int(k[-1])-1], i, color="C1", marker="<", s=50, alpha=0.7)
     
     ax1.set_ylim([-1, len(keys)])
     ax1.set_yticks(list(range(0,len(keys))))
@@ -625,7 +530,8 @@ def plot_summary(sol, save=False, save_as_png=True):
     ax2.set_xticklabels(["","1","2","3+"])
     ax2.set_xticks([0.5, 1, 2, 3])
     ax1.set_xlabel("Parameter values")
-
+    plt.tight_layout()
+    
     if save:
         save_where = '/Figures/Summaries/'
         working_path = getcwd().replace("\\", "/")+"/"
@@ -633,13 +539,13 @@ def plot_summary(sol, save=False, save_as_png=True):
         print("\nSaving summary figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Summary-%s-%s.%s'%(model,filename,save_as))
+        fig.savefig(save_path+'Summary-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
 
     return fig
 
-def plot_autocorr(sol, save=False, save_as_png=True):
+def plot_autocorr(sol, save=False, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -650,7 +556,9 @@ def plot_autocorr(sol, save=False, save_as_png=True):
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
-        keys.remove("m_")
+        keys.remove("log_m_i")
+        keys.remove("log_tau_i")
+        keys.remove("cond")    
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -690,12 +598,12 @@ def plot_autocorr(sol, save=False, save_as_png=True):
         print("\nSaving autocorrelation figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Autocorr-%s-%s.%s'%(model,filename,save_as))
+        fig.savefig(save_path+'Autocorr-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
     return fig
 
-def plot_rtd(sol, save=False, draw=True, save_as_png=True):
+def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -704,33 +612,38 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True):
     model = get_model_type(sol)
     if draw or save:
         fig, ax = plt.subplots(figsize=(5,3))
-        x = np.log10(sol.data["tau"])
-        xmax = max(x)-1
-        xmin = min(x)+1
-        x = np.linspace(xmin, xmax,100)
-        y = 100*np.sum([a*(x**i) for (i, a) in enumerate(sol.pm["a"])], axis=0)
-        pymc = sol.MDL
-        cond = np.r_[True, y[1:] > y[:-1]] & np.r_[y[:-1] > y[1:], True]
-        cond[0] = False
-        peak = pymc.stats()["log_peak_tau"]['mean']
-        peak_unc = pymc.stats()["log_peak_tau"]['standard deviation']
-        try: plt.errorbar(peak,y[cond][0]+0.2*y[cond][0],None,peak_unc,"v",c="#d62728",label=r"$\tau_{peak}$")
-        except: print("No peak detected")
-        plt.vlines(pymc.stats()["log_mean_tau"]['mean'],0,max(y),color="#2ca02c",label=r"$\bar{\tau}$ (95% HPD)")
-        plt.vlines(pymc.stats()["log_half_tau"]['mean'],0,max(y),color='#1f77b4',label=r"$\tau_{50}$ (95% HPD)")
-        plt.errorbar(x, y, None, None, "-", color="#7f7f7f", linewidth=2, label="RTD")  
-        inter = pymc.stats()["log_mean_tau"]['95% HPD interval']
-        ax.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
-        inter = pymc.stats()["log_half_tau"]['95% HPD interval']
-        ax.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
-        ax.fill_between(x, 0, y, where=x >= sol.model_type["log_min_tau"], color="#7f7f7f", alpha=0.2,label=r"$\Sigma m$")
-#        ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2f'))
+        uncer_m = sol.MDL.stats()["log_m_i"]["standard deviation"]
+        uncer_tau = sol.MDL.stats()["log_tau_i"]["standard deviation"]
+        
+        peaks = np.atleast_1d(sol.MDL.stats()["log_peak_tau"]["mean"])
+        uncer_peaks = sol.MDL.stats()["log_peak_tau"]['95% HPD interval']
+        uncer_peaks = uncer_peaks[1]-uncer_peaks[0]
+        
+        bot95 = sol.MDL.stats()["log_m_i"]['95% HPD interval'][0]
+        top95 = sol.MDL.stats()["log_m_i"]['95% HPD interval'][1]
+        
+        log_tau = sol.MDL.stats()["log_tau_i"]['mean']
+        log_m = sol.MDL.stats()["log_m_i"]['mean']
+        m_peaks = log_m[[list(log_tau).index(peaks[x]) for x in range(len(peaks))]]
+        plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD (95% HPD)")
+        plt.errorbar(peaks, m_peaks+0.1, None, uncer_peaks, color="C3", marker="v", linestyle="", label=r"$\tau_{peak}$ (95% HPD)")
+        plt.fill_between(np.log10(sol.ccd_priors['tau']), bot95, top95, color="C7", alpha=0.2)
+        plt.axvline(sol.MDL.stats()["log_mean_tau"]['mean'],color="#2ca02c",label=r"$\bar{\tau}$ (95% HPD)")
+        plt.axvline(sol.MDL.stats()["log_half_tau"]['mean'],color='#1f77b4',label=r"$\tau_{50}$ (95% HPD)")
+        inter = sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
+        plt.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
+        inter = sol.MDL.stats()["log_half_tau"]['95% HPD interval']
+        plt.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
+        plt.axvspan(min(log_tau), min(log_tau)+1, alpha=0.1, color='C7')
+        plt.axvspan(max(log_tau)-1, max(log_tau), alpha=0.1, color='C7')
+        plt.xlim([min(log_tau), max(log_tau)])
+        plt.xlabel(r"log$_{10}\tau$ ($\tau$ in s)", fontsize=12)
+        plt.ylabel("log$_{10}$m", fontsize=12)
+        plt.legend(fontsize=8, loc=1)
         plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)", fontsize=12)
-        plt.ylabel("Chargeability (%)", fontsize=12)
+        plt.ylabel(r"$log_{10}$m", fontsize=12)
         plt.yticks(fontsize=12), plt.xticks(fontsize=12)
-        plt.xlim([xmin, xmax])
         plt.grid('on')
-        plt.ylim([0, max(y)])
         plt.legend(numpoints=1, fontsize=10, loc="best",labelspacing=0.1)
         fig.tight_layout()
     if save:
@@ -741,7 +654,7 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True):
         print("\nSaving relaxation time distribution figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'Polynomial-RTD-%s-%s.%s'%(model, filename,save_as))
+        fig.savefig(save_path+'RTD-%s-%s.%s'%(model, filename,save_as), dpi=fig_dpi, bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
@@ -751,34 +664,40 @@ def save_resul(sol):
     # Fonction pour enregistrer les résultats
     MDL, pm, filepath = sol.MDL, sol.pm, sol.filename
     model = get_model_type(sol)
+    print(model)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     save_where = '/Results/'
     working_path = getcwd().replace("\\", "/")+"/"
-
     save_path = working_path+save_where+"%s/"%sample_name
     print("\nSaving csv file in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
-    if model == 'Debye': tag = 0
-    else: tag = 1
+    if sol.model == 'PDecomp': 
+        tag = 0
+    else: 
+        tag = 1
     A = []
     headers = []
     for c, key in enumerate(sorted(pm.keys())):
         A.append(list(np.array(pm[key]).ravel()))
-        key = model[:2]+"_"+key
+        key = model+"_"+key
         if len(A[c]) == 1:
             headers.append(key)
+#            print(key)
         else:
             for i in range(len(A[c])):
-                headers.append(key+"%d" %(i+tag))
+#                print(key+"%d" %(i+tag))
+                headers.append(key.strip("_")+"%d" %(i+tag))
     headers = ','.join(headers)
     results = np.array(flatten(A))
-    if model in ["DDebye", "PDecomp"]:
-        tau_ = sol["data"]["tau"]
-        add = ["tau"+"%d"%(i+1) for i in range(len(tau_))]
+    if sol.model == 'PDecomp': 
+        tau_ = sol.data["tau"]
+        add = ["tau"+"%d"%(i) for i in range(len(tau_))]
         add = ',' + ','.join(add)
         headers += add
         results = np.concatenate((results,tau_))
+    headers += ",Z_max,c_exponent"
+    results = np.concatenate((results,np.array([sol.data["Z_max"]]),np.array([sol.c_exp])))
     np.savetxt(save_path+'INV_%s_%s.csv' %(model,sample_name), results[None],
                header=headers, comments='', delimiter=',')
     vars_ = ["%s"%x for x in MDL.stochastics]+["%s"%x for x in MDL.deterministics]
@@ -852,7 +771,7 @@ def plot_data(filename, headers, ph_units):
     plt.close(fig)
     return fig
 
-def plot_deviance(sol, save=False, draw=True, save_as_png=True):
+def plot_deviance(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -860,15 +779,19 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True):
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
-        fig, ax = plt.subplots(figsize=(6,4))
+        fig, ax = plt.subplots(figsize=(4,3))
         deviance = sol.MDL.trace('deviance')[:]
         sampler_state = sol.MDL.get_state()["sampler"]
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
-        plt.plot(x, deviance, "-b", linewidth=2, label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
-        plt.xlabel("Iteration", fontsize=14)
-        plt.ylabel("Deviance", fontsize=14)
-        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
-        plt.legend(numpoints=1, fontsize=14, loc="best")
+        plt.plot(x, deviance, "-", color="C3", label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
+        plt.xlabel("Iteration")
+        plt.ylabel("Deviance")
+        plt.legend(numpoints=1, loc="best")
+        if sampler_state["_burn"] == 0:
+            plt.xscale('log')
+        else:
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         fig.tight_layout()
     if save:
         save_where = '/Figures/ModelDeviance/'
@@ -877,7 +800,7 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True):
         print("\nSaving model deviance figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'ModelDeviance-%s-%s.%s'%(model,filename,save_as))
+        fig.savefig(save_path+'ModelDeviance-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
@@ -906,7 +829,7 @@ def logp_trace(model):
         logp[i_sample] = model.logp
     return logp
 
-def plot_logp(sol, save=False, draw=True, save_as_png=True):
+def plot_logp(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -914,15 +837,19 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True):
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
-        fig, ax = plt.subplots(figsize=(6,4))
+        fig, ax = plt.subplots(figsize=(4,3))
         logp = logp_trace(sol.MDL)
         sampler_state = sol.MDL.get_state()["sampler"]
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
-        plt.plot(x, logp, "-b", linewidth=2, label="logp")
-        plt.xlabel("Iteration", fontsize=14)
-        plt.ylabel("Log-likelihood", fontsize=14)
-        plt.yticks(fontsize=14), plt.xticks(fontsize=14)
-        plt.legend(numpoints=1, fontsize=14, loc="best")
+        plt.plot(x, logp, "-", color="C3")
+        plt.xlabel("Iteration")
+        plt.ylabel("Log-likelihood")
+        plt.legend(numpoints=1, loc="best")
+        if sampler_state["_burn"] == 0:
+            plt.xscale('log')
+        else:
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         fig.tight_layout()
     if save:
         save_where = '/Figures/LogLikelihood/'
@@ -931,13 +858,13 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True):
         print("\nSaving logp trace figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'LogLikelihood-%s-%s.%s'%(model,filename,save_as))
+        fig.savefig(save_path+'LogLikelihood-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
     if draw:    return fig
     else:       return None
 
-def plot_fit(sol, save=False, draw=True, save_as_png=True):
+def plot_fit(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -1020,7 +947,7 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True):
         print("\nSaving fit figure in:\n", save_path)
         if not path.exists(save_path):
             makedirs(save_path)
-        fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as), bbox_inches='tight')
+        fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as), dpi=fig_dpi, bbox_inches='tight')
     try:    plt.close(fig)
     except: pass
     if draw:    return fig

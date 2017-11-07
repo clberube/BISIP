@@ -40,7 +40,7 @@ setup(
   py_models=['models','invResults','GUI'],
   version = '0.0.8',
   license = 'MIT',
-  install_requires=['pymc'],
+  install_requires=['pymc', 'ccd_tools'],
   description = 'Bayesian inversion of SIP data',
   long_description = 'README.md',
   author = 'Charles L. Berube',

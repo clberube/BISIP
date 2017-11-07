@@ -61,6 +61,8 @@ from os import getcwd
 from datetime import datetime
 import bisip.invResults as iR
 from bisip.utils import format_results, get_data
+import lib_dd.decomposition.ccd_single as ccd_single
+import lib_dd.config.cfg_single as cfg_single
 
 #==============================================================================
 # Function to run MCMC simulation on selected model
@@ -93,8 +95,18 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
     return MDL
 
 class mcmcinv(object):
+    """
+    List of models:
+    Use mcmcinv("ColeCole"
+                "Dias"
+                "PDecomp"
+                "Shin"
+                "CCDtools"
+                )
+    """
+    
     # Default MCMC parameters:
-    default_mcmc = {"adaptive"  : False,
+    default_mcmc = {"adaptive"  : True,
                    "nb_chain"   : 1,
                    "nb_iter"    : 10000,
                    "nb_burn"    : 8000,
@@ -102,8 +114,8 @@ class mcmcinv(object):
                    "tune_inter" : 500,
                    "prop_scale" : 1.0,
                    "verbose"    : False,
-                   "cov_inter"  : 10000,
-                   "cov_delay"  : 10000,
+                   "cov_inter"  : 1000,
+                   "cov_delay"  : 1000,
                     }
     
     print_results = iR.print_resul
@@ -122,12 +134,22 @@ class mcmcinv(object):
     plot_KDE = iR.plot_KDE
     get_model_type = iR.get_model_type
     
+    
+
+    
+    
+    
+    
     def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
-                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False):
+                   ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, 
+                   log_min_tau=-3, guess_noise=False, keep_traces=False, 
+                   ccdt_priors='auto', ccdt_cfg=None):
+        
         self.model = model
         self.filename = filename 
         self.mcmc = mcmc
         self.headers = headers
+        self.ccd_priors = ccdt_priors
         self.ph_units = ph_units
         self.cc_modes = cc_modes
         self.decomp_poly = decomp_poly
@@ -135,8 +157,15 @@ class mcmcinv(object):
         self.log_min_tau = log_min_tau
         self.guess_noise = guess_noise
         self.keep_traces = keep_traces
+        self.ccdtools_config = ccdt_cfg
+        if model == "CCD":
+            if self.ccd_priors == 'auto':
+                self.ccd_priors = self.get_ccd_priors(config=self.ccdtools_config)
+            
         self.start()
-    
+        
+
+                
 #    def print_resul(self):
 #    #==============================================================================
 #        # Impression des résultats
@@ -150,6 +179,39 @@ class mcmcinv(object):
 #        np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
 #        for l, v, e in zip(labels, v_keys, e_keys):
 #            print(l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
+    
+    def get_ccd_priors(self, config=None):
+        data = get_data(self.filename, self.headers, self.ph_units)
+        data_ccdtools = np.hstack((data['amp'][::-1], 1000*data['pha'][::-1]))
+        freq_ccdtools = data['freq'][::-1]
+            
+        # set options using this dict-like object
+        if config == None:
+            config = cfg_single.cfg_single()
+            config['fixed_lambda'] = 10
+            config['norm'] = 10  
+            
+        config['frequency_file'] = freq_ccdtools
+        config['data_file'] = data_ccdtools
+
+        
+        # generate a ccd object
+        ccd_obj = ccd_single.ccd_single(config)
+        
+        # commence with the actual fitting
+        ccd_obj.fit_data()
+        
+        # extract the last iteration
+        last_it = ccd_obj.results[0].iterations[-1]
+        
+        # Make a dictionary with what we learn from CCDtools inversion
+        priors = {}
+        priors['R0'] = last_it.stat_pars['rho0'][0]
+        priors['tau'] = last_it.Data.obj.tau
+        priors['log_tau'] = np.log10(last_it.Data.obj.tau)
+        priors['m'] = 10**last_it.m[1:]
+        priors['log_m'] = last_it.m[1:]  
+        return priors 
     
     #==============================================================================
     # Main inversion function.
@@ -234,14 +296,67 @@ class mcmcinv(object):
             obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2,len(w)), observed=True)
             return locals()
     
+    
+        def stoCCD(c_exp, ccd_priors):
+            # Stochastic variables (noise on CCDtools output)
+            # The only assumption we make is that the RTD noise is below 10%
+            noise_rho = pymc.Uniform('noise_rho', lower=-0.1, upper=0.1)
+            noise_tau = pymc.Uniform('log_noise_tau', lower=-0.1, upper=0.1)
+            noise_m = pymc.Uniform('log_noise_m', lower=-0.1, upper=0.1)
+            
+            # Deterministic variables of CCD
+            @pymc.deterministic(plot=False) 
+            def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
+                # Chargeability array
+                return logm + dm
+            @pymc.deterministic(plot=False) 
+            def log_tau_i(logt=ccd_priors['log_tau'], dt=noise_tau):
+                # Tau logarithmic array
+                return logt + dt
+            @pymc.deterministic(plot=False) 
+            def R0(R=ccd_priors['R0'], dR=noise_rho):
+                # DC resistivity (normalized)
+                return R + dR
+            @pymc.deterministic(plot=False) 
+            def cond(log_tau = log_tau_i):
+                # Condition on log_tau to compute integrating parameters
+                return (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
+            @pymc.deterministic(plot=False)
+            def total_m(m=10**log_m_i[cond]):
+                # Total chargeability
+                return np.sum(m)
+            @pymc.deterministic(plot=False)
+            def log_half_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
+                # Tau 50
+                return log_tau[np.where(np.cumsum(m_i)/np.sum(m_i) > 0.5)[0][0]]
+            @pymc.deterministic(plot=False)
+            def log_peak_tau(m_i=log_m_i, log_tau=log_tau_i):
+                # Tau peaks
+                peak_cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
+                return log_tau[peak_cond]
+            @pymc.deterministic(plot=False)
+            def log_mean_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
+                # Tau logarithmic average 
+                return np.log10(np.exp(old_div(np.sum(m_i*np.log(10**log_tau)),np.sum(m_i))))
+            @pymc.deterministic(plot=False)
+            def zmod(R0=R0, m=10**log_m_i, tau=10**log_tau_i):
+                Z = R0 * (1 - np.sum(m*(1 - 1.0/(1 + ((1j*w[:,np.newaxis]*tau)**c_exp))), axis=1))
+                return np.array([Z.real, Z.imag])
+            
+            # Likelihood function
+            obs = pymc.Normal('obs', mu=zmod, tau=1./(2*self.data["zn_err"]**2), value=self.data["zn"], size = (2, len(w)), observed=True)
+            return locals()
+    
     #==============================================================================
         """Debye, Warburg, Cole-Cole decomposition Bayesian Model"""
     #==============================================================================
-        def PolyDecompModel(decomp_poly, c_exp):
+        def PolyDecompModel(decomp_poly, c_exp, ccd_priors):
             # Initial guesses
             p0 = {'R0'         : 1.0,
                   'a'          : None,
     #              'a'          : ([0.01, -0.01, -0.01, 0.001, 0.001]+[0.0]*(decomp_poly-4))[:(decomp_poly+1)],
+                  'a_mu' : np.array([0.00590622364129, -0.00259869937567, -0.00080727429007, 0.00051369743841, 0.000176048226508]),
+                  'a_sd' : np.array([0.00448686724083, 0.00354717249566, 0.00153254695967, 0.00109002742145, 0.000189386869372]),
                   'log_tau_hi' : -5.0,
                   'm_hi'       : 0.5,
                   'TotalM'     : None,
@@ -249,11 +364,17 @@ class mcmcinv(object):
                   'U'          : None,
                   }
             # Stochastics
-            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
+#            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
+#            R0 = pymc.Normal('R0', mu=0.989222579813, tau=1./(0.0630422467962**2))
+            R0 = pymc.Normal('R0', mu=ccd_priors['R0'], tau=1./(1e-10**2))
+
     #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
     #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
-    #        a = pymc.Uniform('a', lower=-0.1, upper=0.1, value=p0["a"], size=decomp_poly+1)
-            a = pymc.Normal('a', mu=0, tau=1./(0.001**2), value=p0["a"], size=decomp_poly+1)
+#            a = pymc.Uniform('a', lower=0.9*np.array([-0.0018978657,-0.01669747315,-0.00507228575,-0.0058924686,-0.0008685198]), upper=1.1*np.array([0.0222362157,0.00528944015,0.00767281475,0.0052059286,0.0009839638]), size=decomp_poly+1)
+#            a = pymc.MvNormal('a', mu=p0['a_mu']*np.ones(decomp_poly+1), tau=(1./(2*p0['a_sd'])**2)*np.eye(decomp_poly+1))        
+            a = pymc.MvNormal('a', mu=ccd_priors['a'], tau=(1./(1e-10)**2)*np.eye(decomp_poly+1))        
+
+#            a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
 #            noise = pymc.Uniform('noise', lower=0., upper=1.)
             if self.guess_noise:
                 noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
@@ -268,23 +389,28 @@ class mcmcinv(object):
             def zmod(R0=R0, a=a):
                 return Decomp_cyth(w, tau_10, log_taus, c_exp, R0, a)
             @pymc.deterministic(plot=False)
-            def m_(a=a):
-                return np.sum((a*log_taus.T).T, axis=0)
-            @pymc.deterministic(plot=False)
-            def total_m(m_=m_):
-                return np.sum(m_[(log_tau >= self.log_min_tau)&(m_ >= 0)&(log_tau <= max(log_tau)-1)])
-            @pymc.deterministic(plot=False)
-            def log_half_tau(m_=m_):
-                return log_tau[cond][np.where(np.cumsum(m_[cond])/np.sum(m_[cond]) > 0.5)[0][0]]
-            @pymc.deterministic(plot=False)
-            def log_peak_tau(m_=m_):
-                cond = np.r_[True, m_[1:] > m_[:-1]] & np.r_[m_[:-1] > m_[1:], True]
-                cond[0] = False
-                try: return log_tau[cond][0]
-                except: return log_tau[0]
-            @pymc.deterministic(plot=False)
-            def log_mean_tau(m_=m_):
-                return np.log10(np.exp(old_div(np.sum(m_[cond]*np.log(10**log_tau[cond])),np.sum(m_[cond]))))
+            def m_i(a=a):
+#                return np.sum((a*log_taus.T).T, axis=0)
+                return np.poly1d(a)(ccd_priors['log_tau'])
+            
+            
+            
+#            @pymc.deterministic(plot=False)
+#            def total_m(m_i=m_i):
+#                return np.sum(m_i[(log_tau >= self.log_min_tau)&(m_i >= 0)&(log_tau <= max(log_tau)-1)])
+##                return np.sum(m_i[(log_tau >= self.log_min_tau)&(m_i >= 0)&(log_tau <= 0)])
+#            @pymc.deterministic(plot=False)
+#            def log_half_tau(m_i=m_i):
+#                return log_tau[cond][np.where(np.cumsum(m_i[cond])/np.sum(m_i[cond]) > 0.5)[0][0]]
+#            @pymc.deterministic(plot=False)
+#            def log_peak_tau(m_i=m_i):
+#                cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
+#                cond[0] = False
+#                try: return log_tau[cond][0]
+#                except: return log_tau[0]
+#            @pymc.deterministic(plot=False)
+#            def log_mean_tau(m_i=m_i):
+#                return np.log10(np.exp(old_div(np.sum(m_i[cond]*np.log(10**log_tau[cond])),np.sum(m_i[cond]))))
             # Likelihood
 #            obs = pymc.Normal('obs', mu=zmod, tau=1./((self.data["zn_err"]+noise)**2), value=self.data["zn"], size = (2, len(w)), observed=True)
 #            for i in range(2):
@@ -304,6 +430,10 @@ class mcmcinv(object):
     #==============================================================================
         # Importing data
         self.data = get_data(self.filename, self.headers, self.ph_units)
+        
+        
+        
+        
         if (self.data["pha_err"] == 0).all():
             self.guess_noise = True
         seigle_m = (old_div((self.data["amp"][-1] - self.data["amp"][0]), self.data["amp"][-1]) ) # Estimating Seigel chargeability
@@ -311,11 +441,12 @@ class mcmcinv(object):
     #    n_freq = len(w)
     #    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
         # Relaxation times associated with the measured frequencies (Debye decomposition only)
-        log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
-        cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
-        log_taus = np.array([log_tau**i for i in range(0,self.decomp_poly+1,1)]) # Polynomial approximation for the RTD
-        tau_10 = 10**log_tau # Accelerates sampling
-        self.data["tau"] = tau_10 # Put relaxation times in data dictionary
+#        log_tau = self.ccd_priors['log_tau']
+#        log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
+#        cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
+#        log_taus = np.array([log_tau**i for i in list(reversed(range(0,self.decomp_poly+1)))]) # Polynomial approximation for the RTD
+#        tau_10 = 10**log_tau # Accelerates sampling
+#        self.data["tau"] = tau_10 # Put relaxation times in data dictionary
     
         # Time and date (for saving traces)
         sample_name = self.filename.replace("\\", "/").split("/")[-1].split(".")[0]
@@ -336,9 +467,10 @@ class mcmcinv(object):
         # "ColeCole", "Dias", "Debye" or "Shin"
         sim_dict = {"ColeCole": {"func": ColeColeModel,     "args": [self.cc_modes]          },
                     "Dias":     {"func": DiasModel,         "args": []                  },
-                    "PDecomp":  {"func": PolyDecompModel,   "args": [self.decomp_poly, self.c_exp]},
+                    "PDecomp":  {"func": PolyDecompModel,   "args": [self.decomp_poly, self.c_exp, self.ccd_priors]},
                     "Shin":     {"func": ShinModel,         "args": []                  },
     #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
+                    "CCD":      {"func": stoCCD,            "args": [self.c_exp, self.ccd_priors]}
                     }
         simulation = sim_dict[self.model] # Pick entries for the selected model
         self.MDL = run_MCMC(simulation["func"](*simulation["args"]), self.mcmc, save_traces=self.keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments

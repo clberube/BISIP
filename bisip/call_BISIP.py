@@ -13,7 +13,7 @@ from builtins import str
 from builtins import range
 
 from bisip import mcmcinv
-#import invResults as iR
+#import bisip.invResults as iR
 import pickle as pickle
 import os
 
@@ -37,14 +37,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 100000,
-          "nb_burn"    : 80000,
+          "nb_iter"    : 300000,
+          "nb_burn"    : 250000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False,
           "cov_inter"  : 10000,
-          "cov_delay"  : 10000,
+          "cov_delay"  : 40000,
           }
 sol = []
 
@@ -65,13 +65,28 @@ for noise in [1]:
         
     reflist = os.listdir("/Users/Charles/Documents/SIP dat files")
     reflist = [x for x in reflist if not x.startswith('.')]
-    reflist = [x for x in reflist if "AVG" in x]
-    reflist = [x for x in reflist if "Reciprocals" in x]
-    
-    reflist = [reflist[1]]
-    
+    reflist = [x for x in reflist if ("AVG" in x)]
+    reflist = [x for x in reflist if ("Reciprocals" in x) or ("MLA12" in x)]
+#    reflist = [x for x in reflist if "Reciprocals" in x]
+    reflist = [x for x in reflist if "MLA12" in x]
+#    reflist = [x for x in reflist if "_stable" in x]
+#    reflist = [x for x in reflist if "55" in x]
+#    reflist = reflist[-87:]
+#    reflist = [reflist[1]]
+#    reflist = reflist[1:11]
+#    reflist = ["SIP-K389055.dat"]
+#    reflist = [reflist[x] for x in [2,0,3,1,-2]]
+    reflist = [reflist[x] for x in [4,5,6,7,-1]]
+
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
-    
+#    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389398.dat"]
+#    filename = [
+##            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_2_sandstones_nord_avg.dat',
+#            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_5_sandstones_sud_avg.dat',
+#            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_3_mudstones_avg.dat',
+#            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_4_sandstonesGOLD_avg.dat',
+#            ]
+#    filename = ['/Users/Charles/Documents/SIP dat files/SIP-BravoProfile_Station%s.dat' %str(x).zfill(2) for x in range(29)]
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
@@ -92,35 +107,35 @@ for noise in [1]:
         sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False))
     
         """Plot fit and data ?"""
-        if False:
-            fig_fit = iR.plot_fit(sol[i], save=True)
+        if True:
+            sol[i].plot_fit(save=True, draw=True)
     
         """Save results ?"""
-        if False:
-            iR.save_resul(sol[i])
+        if True:
+            sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
-        if False:
-            fig_RTD = iR.plot_rtd(sol[i], save=True, draw=False)
+        if True:
+            fig_RTD = sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""
         if False:
-            iR.print_resul(sol[i])
+            sol[i].print_resul()
     
         """Plot parameter histograms ?"""
         if False:
-            fig_histo = iR.plot_histo(sol[i], save=True)
+            fig_histo = sol[i].plot_histograms(save=True)
     
         if False:
-            fig_trace = iR.plot_traces(sol[i], save=True)
+            fig_trace = sol[i].plot_traces(save=True)
     
         """Plot parameter summary and Gelman-Rubin convergence test ?"""
         if False:
             fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-sol = sol[0]
+#sol = sol[0]
 
-#iR.merge_results(sol, [x.split(".")[0] for x in reflist])
+sol[0].merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
