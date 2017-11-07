@@ -159,13 +159,13 @@ class MainApplication(object):
 
         self.mcmc_vars = OrderedDict((
                                 ("Number of chains"     , (tk.IntVar(), 1)),
-                                ("Total iterations"     , (tk.IntVar(), 100000)),
-                                ("Burn-in period"       , (tk.IntVar(), 80000)),
+                                ("Total iterations"     , (tk.IntVar(), 10000)),
+                                ("Burn-in period"       , (tk.IntVar(), 8000)),
                                 ("Thinning factor"      , (tk.IntVar(), 1)),
-                                ("Tuning interval"      , (tk.IntVar(), 10000)),
+                                ("Tuning interval"      , (tk.IntVar(), 1000)),
                                 ("Proposal scale"       , (tk.DoubleVar(), 1)),
-                                ("Covariance delay"     , (tk.IntVar(), 10000)),
-                                ("Covariance interval"  , (tk.IntVar(), 10000)),
+                                ("Covariance delay"     , (tk.IntVar(), 1000)),
+                                ("Covariance interval"  , (tk.IntVar(), 1000)),
                                 ))
 
         self.master = master
