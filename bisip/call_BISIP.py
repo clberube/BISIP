@@ -107,15 +107,15 @@ for noise in [1]:
         sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False))
     
         """Plot fit and data ?"""
-        if True:
+        if False:
             sol[i].plot_fit(save=True, draw=True)
     
         """Save results ?"""
-        if True:
+        if False:
             sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
-        if True:
+        if False:
             fig_RTD = sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""

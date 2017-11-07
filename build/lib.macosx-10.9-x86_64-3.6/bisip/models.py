@@ -364,17 +364,17 @@ class mcmcinv(object):
                   'U'          : None,
                   }
             # Stochastics
-#            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
+            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
 #            R0 = pymc.Normal('R0', mu=0.989222579813, tau=1./(0.0630422467962**2))
-            R0 = pymc.Normal('R0', mu=ccd_priors['R0'], tau=1./(1e-10**2))
+#            R0 = pymc.Normal('R0', mu=ccd_priors['R0'], tau=1./(1e-10**2))
 
     #        m_hi = pymc.Uniform('m_hi', lower=0.0, upper=1.0, value=p0['m_hi'])
     #        log_tau_hi = pymc.Uniform('log_tau_hi', lower=-8.0, upper=-3.0, value=p0['log_tau_hi'])
 #            a = pymc.Uniform('a', lower=0.9*np.array([-0.0018978657,-0.01669747315,-0.00507228575,-0.0058924686,-0.0008685198]), upper=1.1*np.array([0.0222362157,0.00528944015,0.00767281475,0.0052059286,0.0009839638]), size=decomp_poly+1)
 #            a = pymc.MvNormal('a', mu=p0['a_mu']*np.ones(decomp_poly+1), tau=(1./(2*p0['a_sd'])**2)*np.eye(decomp_poly+1))        
-            a = pymc.MvNormal('a', mu=ccd_priors['a'], tau=(1./(1e-10)**2)*np.eye(decomp_poly+1))        
+#            a = pymc.MvNormal('a', mu=ccd_priors['a'], tau=(1./(1e-10)**2)*np.eye(decomp_poly+1))        
 
-#            a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
+            a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0["a"], size=decomp_poly+1)
 #            noise = pymc.Uniform('noise', lower=0., upper=1.)
             if self.guess_noise:
                 noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
@@ -390,27 +390,27 @@ class mcmcinv(object):
                 return Decomp_cyth(w, tau_10, log_taus, c_exp, R0, a)
             @pymc.deterministic(plot=False)
             def m_i(a=a):
-#                return np.sum((a*log_taus.T).T, axis=0)
-                return np.poly1d(a)(ccd_priors['log_tau'])
+                return np.sum((a*log_taus.T).T, axis=0)
+#                return np.poly1d(a)(ccd_priors['log_tau'])
             
             
             
-#            @pymc.deterministic(plot=False)
-#            def total_m(m_i=m_i):
-#                return np.sum(m_i[(log_tau >= self.log_min_tau)&(m_i >= 0)&(log_tau <= max(log_tau)-1)])
-##                return np.sum(m_i[(log_tau >= self.log_min_tau)&(m_i >= 0)&(log_tau <= 0)])
-#            @pymc.deterministic(plot=False)
-#            def log_half_tau(m_i=m_i):
-#                return log_tau[cond][np.where(np.cumsum(m_i[cond])/np.sum(m_i[cond]) > 0.5)[0][0]]
-#            @pymc.deterministic(plot=False)
-#            def log_peak_tau(m_i=m_i):
-#                cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
-#                cond[0] = False
-#                try: return log_tau[cond][0]
-#                except: return log_tau[0]
-#            @pymc.deterministic(plot=False)
-#            def log_mean_tau(m_i=m_i):
-#                return np.log10(np.exp(old_div(np.sum(m_i[cond]*np.log(10**log_tau[cond])),np.sum(m_i[cond]))))
+            @pymc.deterministic(plot=False)
+            def total_m(m_i=m_i):
+                return np.sum(m_i[(log_tau >= self.log_min_tau)&(m_i >= 0)&(log_tau <= max(log_tau)-1)])
+#                return np.sum(m_i[(log_tau >= self.log_min_tau)&(m_i >= 0)&(log_tau <= 0)])
+            @pymc.deterministic(plot=False)
+            def log_half_tau(m_i=m_i):
+                return log_tau[cond][np.where(np.cumsum(m_i[cond])/np.sum(m_i[cond]) > 0.5)[0][0]]
+            @pymc.deterministic(plot=False)
+            def log_peak_tau(m_i=m_i):
+                cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
+                cond[0] = False
+                try: return log_tau[cond][0]
+                except: return log_tau[0]
+            @pymc.deterministic(plot=False)
+            def log_mean_tau(m_i=m_i):
+                return np.log10(np.exp(old_div(np.sum(m_i[cond]*np.log(10**log_tau[cond])),np.sum(m_i[cond]))))
             # Likelihood
 #            obs = pymc.Normal('obs', mu=zmod, tau=1./((self.data["zn_err"]+noise)**2), value=self.data["zn"], size = (2, len(w)), observed=True)
 #            for i in range(2):
@@ -442,11 +442,12 @@ class mcmcinv(object):
     #    n_decades = np.ceil(max(np.log10(old_div(1.0,w)))) - np.floor(min(np.log10(old_div(1.0,w))))
         # Relaxation times associated with the measured frequencies (Debye decomposition only)
 #        log_tau = self.ccd_priors['log_tau']
-#        log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
-#        cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
-#        log_taus = np.array([log_tau**i for i in list(reversed(range(0,self.decomp_poly+1)))]) # Polynomial approximation for the RTD
-#        tau_10 = 10**log_tau # Accelerates sampling
-#        self.data["tau"] = tau_10 # Put relaxation times in data dictionary
+        if self.model == "PDecomp":
+            log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
+            cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
+            log_taus = np.array([log_tau**i for i in list(reversed(range(0,self.decomp_poly+1)))]) # Polynomial approximation for the RTD
+            tau_10 = 10**log_tau # Accelerates sampling
+            self.data["tau"] = tau_10 # Put relaxation times in data dictionary
     
         # Time and date (for saving traces)
         sample_name = self.filename.replace("\\", "/").split("/")[-1].split(".")[0]

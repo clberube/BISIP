@@ -159,13 +159,13 @@ class MainApplication(object):
 
         self.mcmc_vars = OrderedDict((
                                 ("Number of chains"     , (tk.IntVar(), 1)),
-                                ("Total iterations"     , (tk.IntVar(), 100000)),
-                                ("Burn-in period"       , (tk.IntVar(), 80000)),
+                                ("Total iterations"     , (tk.IntVar(), 10000)),
+                                ("Burn-in period"       , (tk.IntVar(), 8000)),
                                 ("Thinning factor"      , (tk.IntVar(), 1)),
-                                ("Tuning interval"      , (tk.IntVar(), 10000)),
+                                ("Tuning interval"      , (tk.IntVar(), 1000)),
                                 ("Proposal scale"       , (tk.DoubleVar(), 1)),
-                                ("Covariance delay"     , (tk.IntVar(), 10000)),
-                                ("Covariance interval"  , (tk.IntVar(), 10000)),
+                                ("Covariance delay"     , (tk.IntVar(), 1000)),
+                                ("Covariance interval"  , (tk.IntVar(), 1000)),
                                 ))
 
         self.master = master
@@ -662,7 +662,11 @@ class MainApplication(object):
             modes_lab.grid(row=0, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
             modes_scale = tk.Entry(self.mod_opt_frame, textvariable=self.lamb_da, width=10)
             modes_scale.grid(row=1, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
-
+            exp_lab = tk.Label(self.mod_opt_frame, text="""c exponent""", justify = tk.LEFT, font=fontz["normal_small"])
+            exp_lab.grid(row=2, column=1, rowspan=1, sticky=tk.W+tk.N, pady=(0,0), padx=(0,10))
+            exp_scale = tk.Scale(self.mod_opt_frame, variable=self.c_exp, width=10, length=70, from_=0.1, to=1.0, resolution=0.05, font=fontz["normal_small"], orient=tk.HORIZONTAL)
+            exp_scale.grid(row=3, column=1, rowspan=1, sticky=tk.E+tk.N, padx=(0,10), pady=(0,0))
+ 
 
 #==============================================================================
 # Run Exit Options
