@@ -90,7 +90,7 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
                                 scale=mc_p['prop_scale'], verbose=mc_p['verbose'])
 
     for i in range(1, mc_p['nb_chain']+1):
-        print('\n Chain #%d/%d'%(i, mc_p['nb_chain']))
+        print('\nChain #%d/%d'%(i, mc_p['nb_chain']))
         MDL.sample(mc_p['nb_iter'], mc_p['nb_burn'], mc_p['thin'], tune_interval=mc_p['tune_inter'], tune_throughout=False)
     return MDL
 
@@ -149,7 +149,6 @@ class mcmcinv(object):
         self.filename = filename 
         self.mcmc = mcmc
         self.headers = headers
-        self.ccd_priors = ccdt_priors
         self.ph_units = ph_units
         self.cc_modes = cc_modes
         self.decomp_poly = decomp_poly
@@ -157,11 +156,12 @@ class mcmcinv(object):
         self.log_min_tau = log_min_tau
         self.guess_noise = guess_noise
         self.keep_traces = keep_traces
+        self.ccd_priors = ccdt_priors
         self.ccdtools_config = ccdt_cfg
         if model == "CCD":
             if self.ccd_priors == 'auto':
                 self.ccd_priors = self.get_ccd_priors(config=self.ccdtools_config)
-            
+                print("\nUpdated CCD priors with new data")
         self.start()
         
 
@@ -182,18 +182,18 @@ class mcmcinv(object):
     
     def get_ccd_priors(self, config=None):
         data = get_data(self.filename, self.headers, self.ph_units)
+#        print(data['pha'][0])
         data_ccdtools = np.hstack((data['amp'][::-1], 1000*data['pha'][::-1]))
         freq_ccdtools = data['freq'][::-1]
-            
         # set options using this dict-like object
         if config == None:
             config = cfg_single.cfg_single()
             config['fixed_lambda'] = 10
             config['norm'] = 10  
+            print("\nNo CCDtools config passed, using default")
             
         config['frequency_file'] = freq_ccdtools
         config['data_file'] = data_ccdtools
-
         
         # generate a ccd object
         ccd_obj = ccd_single.ccd_single(config)
@@ -202,7 +202,7 @@ class mcmcinv(object):
         ccd_obj.fit_data()
         
         # extract the last iteration
-        last_it = ccd_obj.results[0].iterations[-1]
+        last_it = ccd_obj.results[-1].iterations[-1]
         
         # Make a dictionary with what we learn from CCDtools inversion
         priors = {}

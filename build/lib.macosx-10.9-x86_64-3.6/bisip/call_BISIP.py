@@ -13,9 +13,14 @@ from builtins import str
 from builtins import range
 
 from bisip import mcmcinv
+#from models import mcmcinv
 #import bisip.invResults as iR
 import pickle as pickle
 import os
+
+import matplotlib as mpl
+mpl.rc_file_defaults()
+
 
 def save_object(obj, filename):
     with open(filename, 'wb') as output:
@@ -28,23 +33,24 @@ def save_object(obj, filename):
 #model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-model = "PDecomp"
+#model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
+model = "CCD"
 
 #==============================================================================
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 300000,
-          "nb_burn"    : 250000,
+          "nb_iter"    : 1000,
+          "nb_burn"    : 800,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
-          "verbose"    : False,
-          "cov_inter"  : 10000,
-          "cov_delay"  : 40000,
+          "verbose"    : False, 
+          "cov_inter"  : 100,
+          "cov_delay"  : 100,
           }
 sol = []
 
@@ -76,10 +82,11 @@ for noise in [1]:
 #    reflist = reflist[1:11]
 #    reflist = ["SIP-K389055.dat"]
 #    reflist = [reflist[x] for x in [2,0,3,1,-2]]
-    reflist = [reflist[x] for x in [4,5,6,7,-1]]
+#    reflist = [reflist[x] for x in [4,5,6,7,-1]]
+    reflist = [reflist[x] for x in [4,5]]
 
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
-#    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389398.dat"]
+    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389701.dat"]
 #    filename = [
 ##            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_2_sandstones_nord_avg.dat',
 #            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_5_sandstones_sud_avg.dat',
@@ -90,7 +97,7 @@ for noise in [1]:
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
-    skip_header = 3
+    skip_header = 1
     
     #==============================================================================
     """ 5.
@@ -104,14 +111,19 @@ for noise in [1]:
 #    for i in range(repeat):
 #        fn = filename[0]
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
-        sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, ph_units=ph_units, decomp_poly=4, cc_modes=2, c_exp=1.0, log_min_tau=-3, guess_noise=False, keep_traces=False))
+        sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, 
+                           ph_units=ph_units, decomp_poly=4, cc_modes=2, 
+                           c_exp=1.0, log_min_tau=-3, guess_noise=False, 
+                           keep_traces=False))
     
         """Plot fit and data ?"""
         if False:
-            sol[i].plot_fit(save=True, draw=True)
+            sol[i].plot_fit(save=False, draw=True)
+            
+        sol[i].plot_rtd(save=False, draw=True)
     
         """Save results ?"""
-        if False:
+        if True:
             sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
@@ -120,7 +132,7 @@ for noise in [1]:
     
         """Print numerical results ?"""
         if False:
-            sol[i].print_resul()
+            sol[i].print_results()
     
         """Plot parameter histograms ?"""
         if False:
@@ -129,9 +141,9 @@ for noise in [1]:
         if False:
             fig_trace = sol[i].plot_traces(save=True)
     
-        """Plot parameter summary and Gelman-Rubin convergence test ?"""
-        if False:
-            fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
+#        """Plot parameter summary and Gelman-Rubin convergence test ?"""
+#        if False:
+#            fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
 #sol = sol[0]
 

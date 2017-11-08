@@ -38,7 +38,7 @@ setup(
   name = 'bisip',
   packages=['bisip',], # this must be the same as the name above
   py_models=['models','invResults','GUI'],
-  version = '0.0.10',
+  version = '0.0.9',
   license = 'MIT',
   install_requires=['pymc', 'ccd_tools'],
   description = 'Bayesian inversion of SIP data',
@@ -47,7 +47,7 @@ setup(
   author_email = 'cberube@ageophysics.com',
   url = 'https://github.com/clberube/BISIP', # use the URL to the github repo
 #  download_url = 'https://github.com/clberube/BISIP/archive/0.0.1.tar.gz', # I'll explain this in a second
-  keywords = ['testing', 'logging', 'example'], # arbitrary keywords
+  keywords = ['stochastic inversion','spectral induced polarization','mcmc'], # arbitrary keywords
   classifiers = [],
   cmdclass = cmdclass,
   ext_modules = ext_modules,

@@ -260,13 +260,10 @@ class MainApplication(object):
         print("=====================")
 
         print("Model:", self.model.get())
-        if self.model.get() == "ColeCole":
-            print("Cole-Cole modes:", self.modes_n.get())
         if self.model.get() == "CCD":
             print("CCD lambda:", self.lamb_da.get())
-            self.ccdt_config = cfg_single.cfg_single()
-            self.ccdt_config['fixed_lambda'] = self.lamb_da.get()
-            self.ccdt_config['norm'] = 10          
+        if self.model.get() == "ColeCole":
+            print("Cole-Cole modes:", self.modes_n.get())       
         if self.model.get() == "PDecomp":
             print("Polynomial order:", self.poly_n.get())
             if self.c_exp.get() == 1.0:
@@ -301,15 +298,27 @@ class MainApplication(object):
         self.draw_drop_down()
         self.var_review.set("Working...")
         for (i, self.f_n) in enumerate(self.files):
+            
+            if self.model.get() == "CCD":
+                print("\nRemoving data from CCDtools config")
+                self.ccdt_config = cfg_single.cfg_single()
+                self.ccdt_config['fixed_lambda'] = self.lamb_da.get()
+                self.ccdt_config['norm'] = 10   
+            
             print("=====================")
             self.activity()
             self.var_review.set(self.f_n)
-            self.sol = mcmcinv( self.model.get(), self.sel_files[i], mcmc = self.mcmc_params,
-                                headers=self.head.get(), ph_units=self.units.get(),
-                                cc_modes=self.modes_n.get(), decomp_poly=self.poly_n.get(),
-                                c_exp=self.c_exp.get(), keep_traces=self.save_options["Save traces as txt"].get(),
-                                ccdt_priors='auto', ccdt_cfg=self.ccdt_config)
-
+            self.sol = mcmcinv(self.model.get(), self.sel_files[i], 
+                               mcmc = self.mcmc_params,
+                               headers=self.head.get(), 
+                               ph_units=self.units.get(),
+                               cc_modes=self.modes_n.get(), 
+                               decomp_poly=self.poly_n.get(),
+                               c_exp=self.c_exp.get(), 
+                               keep_traces=self.save_options["Save traces as txt"].get(),
+                               ccdt_priors='auto', 
+                               ccdt_cfg=self.ccdt_config)
+#            print(self.model.get(), self.sel_files[i])
             self.all_results[self.f_n] = {"pm":self.sol.pm,"MDL":self.sol.MDL,"data":self.sol.data,"fit":self.sol.fit, "sol":self.sol}
 #           Impression ou non des résultats, graphiques, histogrammes
             try:            
@@ -320,13 +329,17 @@ class MainApplication(object):
                 self.sol.print_results()
             if self.run_options["Save CSV results"].get():
                 self.sol.save_results()
-            fig_fit = self.sol.plot_fit(save=self.save_options["Save fit figures"].get(), save_as_png=self.save_options["PNG figures"].get(), draw=self.run_options["Auto draw fit"].get())
-            if self.run_options["Auto draw fit"].get():
-                self.plot_window(fig_fit, "Inversion results: "+self.f_n)
-            if self.model.get() in ["PDecomp", "CCD"]:
-                if (self.save_options["Save Debye RTD"].get())|(self.save_options["Save fit figures"].get()):
-                    self.sol.plot_rtd(save=True, save_as_png=self.save_options["PNG figures"].get(), draw=False)
             
+            if self.save_options["Save fit figures"].get():
+                self.sol.plot_fit(save=True, save_as_png=self.save_options["PNG figures"].get(), draw=False)
+            
+            if self.run_options["Auto draw fit"].get():
+                fig_fit = self.sol.plot_fit(save=False, draw=True)
+                self.plot_window(fig_fit, "Inversion results: "+self.f_n)
+                
+            if self.model.get() in ["PDecomp", "CCD"]:
+                if self.save_options["Save Debye RTD"].get():
+                    self.sol.plot_rtd(save=True, save_as_png=self.save_options["PNG figures"].get(), draw=False)
             if self.save_options["Save all hexbins (will make error)"].get():
                 for v1, v2 in list(combinations(self.list_of_parameters, 2)):
                     self.all_results[self.f_n]["sol"].plot_hexbin(v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
@@ -338,7 +351,10 @@ class MainApplication(object):
             if self.save_options["Save traces"].get():
                 self.all_results[self.f_n]["sol"].plot_traces(no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save summaries"].get():
-                self.all_results[self.f_n]["sol"].plot_summary(save=True, save_as_png=self.save_options["PNG figures"].get())
+                try:
+                    self.all_results[self.f_n]["sol"].plot_summary(save=True, save_as_png=self.save_options["PNG figures"].get())
+                except:
+                    print("\nError plotting summary: need more than 1 chain for Gelman-Rubin stats")
             if self.save_options["Save autocorrelations"].get():
                 self.all_results[self.f_n]["sol"].plot_autocorrelation(save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save deviance"].get():

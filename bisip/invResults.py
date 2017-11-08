@@ -71,6 +71,10 @@ def flatten(x):
             result.append(el)
     return result
 
+def find_nearest(array,value):
+    idx = (np.abs(array-value)).argmin()
+    return array[idx]
+
 def get_model_type(sol):
     model = sol.model
     if model in ["PDecomp", "CCD"]:
@@ -82,6 +86,9 @@ def get_model_type(sol):
             model = "ColeColeDecomp"
         
         model = ''.join([c for c in model if c.isupper()])
+        
+    if model == "ColeCole":
+        model = "%dmodes"%sol.cc_modes
         
     return model
 
@@ -433,10 +440,17 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=14
             plt.locator_params(axis = 'y', nbins = 6)
             plt.ylabel(k)
             plt.plot(x, data, '-')
+            
+            if sampler["_burn"] == 0:
+                plt.xscale('log')
+            else:
+                plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+                
+            
 #            plt.xscale('log')
             plt.grid('on')
             
-        plt.tight_layout(pad=0.1, w_pad=0., h_pad=-2)
+        plt.tight_layout(pad=0.1, w_pad=0., h_pad=-1)
         for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
             a.set_visible(False)
         
@@ -624,7 +638,9 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         
         log_tau = sol.MDL.stats()["log_tau_i"]['mean']
         log_m = sol.MDL.stats()["log_m_i"]['mean']
-        m_peaks = log_m[[list(log_tau).index(peaks[x]) for x in range(len(peaks))]]
+        
+        
+        m_peaks = log_m[[list(log_tau).index(find_nearest(log_tau, peaks[x])) for x in range(len(peaks))]]
         plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD (95% HPD)")
         plt.errorbar(peaks, m_peaks+0.1, None, uncer_peaks, color="C3", marker="v", linestyle="", label=r"$\tau_{peak}$ (95% HPD)")
         plt.fill_between(np.log10(sol.ccd_priors['tau']), bot95, top95, color="C7", alpha=0.2)
@@ -634,8 +650,8 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
         inter = sol.MDL.stats()["log_half_tau"]['95% HPD interval']
         plt.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
-        plt.axvspan(min(log_tau), min(log_tau)+1, alpha=0.1, color='C7')
-        plt.axvspan(max(log_tau)-1, max(log_tau), alpha=0.1, color='C7')
+        plt.axvspan(min(log_tau), min(log_tau)+1, alpha=0.1, color='C7', hatch='xx')
+        plt.axvspan(max(log_tau)-1, max(log_tau), alpha=0.1, color='C7', hatch='xx')
         plt.xlim([min(log_tau), max(log_tau)])
         plt.xlabel(r"log$_{10}\tau$ ($\tau$ in s)", fontsize=12)
         plt.ylabel("log$_{10}$m", fontsize=12)
@@ -655,16 +671,18 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'RTD-%s-%s.%s'%(model, filename,save_as), dpi=fig_dpi, bbox_inches='tight')
-    try:    plt.close(fig)
-    except: pass
-    if draw:    return fig
-    else:       return None
+#    try:    plt.close(fig)
+#    except: pass
+    if draw:
+        return fig
+    else:       
+        plt.close(fig)
+        return None
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
     MDL, pm, filepath = sol.MDL, sol.pm, sol.filename
     model = get_model_type(sol)
-    print(model)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     save_where = '/Results/'
     working_path = getcwd().replace("\\", "/")+"/"
@@ -677,49 +695,85 @@ def save_resul(sol):
     else: 
         tag = 1
     A = []
+    B = []
     headers = []
-    for c, key in enumerate(sorted(pm.keys())):
+    keys = sorted(pm.keys())
+    if sol.model == "CCD":
+        print("moving")
+        keys += [keys.pop(keys.index("peak_tau"))]
+    
+    keys = [k for k in keys if "_std" not in k]
+        
+    for c, key in enumerate(keys):
+        
+                
         A.append(list(np.array(pm[key]).ravel()))
-        key = model+"_"+key
-        if len(A[c]) == 1:
-            headers.append(key)
-#            print(key)
-        else:
+        B.append(list(np.array(pm[key+"_std"]).ravel()))        
+
+        length = len(np.atleast_1d(pm[key]))
+                
+        if length > 1:
             for i in range(len(A[c])):
-#                print(key+"%d" %(i+tag))
-                headers.append(key.strip("_")+"%d" %(i+tag))
+                headers.append(model+"_"+key+"_%d" %(i+tag))
+                headers.append(model+"_"+key+("_%d"%(i+tag))+"_std")
+        else:           
+            headers.append(model+"_"+key)
+            headers.append(model+"_"+key+"_std")
+
+    A=flatten(A)
+    B=flatten(B)
+
+    results = [None]*(len(A)+len(B))
+    results[::2] = A
+    results[1::2] = B
+
+
     headers = ','.join(headers)
-    results = np.array(flatten(A))
+    results = np.array(results)
+
     if sol.model == 'PDecomp': 
         tau_ = sol.data["tau"]
         add = ["tau"+"%d"%(i) for i in range(len(tau_))]
         add = ',' + ','.join(add)
         headers += add
         results = np.concatenate((results,tau_))
-    headers += ",Z_max,c_exponent"
-    results = np.concatenate((results,np.array([sol.data["Z_max"]]),np.array([sol.c_exp])))
-    np.savetxt(save_path+'INV_%s_%s.csv' %(model,sample_name), results[None],
+    headers = "Z_max,c_exponent," + headers
+    results = np.concatenate((np.array([sol.data["Z_max"]]),np.array([sol.c_exp]),results))
+    np.savetxt(save_path+'INV_%s-%s_%s.csv' %(sol.model,model,sample_name), results[None],
                header=headers, comments='', delimiter=',')
     vars_ = ["%s"%x for x in MDL.stochastics]+["%s"%x for x in MDL.deterministics]
     if "zmod" in vars_: vars_.remove("zmod")
-    MDL.write_csv(save_path+'STATS_%s_%s.csv' %(model,sample_name), variables=(vars_))
+    MDL.write_csv(save_path+'STATS_%s-%s_%s.csv' %(sol.model,model,sample_name), variables=(vars_))
 
 def merge_results(sol,files):
     model = get_model_type(sol)
     save_where = '/Batch results/'
     working_path = getcwd().replace("\\", "/")+"/"
     save_path = working_path+save_where
+    
+    print("\nChecking for longest csv file")
+    lengths = []
+    for f in files:
+        to_merge_temp = working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f)
+        headers_temp = np.genfromtxt(to_merge_temp, delimiter=",", dtype=str, skip_footer=1)
+        lengths.append(len(headers_temp))
+    
+    to_merge_max = working_path+"/Results/%s/INV_%s-%s_%s.csv" %(files[lengths.index(max(lengths))],sol.model,model,files[lengths.index(max(lengths))])
+    headers = np.genfromtxt(to_merge_max, delimiter=",", dtype=str, skip_footer=1)
+
     print("\nMerging csv files")
     if not path.exists(save_path):
         makedirs(save_path)
-    to_merge = working_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
-    headers = np.genfromtxt(to_merge, delimiter=",", dtype=str, skip_footer=1)
-    merged_inv_results = np.empty((len(files), len(headers)))
+#    to_merge = working_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
+#    headers = np.genfromtxt(to_merge, delimiter=",", dtype=str, skip_footer=1)
+    merged_inv_results = np.zeros((len(files), len(headers)))
+    merged_inv_results.fill(np.nan)
     for i, f in enumerate(files):
-        merged_inv_results[i] = np.loadtxt(working_path+"/Results/%s/INV_%s_%s.csv" %(f,model,f), delimiter=",", skiprows=1)
+        to_add = np.loadtxt(working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f), delimiter=",", skiprows=1)
+        merged_inv_results[i][:to_add.shape[0]] = to_add
     rows = np.array(files, dtype=str)[:, np.newaxis]
     hd = ",".join(["ID"] + list(headers))
-    np.savetxt(save_path+"Merged_%s_%s_TO_%s.csv" %(model,files[0],files[-1]), np.hstack((rows, merged_inv_results)), delimiter=",", header=hd, fmt="%s")
+    np.savetxt(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,model,files[0],files[-1]), np.hstack((rows, merged_inv_results)), delimiter=",", header=hd, fmt="%s")
     print("Batch file successfully saved in:\n", save_path)
 
 def plot_data(filename, headers, ph_units):
@@ -785,8 +839,9 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
         plt.plot(x, deviance, "-", color="C3", label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
         plt.xlabel("Iteration")
-        plt.ylabel("Deviance")
+        plt.ylabel("Model deviance")
         plt.legend(numpoints=1, loc="best")
+        plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
         else:
@@ -845,6 +900,7 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.xlabel("Iteration")
         plt.ylabel("Log-likelihood")
         plt.legend(numpoints=1, loc="best")
+        plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
         else:
@@ -948,10 +1004,13 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as), dpi=fig_dpi, bbox_inches='tight')
-    try:    plt.close(fig)
-    except: pass
-    if draw:    return fig
-    else:       return None
+#    try:    plt.close(fig)
+#    except: pass
+    if draw:    
+        return fig
+    else:       
+        plt.close(fig)
+        return None
 
 def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
