@@ -147,7 +147,7 @@ for noise in [1]:
 
 #sol = sol[0]
 
-sol[0].merge_results([x.split(".")[0] for x in reflist])
+#sol[0].merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]

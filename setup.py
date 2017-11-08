@@ -9,7 +9,15 @@ from setuptools import setup, find_packages
 
 from distutils.core import setup
 from distutils.extension import Extension
+from distutils.command.sdist import sdist as _sdist
 import numpy
+
+class sdist(_sdist):
+    def run(self):
+        # Make sure the compiled Cython files in the distribution are up-to-date
+        from Cython.Build import cythonize
+        cythonize(['bisip/cython_funcs.pyx'])
+        _sdist.run(self)
 
 try:
     from Cython.Distutils import build_ext
@@ -21,7 +29,9 @@ else:
 cmdclass = { }
 ext_modules = [ ]
 
-if use_cython:
+cmdclass['sdist'] = sdist
+
+if use_cython:    
     ext_modules += [
         Extension("bisip.cython_funcs", [ "bisip/cython_funcs.pyx" ]),
     ]
