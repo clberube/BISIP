@@ -625,7 +625,7 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
-        fig, ax = plt.subplots(figsize=(5,3))
+        fig, ax = plt.subplots(figsize=(4,3))
         uncer_m = sol.MDL.stats()["log_m_i"]["standard deviation"]
         uncer_tau = sol.MDL.stats()["log_tau_i"]["standard deviation"]
         
@@ -643,24 +643,26 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         m_peaks = log_m[[list(log_tau).index(find_nearest(log_tau, peaks[x])) for x in range(len(peaks))]]
         plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD (95% HPD)")
         plt.errorbar(peaks, m_peaks+0.1, None, uncer_peaks, color="C3", marker="v", linestyle="", label=r"$\tau_{peak}$ (95% HPD)")
-        plt.fill_between(np.log10(sol.ccd_priors['tau']), bot95, top95, color="C7", alpha=0.2)
-        plt.axvline(sol.MDL.stats()["log_mean_tau"]['mean'],color="#2ca02c",label=r"$\bar{\tau}$ (95% HPD)")
-        plt.axvline(sol.MDL.stats()["log_half_tau"]['mean'],color='#1f77b4',label=r"$\tau_{50}$ (95% HPD)")
+        plt.fill_between(np.log10(sol.ccd_priors['tau']), bot95, top95, color="C7", alpha=0.3)
+        plt.axvline(sol.MDL.stats()["log_mean_tau"]['mean'],color="#2ca02c",linestyle='--', label=r"$\bar{\tau}$ (95% HPD)")
+        plt.axvline(sol.MDL.stats()["log_half_tau"]['mean'],color='#1f77b4',linestyle=':', label=r"$\tau_{50}$ (95% HPD)")
         inter = sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
-        plt.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
+        plt.axvspan(inter[0], inter[1], alpha=0.3, color="#2ca02c")
         inter = sol.MDL.stats()["log_half_tau"]['95% HPD interval']
-        plt.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
+        plt.axvspan(inter[0], inter[1], alpha=0.3, color='#1f77b4')
         plt.axvspan(min(log_tau), min(log_tau)+1, alpha=0.1, color='C7', hatch='xx')
         plt.axvspan(max(log_tau)-1, max(log_tau), alpha=0.1, color='C7', hatch='xx')
         plt.xlim([min(log_tau), max(log_tau)])
-        plt.xlabel(r"log$_{10}\tau$ ($\tau$ in s)", fontsize=12)
-        plt.ylabel("log$_{10}$m", fontsize=12)
-        plt.legend(fontsize=8, loc=1)
-        plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)", fontsize=12)
-        plt.ylabel(r"$log_{10}$m", fontsize=12)
-        plt.yticks(fontsize=12), plt.xticks(fontsize=12)
-        plt.grid('on')
-        plt.legend(numpoints=1, fontsize=10, loc="best",labelspacing=0.1)
+        plt.xlabel(r"log$_{10}\tau$ ($\tau$ in s)")
+        plt.ylabel("log$_{10}$m")
+        plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)")
+        plt.ylabel(r"$log_{10}$m")
+        plt.grid('off')
+        plt.legend(numpoints=1, fontsize=9, loc=1,labelspacing=0.1)
+        
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
         fig.tight_layout()
     if save:
         save_where = '/Figures/Debye distributions/'

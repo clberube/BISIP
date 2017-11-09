@@ -72,9 +72,9 @@ for noise in [1]:
     reflist = os.listdir("/Users/Charles/Documents/SIP dat files")
     reflist = [x for x in reflist if not x.startswith('.')]
     reflist = [x for x in reflist if ("AVG" in x)]
-    reflist = [x for x in reflist if ("Reciprocals" in x) or ("MLA12" in x)]
+#    reflist = [x for x in reflist if ("Reciprocals" in x) or ("MLA12" in x)]
 #    reflist = [x for x in reflist if "Reciprocals" in x]
-    reflist = [x for x in reflist if "MLA12" in x]
+#    reflist = [x for x in reflist if "MLA12" in x]
 #    reflist = [x for x in reflist if "_stable" in x]
 #    reflist = [x for x in reflist if "55" in x]
 #    reflist = reflist[-87:]
@@ -83,7 +83,7 @@ for noise in [1]:
 #    reflist = ["SIP-K389055.dat"]
 #    reflist = [reflist[x] for x in [2,0,3,1,-2]]
 #    reflist = [reflist[x] for x in [4,5,6,7,-1]]
-    reflist = [reflist[x] for x in [4,5]]
+#    reflist = [reflist[x] for x in [4,5]]
 
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
     filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389701.dat"]
@@ -97,7 +97,7 @@ for noise in [1]:
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
-    skip_header = 1
+    skip_header = 3
     
     #==============================================================================
     """ 5.
@@ -117,18 +117,13 @@ for noise in [1]:
                            keep_traces=False))
     
         """Plot fit and data ?"""
-        if False:
-            sol[i].plot_fit(save=False, draw=True)
-            
-        sol[i].plot_rtd(save=False, draw=True)
-    
+        sol[i].plot_fit(save=True, draw=False)
+                
         """Save results ?"""
-        if True:
-            sol[i].save_results()
+        sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
-        if False:
-            fig_RTD = sol[i].plot_rtd(save=True, draw=False)
+        sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""
         if False:
