@@ -182,19 +182,15 @@ class mcmcinv(object):
     
     def get_ccd_priors(self, config=None):
         data = get_data(self.filename, self.headers, self.ph_units)
-#        print(data['pha'][0])
         data_ccdtools = np.hstack((data['amp'][::-1], 1000*data['pha'][::-1]))
         freq_ccdtools = data['freq'][::-1]
-        # set options using this dict-like object
         if config == None:
             config = cfg_single.cfg_single()
             config['fixed_lambda'] = 10
-            config['norm'] = 10  
-            print("\nNo CCDtools config passed, using default")
-            
+            config['norm'] = 10
+                        
         config['frequency_file'] = freq_ccdtools
-        config['data_file'] = data_ccdtools
-        
+        config['data_file'] = data_ccdtools        
         # generate a ccd object
         ccd_obj = ccd_single.ccd_single(config)
         
@@ -210,7 +206,7 @@ class mcmcinv(object):
         priors['tau'] = last_it.Data.obj.tau
         priors['log_tau'] = np.log10(last_it.Data.obj.tau)
         priors['m'] = 10**last_it.m[1:]
-        priors['log_m'] = last_it.m[1:]  
+        priors['log_m'] = last_it.m[1:]
         return priors 
     
     #==============================================================================
