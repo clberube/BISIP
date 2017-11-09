@@ -2,7 +2,8 @@
 ## Fast + robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
 #### Compatible with Python 2.7 and 3.6
 ####    Generalized Cole-Cole/Warburg/Debye decomposition scheme 
-####    Simple single/double/triple Pelton and Dias models
+####    Simple Dias and single/double/triple Pelton models
+####    Stochastic noise analysis of RTD results from [CCD_tools](https://github.com/m-weigand/ccd_tools) code
 
 #### Good for batch inversion of laboratory data and propagating SIP data uncertainty to model parameter uncertainty
 #### This code is not designed for large-scale production!
