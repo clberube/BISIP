@@ -59,7 +59,11 @@ from bisip.cython_funcs import ColeCole_cyth1, Dias_cyth, Decomp_cyth, Shin_cyth
 from os import path, makedirs
 from os import getcwd
 from datetime import datetime
-import bisip.invResults as iR
+try:
+    import invResults as iR
+except:
+    import bisip.invResults as iR
+    
 from bisip.utils import format_results, get_data
 import lib_dd.decomposition.ccd_single as ccd_single
 import lib_dd.config.cfg_single as cfg_single
@@ -303,12 +307,20 @@ class mcmcinv(object):
             # Deterministic variables of CCD
             @pymc.deterministic(plot=False) 
             def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
-                # Chargeability array
+                # log chargeability array
                 return logm + dm
             @pymc.deterministic(plot=False) 
+            def m_i(logm=log_m_i):
+                # chargeability array
+                return 10**logm
+            @pymc.deterministic(plot=False) 
             def log_tau_i(logt=ccd_priors['log_tau'], dt=noise_tau):
-                # Tau logarithmic array
+                # log tau array
                 return logt + dt
+            @pymc.deterministic(plot=False) 
+            def tau_i(logt=log_tau_i):
+                # tau array
+                return 10**logt
             @pymc.deterministic(plot=False) 
             def R0(R=ccd_priors['R0'], dR=noise_rho):
                 # DC resistivity (normalized)

@@ -12,8 +12,11 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 
-from bisip import mcmcinv
-#from models import mcmcinv
+try:
+    from models import mcmcinv
+except:
+    from bisip import mcmcinv
+
 #import bisip.invResults as iR
 import pickle as pickle
 import os
@@ -43,14 +46,14 @@ model = "CCD"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 1000,
-          "nb_burn"    : 800,
+          "nb_iter"    : 10000,
+          "nb_burn"    : 8000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False, 
-          "cov_inter"  : 100,
-          "cov_delay"  : 100,
+          "cov_inter"  : 1000,
+          "cov_delay"  : 1000,
           }
 sol = []
 
@@ -77,7 +80,7 @@ for noise in [1]:
 #    reflist = [x for x in reflist if "MLA12" in x]
 #    reflist = [x for x in reflist if "_stable" in x]
 #    reflist = [x for x in reflist if "55" in x]
-#    reflist = reflist[-87:]
+#    reflist = [reflist[77]]
 #    reflist = [reflist[1]]
 #    reflist = reflist[1:11]
 #    reflist = ["SIP-K389055.dat"]
@@ -94,6 +97,13 @@ for noise in [1]:
 #            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_4_sandstonesGOLD_avg.dat',
 #            ]
 #    filename = ['/Users/Charles/Documents/SIP dat files/SIP-BravoProfile_Station%s.dat' %str(x).zfill(2) for x in range(29)]
+
+#    filename = [
+#                "/Users/Charles/Documents/SIP dat files/B7-GB-semaine1-degree-ohm.csv",
+#                "/Users/Charles/Documents/SIP dat files/B7-GB-semaine12-degree-ohm.csv",
+#                "/Users/Charles/Documents/SIP dat files/B1-semaine17-degree-ohm.csv",
+#                ]
+
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
@@ -126,23 +136,19 @@ for noise in [1]:
         sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""
-        if False:
-            sol[i].print_results()
+#        sol[i].print_results()
     
         """Plot parameter histograms ?"""
-        if False:
-            fig_histo = sol[i].plot_histograms(save=True)
-    
-        if False:
-            fig_trace = sol[i].plot_traces(save=True)
+        sol[i].plot_histograms(save=True)
+        sol[i].plot_traces(save=True)
     
 #        """Plot parameter summary and Gelman-Rubin convergence test ?"""
 #        if False:
 #            fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-#sol = sol[0]
+sol = sol[0]
 
-sol[0].merge_results([x.split(".")[0] for x in reflist])
+sol.merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
@@ -176,40 +182,3 @@ Freq (Hz), Res (Ohm-m),  Phase (deg), dRes (Ohm-m), dPhase (deg), Current (A)
 2.962e-02, 1.24935e+05, -1.30672e+01, 4.100396e+02, 3.281218e+00, 6.95748e-06
 =============================================================================
 """
-
-#==============================================================================
-#================================REFERENCES====================================
-#==============================================================================
-"""
-Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
-    Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
-    Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
-    73 (6): F247–59. doi:10.1190/1.2976115.
-Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
-    Electrical Polarization of Rocks.” Geophysics 65 (2): 437–51.
-    doi:10.1190/1.1444738.
-Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
-    Stochastic Simulation for Bayesian Inference, Second Edition. CRC Press.
-Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
-    “Bayesian Inference of the Cole–Cole Parameters from Time- and Frequency-
-    Domain Induced Polarization.” Geophysical Prospecting 55 (4): 589–605.
-    doi:10.1111/j.1365-2478.2007.00627.x.
-Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
-    Science & Business Media.
-Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
-    “Markov-Chain Monte Carlo Estimation of Distributed Debye Relaxations in
-    Spectral Induced Polarization.” Geophysics 77 (2): E159–70.
-    doi:10.1190/geo2011-0244.1.
-Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
-    Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
-Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
-    Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
-Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
-    Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
-Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
-    “Mineral Discrimination and Removal of Inductive Coupling with
-    Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
-Shin, S. W., S. Park, and D. B. Shin. 2015. “Development of a New Equivalent
-    Circuit Model for Spectral Induced Polarization Data Analysis of Ore
-    Samples.” Environmental Earth Sciences 74 (7): 5711–16.
-    doi:10.1007/s12665-015-4588-z."""

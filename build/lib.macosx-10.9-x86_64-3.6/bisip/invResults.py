@@ -842,7 +842,7 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.plot(x, deviance, "-", color="C3", label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
         plt.xlabel("Iteration")
         plt.ylabel("Model deviance")
-        plt.legend(numpoints=1, loc="best")
+        plt.legend(numpoints=1, loc="best", fontsize=9)
         plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
@@ -901,7 +901,7 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.plot(x, logp, "-", color="C3")
         plt.xlabel("Iteration")
         plt.ylabel("Log-likelihood")
-        plt.legend(numpoints=1, loc="best")
+        plt.legend(numpoints=1, loc="best", fontsize=9)
         plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
@@ -964,6 +964,8 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.legend(loc='best', fontsize=9, numpoints=1)
         plt.xlim([None, 1])
         plt.ylim([0, max(-zn_dat.imag)])
+        print("EHEHE")
+        ax[2].get_xaxis().get_major_formatter().labelOnlyBase = False
         
         # Freq-Ampl
         plt.axes(ax[1])

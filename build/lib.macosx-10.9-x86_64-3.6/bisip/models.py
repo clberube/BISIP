@@ -59,7 +59,11 @@ from bisip.cython_funcs import ColeCole_cyth1, Dias_cyth, Decomp_cyth, Shin_cyth
 from os import path, makedirs
 from os import getcwd
 from datetime import datetime
-import bisip.invResults as iR
+try:
+    import invResults as iR
+except:
+    import bisip.invResults as iR
+    
 from bisip.utils import format_results, get_data
 import lib_dd.decomposition.ccd_single as ccd_single
 import lib_dd.config.cfg_single as cfg_single
@@ -182,29 +186,8 @@ class mcmcinv(object):
     
     def get_ccd_priors(self, config=None):
         data = get_data(self.filename, self.headers, self.ph_units)
-#        print(data['pha'][0])
         data_ccdtools = np.hstack((data['amp'][::-1], 1000*data['pha'][::-1]))
         freq_ccdtools = data['freq'][::-1]
-#        print(data_ccdtools[0],data_ccdtools[5])
-        # set options using this dict-like object
-
-#        if config == None:
-#            config.update(cfg_single.cfg_single())
-#            config['fixed_lambda'] = 10
-#            config['norm'] = 10
-#            print("\nNo CCDtools config passed, using default")
-            
-#        config.update({'frequency_file': freq_ccdtools})
-#        config.update({'data_file': data_ccdtools})          
-#        print(config['data_file'][0])
-    
-
-#        print(config['data_file'][-1])
-#        print(config['data_file'][5])
-#        print(config['frequency_file'][0])
-
-
-#        print(config['data_file'][-1])
         if config == None:
             config = cfg_single.cfg_single()
             config['fixed_lambda'] = 10
@@ -228,8 +211,6 @@ class mcmcinv(object):
         priors['log_tau'] = np.log10(last_it.Data.obj.tau)
         priors['m'] = 10**last_it.m[1:]
         priors['log_m'] = last_it.m[1:]
-        print(last_it.stat_pars['rho0'])
-#        print(priors['log_m'][0])
         return priors 
     
     #==============================================================================
