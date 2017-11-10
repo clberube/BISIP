@@ -60,10 +60,9 @@ from os import path, makedirs
 from os import getcwd
 from datetime import datetime
 from scipy.signal import argrelextrema
-try:
-    import invResults as iR
-except:
-    import bisip.invResults as iR
+
+#import invResults as iR
+import bisip.invResults as iR
     
 from bisip.utils import format_results, get_data
 import lib_dd.decomposition.ccd_single as ccd_single
@@ -163,9 +162,12 @@ class mcmcinv(object):
         self.keep_traces = keep_traces
         self.ccd_priors = ccdt_priors
         self.ccdtools_config = ccdt_cfg
+        self.ccdt_last_it = None
+        
         if model == "CCD":
             if self.ccd_priors == 'auto':
-                self.ccd_priors = self.get_ccd_priors(config=self.ccdtools_config)
+                self.ccd_priors = self.get_ccd_priors(config=self.ccdtools_config)[0]
+                self.ccdt_last_it = self.get_ccd_priors(config=self.ccdtools_config)[1]
                 print("\nUpdated CCD priors with new data")
         self.start()
         
@@ -203,16 +205,16 @@ class mcmcinv(object):
         ccd_obj.fit_data()
         
         # extract the last iteration
-        last_it = ccd_obj.results[-1].iterations[-1]
+        ccdt_last_it = ccd_obj.results[-1].iterations[-1]
         
         # Make a dictionary with what we learn from CCDtools inversion
         priors = {}
-        priors['R0'] = last_it.stat_pars['rho0'][0]
-        priors['tau'] = last_it.Data.obj.tau
-        priors['log_tau'] = np.log10(last_it.Data.obj.tau)
-        priors['m'] = 10**last_it.m[1:]
-        priors['log_m'] = last_it.m[1:]
-        return priors 
+        priors['R0'] = ccdt_last_it.stat_pars['rho0'][0]
+        priors['tau'] = ccdt_last_it.Data.obj.tau
+        priors['log_tau'] = np.log10(ccdt_last_it.Data.obj.tau)
+        priors['m'] = 10**ccdt_last_it.m[1:]
+        priors['log_m'] = ccdt_last_it.m[1:]
+        return [priors, ccdt_last_it]
     
     #==============================================================================
     # Main inversion function.
@@ -300,10 +302,10 @@ class mcmcinv(object):
     
         def stoCCD(c_exp, ccd_priors):
             # Stochastic variables (noise on CCDtools output)
-            # The only assumption we make is that the RTD noise is below 10%
-            noise_rho = pymc.Uniform('noise_rho', lower=-0.1, upper=0.1)
-            noise_tau = pymc.Uniform('log_noise_tau', lower=-0.1, upper=0.1)
-            noise_m = pymc.Uniform('log_noise_m', lower=-0.1, upper=0.1)
+            # The only assumption we make is that the RTD noise is below 20%
+            noise_rho = pymc.Uniform('noise_rho', lower=-0.2, upper=0.2)
+            noise_tau = pymc.Uniform('log_noise_tau', lower=-0.2, upper=0.2)
+            noise_m = pymc.Uniform('log_noise_m', lower=-0.2, upper=0.2)
             
             # Deterministic variables of CCD
             @pymc.deterministic(plot=False) 
@@ -329,11 +331,15 @@ class mcmcinv(object):
             @pymc.deterministic(plot=False) 
             def cond(log_tau = log_tau_i):
                 # Condition on log_tau to compute integrating parameters
-                return (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
+                log_tau_min = np.log10(1./w.max())
+                log_tau_max = np.log10(1./w.min())
+#                log_tau_min = np.log10(self.ccdt_last_it.Data.obj.tau_data_min)
+#                log_tau_max = np.log10(self.ccdt_last_it.Data.obj.tau_data_max)
+                return (log_tau >= log_tau_min)&(log_tau <= log_tau_max)
             @pymc.deterministic(plot=False)
-            def total_m(m=10**log_m_i[cond]):
+            def log_total_m(m=10**log_m_i[cond]):
                 # Total chargeability
-                return np.sum(m)
+                return np.log10(np.nansum(m))
             @pymc.deterministic(plot=False)
             def log_half_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
                 # Tau 50
@@ -343,7 +349,7 @@ class mcmcinv(object):
                 # Tau peaks
 #                peak_cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
                 peak_cond = argrelextrema(m_i, np.greater)
-                return log_tau[peak_cond]
+                return np.squeeze(log_tau[peak_cond])
             @pymc.deterministic(plot=False)
             def log_mean_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
                 # Tau logarithmic average 

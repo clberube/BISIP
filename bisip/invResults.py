@@ -365,6 +365,14 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=1
         save_as = 'png'
     else:
         save_as = 'pdf'
+    
+    comp_dic = {"log_mean_tau": 'tau_mean',
+                "R0": "rho0",
+                "log_half_tau": "tau_50",
+                "log_peak_tau": "tau_peaks_all",
+                "log_total_m": "m_tot",
+                }
+        
     MDL = sol.MDL
     model = get_model_type(sol)
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
@@ -376,6 +384,9 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=1
         keys.remove("cond")
         keys.remove("log_m_i")
         keys.remove("log_tau_i")
+        keys.remove("log_noise_m")
+        keys.remove("log_noise_tau")
+        keys.remove("noise_rho")
 #        keys.remove("m_i")
 #        keys.remove("tau_i")
     except:
@@ -444,19 +455,33 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=1
             plt.axes(a)
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
             plt.locator_params(axis = 'y', nbins = 6)
-            plt.ylabel(k)
-            plt.plot(x, data, '-')
+            plt.ylabel(k)    
+            try:
+                plt.plot(x, data,'-', color='C7', alpha=0.5)
+                plt.plot(x, np.mean(data)*np.ones(len(x)), color='C0',linestyle='-', linewidth=2)
+#                print(comp_dic[k])
+#                print(sol.ccdt_last_it.stat_pars)
+                ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[k]][0]
+                hpd = sol.MDL.stats()[k]['95% HPD interval']
+                plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
+                plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
+            except:
+                try:
+                    hpd = sol.MDL.stats()[stoc]['95% HPD interval'][:,stoc_num[0]-1]
+                    ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0][-stoc_num[0]]
+                    plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
+                    plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
+                except:
+                    print("File %s: could not plot %s trace. Parameter is None type." %(filename,k))
             
             if sampler["_burn"] == 0:
                 plt.xscale('log')
             else:
                 plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
                 
+            plt.grid('off')
             
-#            plt.xscale('log')
-            plt.grid('on')
-            
-        plt.tight_layout(pad=0.1, w_pad=0., h_pad=-1)
+        plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=-1)
         for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
             a.set_visible(False)
         
@@ -654,7 +679,7 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
         plt.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
         plt.axvspan(min(log_tau), min(log_tau)*10, alpha=0.1, color='C7')
         plt.axvspan(max(log_tau)/10, max(log_tau), alpha=0.1, color='C7')
-        plt.fill_between(sol.ccd_priors['tau'], bot95, top95, color="C7", alpha=0.2)
+        plt.fill_between(10**sol.ccd_priors['log_tau'], bot95, top95, color="C7", alpha=0.2)
         plt.xlim([10**np.ceil(np.log10(min(log_tau))), 10**np.floor(np.log10(max(log_tau)))])
         plt.ylim([10**np.floor(np.log10(min(log_m))), 10**np.ceil(np.log10(max(log_m)))])
         plt.xlabel(r"$\tau$ (s)")

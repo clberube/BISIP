@@ -48,7 +48,7 @@ model = "CCD"
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
           "nb_iter"    : 10000,
-          "nb_burn"    : 8000,
+          "nb_burn"    : 0,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
@@ -88,10 +88,10 @@ for noise in [1]:
 #    reflist = [reflist[x] for x in [2,0,3,1,-2]]
 #    reflist = [reflist[x] for x in [4,5,6,7,-1]]
     reflist = [reflist[x] for x in [77]]
-#    reflist = reflist[-40:]
+#    reflist = reflist[-100:]
 
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
-#    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389701.dat"]
+    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389737.dat"]
 #    filename = [
 ##            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_2_sandstones_nord_avg.dat',
 #            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_5_sandstones_sud_avg.dat',
@@ -109,7 +109,7 @@ for noise in [1]:
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
-    skip_header = 3
+    skip_header = 1
     
     #==============================================================================
     """ 5.
@@ -132,10 +132,10 @@ for noise in [1]:
 #        sol[i].plot_fit(save=True, draw=False)
                 
         """Save results ?"""
-        sol[i].save_results()
+#        sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
-        rtd = sol[i].plot_rtd(save=True, draw=True, save_as_png=True)
+#        rtd = sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""
 #        sol[i].print_results()
