@@ -5,6 +5,7 @@ Created on Tue Apr 21 12:05:22 2015
             École Polytechnique Montréal
 Copyright (c) 2015-2016 Charles L. Bérubé
 """
+
 from __future__ import print_function
 
 from future import standard_library
@@ -86,7 +87,8 @@ for noise in [1]:
 #    reflist = ["SIP-K389055.dat"]
 #    reflist = [reflist[x] for x in [2,0,3,1,-2]]
 #    reflist = [reflist[x] for x in [4,5,6,7,-1]]
-#    reflist = [reflist[x] for x in [4,5]]
+    reflist = [reflist[x] for x in [77]]
+#    reflist = reflist[-40:]
 
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
 #    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389701.dat"]
@@ -127,20 +129,20 @@ for noise in [1]:
                            keep_traces=False))
     
         """Plot fit and data ?"""
-        sol[i].plot_fit(save=True, draw=False)
+#        sol[i].plot_fit(save=True, draw=False)
                 
         """Save results ?"""
         sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
-        sol[i].plot_rtd(save=True, draw=False)
+        rtd = sol[i].plot_rtd(save=True, draw=True, save_as_png=True)
     
         """Print numerical results ?"""
 #        sol[i].print_results()
     
         """Plot parameter histograms ?"""
-        sol[i].plot_histograms(save=True)
-        sol[i].plot_traces(save=True)
+#        sol[i].plot_histograms(save=True)
+#        sol[i].plot_traces(save=True)
     
 #        """Plot parameter summary and Gelman-Rubin convergence test ?"""
 #        if False:
@@ -148,7 +150,7 @@ for noise in [1]:
 
 sol = sol[0]
 
-sol.merge_results([x.split(".")[0] for x in reflist])
+#sol.merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]

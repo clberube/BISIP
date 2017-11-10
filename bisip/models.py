@@ -59,6 +59,7 @@ from bisip.cython_funcs import ColeCole_cyth1, Dias_cyth, Decomp_cyth, Shin_cyth
 from os import path, makedirs
 from os import getcwd
 from datetime import datetime
+from scipy.signal import argrelextrema
 try:
     import invResults as iR
 except:
@@ -309,18 +310,18 @@ class mcmcinv(object):
             def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
                 # log chargeability array
                 return logm + dm
-            @pymc.deterministic(plot=False) 
-            def m_i(logm=log_m_i):
-                # chargeability array
-                return 10**logm
+#            @pymc.deterministic(plot=False) 
+#            def m_i(logm=log_m_i):
+#                # chargeability array
+#                return 10**logm
             @pymc.deterministic(plot=False) 
             def log_tau_i(logt=ccd_priors['log_tau'], dt=noise_tau):
                 # log tau array
                 return logt + dt
-            @pymc.deterministic(plot=False) 
-            def tau_i(logt=log_tau_i):
-                # tau array
-                return 10**logt
+#            @pymc.deterministic(plot=False) 
+#            def tau_i(logt=log_tau_i):
+#                # tau array
+#                return 10**logt
             @pymc.deterministic(plot=False) 
             def R0(R=ccd_priors['R0'], dR=noise_rho):
                 # DC resistivity (normalized)
@@ -340,7 +341,8 @@ class mcmcinv(object):
             @pymc.deterministic(plot=False)
             def log_peak_tau(m_i=log_m_i, log_tau=log_tau_i):
                 # Tau peaks
-                peak_cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
+#                peak_cond = np.r_[True, m_i[1:] > m_i[:-1]] & np.r_[m_i[:-1] > m_i[1:], True]
+                peak_cond = argrelextrema(m_i, np.greater)
                 return log_tau[peak_cond]
             @pymc.deterministic(plot=False)
             def log_mean_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
