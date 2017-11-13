@@ -61,10 +61,9 @@ from os import getcwd
 from datetime import datetime
 from scipy.signal import argrelextrema
 
-#import invResults as iR
-import bisip.invResults as iR
-    
+from bisip import invResults as iR
 from bisip.utils import format_results, get_data
+
 import lib_dd.decomposition.ccd_single as ccd_single
 import lib_dd.config.cfg_single as cfg_single
 
@@ -167,8 +166,9 @@ class mcmcinv(object):
         if model == "CCD":
             if self.ccd_priors == 'auto':
                 self.ccd_priors = self.get_ccd_priors(config=self.ccdtools_config)[0]
-                self.ccdt_last_it = self.get_ccd_priors(config=self.ccdtools_config)[1]
-                print("\nUpdated CCD priors with new data")
+            self.ccdt_last_it = self.get_ccd_priors(config=self.ccdtools_config)[1]
+            print("\nUpdated CCD priors with new data")
+
         self.start()
         
 
@@ -214,7 +214,7 @@ class mcmcinv(object):
         priors['log_tau'] = np.log10(ccdt_last_it.Data.obj.tau)
         priors['m'] = 10**ccdt_last_it.m[1:]
         priors['log_m'] = ccdt_last_it.m[1:]
-        return [priors, ccdt_last_it]
+        return priors, ccdt_last_it
     
     #==============================================================================
     # Main inversion function.

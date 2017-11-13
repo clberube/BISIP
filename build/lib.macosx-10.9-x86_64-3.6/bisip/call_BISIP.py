@@ -13,10 +13,8 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 
-try:
-    from models import mcmcinv
-except:
-    from bisip import mcmcinv
+#    from models import mcmcinv
+from bisip.models import mcmcinv
 
 #import bisip.invResults as iR
 import pickle as pickle

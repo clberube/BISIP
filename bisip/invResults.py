@@ -460,8 +460,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=1
                 plt.plot(x, data,'-', color='C7', alpha=0.5)
                 plt.plot(x, np.mean(data)*np.ones(len(x)), color='C0',linestyle='-', linewidth=2)
 #                print(comp_dic[k])
-#                print(sol.ccdt_last_it.stat_pars)
-                ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[k]][0]
+                ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0]
                 hpd = sol.MDL.stats()[k]['95% HPD interval']
                 plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
                 plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
