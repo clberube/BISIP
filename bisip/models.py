@@ -54,6 +54,7 @@ from builtins import range
 from past.utils import old_div
 import pymc
 import numpy as np
+
 from bisip.cython_funcs import ColeCole_cyth1, Dias_cyth, Decomp_cyth, Shin_cyth
 # Imports to save things
 from os import path, makedirs
@@ -63,6 +64,9 @@ import bisip.invResults as iR
 from bisip.utils import format_results, get_data
 import lib_dd.decomposition.ccd_single as ccd_single
 import lib_dd.config.cfg_single as cfg_single
+
+import matplotlib as mpl
+mpl.rc_file_defaults()
 
 #==============================================================================
 # Function to run MCMC simulation on selected model
