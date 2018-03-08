@@ -15,6 +15,7 @@ from builtins import range
 
 #    from models import mcmcinv
 from bisip.models import mcmcinv
+import lib_dd.config.cfg_single as cfg_single
 
 #import bisip.invResults as iR
 import pickle as pickle
@@ -22,7 +23,6 @@ import os
 
 import matplotlib as mpl
 mpl.rc_file_defaults()
-
 
 def save_object(obj, filename):
     with open(filename, 'wb') as output:
@@ -46,7 +46,7 @@ model = "CCD"
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
           "nb_iter"    : 10000,
-          "nb_burn"    : 0,
+          "nb_burn"    : 8000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
@@ -74,29 +74,44 @@ for noise in [1]:
     reflist = os.listdir("/Users/Charles/Documents/SIP dat files")
     reflist = [x for x in reflist if not x.startswith('.')]
     reflist = [x for x in reflist if ("AVG" in x)]
+#    reflist = [x for x in reflist if ("_avg" in x)]
 #    reflist = [x for x in reflist if ("Reciprocals" in x) or ("MLA12" in x)]
 #    reflist = [x for x in reflist if "Reciprocals" in x]
-#    reflist = [x for x in reflist if "MLA12" in x]
-#    reflist = [x for x in reflist if "_stable" in x]
+    reflist = [x for x in reflist if "MLA12" in x]
+    reflist = [x for x in reflist if "_stable" in x]
 #    reflist = [x for x in reflist if "55" in x]
-#    reflist = [reflist[77]]
+#    reflist = [reflist[75]]
 #    reflist = [reflist[1]]
-#    reflist = reflist[1:11]
+#    reflist = reflist[1:5]
 #    reflist = ["SIP-K389055.dat"]
-#    reflist = [reflist[x] for x in [2,0,3,1,-2]]
-#    reflist = [reflist[x] for x in [4,5,6,7,-1]]
-    reflist = [reflist[x] for x in [77]]
-#    reflist = reflist[-100:]
+#    reflist = [reflist[x] for x in [2,0,3]]
+#    reflist = [reflist[x] for x in [4,1,-2]]
+#    reflist = [reflist[x] for x in [4,0,1,5,3,-2]]
+    
+#    reflist = [reflist[x] for x in [2,4,5,9,10]]
+
+#    reflist = [reflist[x] for x in [2,6,7,9,11]] # RockTypes
+#    reflist = [reflist[x] for x in [2,6,9,11]] # RockTypes
+
+    reflist = [reflist[x] for x in [2,4,5,0,3,1,10]]
+
+#    reflist = [reflist[x] for x in [2, 6, -3,-1]]
+#    reflist = [reflist[x] for x in [77]]
+#    reflist = [reflist[1]]
+
+#    reflist = ["703","709","710","737","738","715","717","723","724","730","732","735"]
+#    reflist = ['AVG_SIP-Reciprocals_K389%s.dat'%x for x in reflist]
 
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
-    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389737.dat"]
+#    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389369.dat"]
 #    filename = [
-##            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_2_sandstones_nord_avg.dat',
-#            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_5_sandstones_sud_avg.dat',
+#            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_2_sandstones_nord_avg.dat',
+##            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_5_sandstones_sud_avg.dat',
 #            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_3_mudstones_avg.dat',
 #            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_4_sandstonesGOLD_avg.dat',
 #            ]
 #    filename = ['/Users/Charles/Documents/SIP dat files/SIP-BravoProfile_Station%s.dat' %str(x).zfill(2) for x in range(29)]
+#    reflist = [f.split("/")[-1] for f in filename]
 
 #    filename = [
 #                "/Users/Charles/Documents/SIP dat files/B7-GB-semaine1-degree-ohm.csv",
@@ -115,6 +130,11 @@ for noise in [1]:
     # {"rad" = radians}  {"mrad" = milliradians}  {"deg" = degrés}
     ph_units = "mrad"
     
+    config = cfg_single.cfg_single()
+    config['nr_terms_decade'] = 20
+    config['lambda'] = 20
+    config['norm'] = 10
+    
     #==============================================================================
     # Call to the inversion function for every file
     for i, fn in enumerate(filename):
@@ -124,13 +144,13 @@ for noise in [1]:
         sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, 
                            ph_units=ph_units, decomp_poly=4, cc_modes=2, 
                            c_exp=1.0, log_min_tau=-3, guess_noise=False, 
-                           keep_traces=False))
+                           keep_traces=False, ccdt_cfg=None))
     
         """Plot fit and data ?"""
-#        sol[i].plot_fit(save=True, draw=False)
+        sol[i].plot_fit(save=True, draw=False)
                 
         """Save results ?"""
-#        sol[i].save_results()
+        sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
 #        rtd = sol[i].plot_rtd(save=True, draw=False)
@@ -141,13 +161,12 @@ for noise in [1]:
         """Plot parameter histograms ?"""
 #        sol[i].plot_histograms(save=True)
 #        sol[i].plot_traces(save=True)
-    
+        
 #        """Plot parameter summary and Gelman-Rubin convergence test ?"""
 #        if False:
 #            fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-sol = sol[0]
-
+#sol = sol[0]
 #sol.merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python

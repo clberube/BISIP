@@ -60,6 +60,7 @@ from os import path, makedirs
 from os import getcwd
 from datetime import datetime
 from scipy.signal import argrelextrema
+from scipy.interpolate import interp1d
 
 from bisip import invResults as iR
 from bisip.utils import format_results, get_data
@@ -193,7 +194,7 @@ class mcmcinv(object):
         freq_ccdtools = data['freq'][::-1]
         if config == None:
             config = cfg_single.cfg_single()
-            config['fixed_lambda'] = 10
+            config['fixed_lambda'] = 20
             config['norm'] = 10
                         
         config['frequency_file'] = freq_ccdtools
@@ -229,12 +230,13 @@ class mcmcinv(object):
                   'log_tau'  : None,
                   'c'        : None,
                   }
-            # Stochastics
+            # Stochastic variables
             R0 = pymc.Uniform('R0', lower=0.7, upper=1.3 , value=p0["R0"])
             m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0["m"], size=cc_modes)
             log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=4.0, value=p0['log_tau'], size=cc_modes)
             c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'], size=cc_modes)
-            # Deterministics
+            
+            # Deterministic variables
             @pymc.deterministic(plot=False)
             def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
                 return ColeCole_cyth1(w, R0, m, lt, c)
@@ -300,13 +302,38 @@ class mcmcinv(object):
             return locals()
     
     
+        def regularize(obj):
+    
+            # Stochastic variables
+#            norm = pymc.Uniform('norm', lower=1, upper=1.1)
+            log_f_lambda = pymc.Uniform('log_f_lambda', lower=1, upper=6)
+            
+            @pymc.deterministic(plot=False)
+            def zmod(obj=obj, f_lambda=10**log_f_lambda):
+                obj.config['norm'] = 10
+                obj.config['fixed_lambda'] = f_lambda
+                obj.fit_data()
+                l_it = obj.results[-1].iterations[-1]
+                z = l_it.Model.F(l_it.m)[::-1].T
+                z[1,:] *= -1
+                return z/obj.config['norm']
+#                return -10**l_it.m[1:]
+            
+            # Likelihood function
+            obs = pymc.Normal('obs', mu=zmod, tau=1./(2*self.data["zn_err"]**2), value=self.data["zn"], size = (2, len(w)), observed=True)
+#            obs = pymc.Normal('obs', mu=zmod, tau=1./(2*np.mean(self.data["pha_err"])**2), value=self.interp_pha, observed=True)
+            return locals()
+        
         def stoCCD(c_exp, ccd_priors):
             # Stochastic variables (noise on CCDtools output)
             # The only assumption we make is that the RTD noise is below 20%
-            noise_rho = pymc.Uniform('noise_rho', lower=-0.2, upper=0.2)
-            noise_tau = pymc.Uniform('log_noise_tau', lower=-0.2, upper=0.2)
-            noise_m = pymc.Uniform('log_noise_m', lower=-0.2, upper=0.2)
-            
+#            noise_rho = pymc.Uniform('noise_rho', lower=-0.2, upper=0.2)
+#            noise_tau = pymc.Uniform('log_noise_tau', lower=-0.2, upper=0.2)
+#            noise_m = pymc.Uniform('log_noise_m', lower=-0.2, upper=0.2)
+            noise_tau = pymc.Normal('log_noise_tau', mu=0, tau=1/(0.1**2))
+            noise_m = pymc.Normal('log_noise_m', mu=0, tau=1/(0.1**2))
+            noise_rho = pymc.Normal('log_noise_rho', mu=0, tau=1/(0.1**2))
+
             # Deterministic variables of CCD
             @pymc.deterministic(plot=False) 
             def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
@@ -343,7 +370,12 @@ class mcmcinv(object):
             @pymc.deterministic(plot=False)
             def log_half_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
                 # Tau 50
-                return log_tau[np.where(np.cumsum(m_i)/np.sum(m_i) > 0.5)[0][0]]
+                return log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.5)[0][0]]
+            @pymc.deterministic(plot=False)
+            def log_U_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
+                tau_60 = log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.6)[0][0]]
+                tau_10 = log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.1)[0][0]]
+                return np.log10(10**tau_60 / 10**tau_10)
             @pymc.deterministic(plot=False)
             def log_peak_tau(m_i=log_m_i, log_tau=log_tau_i):
                 # Tau peaks
@@ -351,9 +383,14 @@ class mcmcinv(object):
                 peak_cond = argrelextrema(m_i, np.greater)
                 return np.squeeze(log_tau[peak_cond])
             @pymc.deterministic(plot=False)
+            def log_peak_m(log_m=log_m_i):
+                peak_cond = argrelextrema(log_m, np.greater)
+                # Peak chargeability
+                return np.squeeze(log_m[peak_cond])
+            @pymc.deterministic(plot=False)
             def log_mean_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
                 # Tau logarithmic average 
-                return np.log10(np.exp(old_div(np.sum(m_i*np.log(10**log_tau)),np.sum(m_i))))
+                return np.log10(np.exp(np.nansum(m_i*np.log(10**log_tau)) / np.nansum(m_i)))
             @pymc.deterministic(plot=False)
             def zmod(R0=R0, m=10**log_m_i, tau=10**log_tau_i):
                 Z = R0 * (1 - np.sum(m*(1 - 1.0/(1 + ((1j*w[:,np.newaxis]*tau)**c_exp))), axis=1))
@@ -448,7 +485,13 @@ class mcmcinv(object):
         self.data = get_data(self.filename, self.headers, self.ph_units)
         
         
+        data_ccd = np.hstack((self.data['amp'][::-1], 1000*self.data['pha'][::-1]))
+        frequencies_ccd = self.data['freq'][::-1]
         
+        # generate a ccd object
+        self.obj = ccd_single.ccd_single(cfg_single.cfg_single())
+        self.obj.config['frequency_file'] = frequencies_ccd
+        self.obj.config['data_file'] = data_ccd
         
         if (self.data["pha_err"] == 0).all():
             self.guess_noise = True
@@ -487,7 +530,8 @@ class mcmcinv(object):
                     "PDecomp":  {"func": PolyDecompModel,   "args": [self.decomp_poly, self.c_exp, self.ccd_priors]},
                     "Shin":     {"func": ShinModel,         "args": []                  },
     #                "Custom":   {"func": YourModel,     "args": [opt_args]   },
-                    "CCD":      {"func": stoCCD,            "args": [self.c_exp, self.ccd_priors]}
+                    "CCD":      {"func": stoCCD,            "args": [self.c_exp, self.ccd_priors]},
+                    "lam":      {"func": regularize,        "args": [self.obj]},
                     }
         simulation = sim_dict[self.model] # Pick entries for the selected model
         self.MDL = run_MCMC(simulation["func"](*simulation["args"]), self.mcmc, save_traces=self.keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments

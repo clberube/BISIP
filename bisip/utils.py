@@ -18,7 +18,8 @@ def format_results(M, Z_max):
     Mst = M.stats(chain=-1)
     pm = {k: Mst[k]["mean"] for k in var_keys}
     pm.update({k+"_std": Mst[k]["standard deviation"] for k in var_keys})
-    pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
+    if "R0" in pm.keys():
+        pm.update({"R0": Z_max*pm["R0"],"R0_std": Z_max*pm["R0_std"]}) # remove normalization
     pm.update({k.replace("log_", ""): 10**pm[k] for k in var_keys if k.startswith("log_")})
     pm.update({(k.replace("log_", ""))+"_std": abs(pm[k+"_std"]/pm[k])*(10**pm[k]) for k in var_keys if k.startswith("log_")})
     pm = {k: v for (k, v) in list(pm.items()) if "log_" not in k}
@@ -48,4 +49,6 @@ def get_data(filename,headers,ph_units):
     zn, zn_e = data["Z"]/data["Z_max"], data["Z_err"]/data["Z_max"] # Normalization of impedance by max amplitude
     data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
     data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
+    data["z"] = np.array([data["Z"].real, data["Z"].imag]) # 2D array with first column = real values, second column = imag values
+    data["z_err"] = np.array([data["Z_err"].real, data["Z_err"].imag]) # 2D array with first column = real values, second column = imag values    
     return data

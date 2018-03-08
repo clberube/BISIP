@@ -670,12 +670,12 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
             plt.errorbar(peaks, m_peaks*1.2, None, None, color="C3", marker="v", markersize=5, linestyle="", label=r"$\tau_{peak}$")
             for i, u in enumerate(uncer_peaks):
                 plt.axvspan(u[0], u[1], alpha=0.2, color="C3")
-        plt.axvline(10**sol.MDL.stats()["log_half_tau"]['mean'],color="#2ca02c",linestyle='--', label=r"$\bar{\tau}$")
-        plt.axvline(10**sol.MDL.stats()["log_mean_tau"]['mean'],color='#1f77b4',linestyle=':', label=r"$\tau_{50}$")
+        plt.axvline(10**sol.MDL.stats()["log_half_tau"]['mean'],color="C0",linestyle=':', label=r"$\tau_{50}$")
+        plt.axvline(10**sol.MDL.stats()["log_mean_tau"]['mean'],color='C2',linestyle='--', label=r"$\bar{\tau}$")
         inter = 10**sol.MDL.stats()["log_half_tau"]['95% HPD interval']
-        plt.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
+        plt.axvspan(inter[0], inter[1], alpha=0.2, color="C0")
         inter = 10**sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
-        plt.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
+        plt.axvspan(inter[0], inter[1], alpha=0.2, color='C2')
         plt.axvspan(min(log_tau), min(log_tau)*10, alpha=0.1, color='C7')
         plt.axvspan(max(log_tau)/10, max(log_tau), alpha=0.1, color='C7')
         plt.fill_between(10**sol.ccd_priors['log_tau'], bot95, top95, color="C7", alpha=0.2)
@@ -786,8 +786,8 @@ def save_resul(sol):
     keys = sorted(pm.keys())
     if sol.model == "CCD":
         print("moving")
-        keys += [keys.pop(keys.index("peak_tau"))]
-    
+        keys += [keys.pop(keys.index("peak_tau"))] # Move to end
+        keys += [keys.pop(keys.index("peak_m"))] # Move to end
     keys = [k for k in keys if "_std" not in k]
         
     for c, key in enumerate(keys):
@@ -797,14 +797,21 @@ def save_resul(sol):
         B.append(list(np.array(pm[key+"_std"]).ravel()))        
 
         length = len(np.atleast_1d(pm[key]))
+
                 
+        
         if length > 1:
             for i in range(len(A[c])):
                 headers.append(model+"_"+key+"_%d" %(i+tag))
                 headers.append(model+"_"+key+("_%d"%(i+tag))+"_std")
         else:           
-            headers.append(model+"_"+key)
-            headers.append(model+"_"+key+"_std")
+            if (key == "peak_tau")|(key == "peak_m"):
+                headers.append(model+"_"+key+"_1")
+                headers.append(model+"_"+key+"_1"+"_std")                
+            else: 
+                headers.append(model+"_"+key)
+                headers.append(model+"_"+key+"_std")
+
 
     A=flatten(A)
     B=flatten(B)
@@ -832,39 +839,28 @@ def save_resul(sol):
     MDL.write_csv(save_path+'STATS_%s-%s_%s.csv' %(sol.model,model,sample_name), variables=(vars_))
 
 def merge_results(sol,files):
+    import pandas as pd
     model = get_model_type(sol)
     save_where = '/Batch results/'
     working_path = getcwd().replace("\\", "/")+"/"
     save_path = working_path+save_where
-    
-    print("\nChecking for longest csv file")
-    lengths = []
-    for f in files:
-        to_merge_temp = working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f)
-        headers_temp = np.genfromtxt(to_merge_temp, delimiter=",", dtype=str, skip_footer=1)
-        lengths.append(len(headers_temp))
-    
-    to_merge_max = working_path+"/Results/%s/INV_%s-%s_%s.csv" %(files[lengths.index(max(lengths))],sol.model,model,files[lengths.index(max(lengths))])
-    headers = np.genfromtxt(to_merge_max, delimiter=",", dtype=str, skip_footer=1)
-
     print("\nMerging csv files")
     if not path.exists(save_path):
         makedirs(save_path)
-#    to_merge = working_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
-#    headers = np.genfromtxt(to_merge, delimiter=",", dtype=str, skip_footer=1)
-    merged_inv_results = np.zeros((len(files), len(headers)))
-    merged_inv_results.fill(np.nan)
-    for i, f in enumerate(files):
-        to_add = np.loadtxt(working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f), delimiter=",", skiprows=1)
-        merged_inv_results[i][:to_add.shape[0]] = to_add
-    rows = np.array(files, dtype=str)[:, np.newaxis]
-    hd = ",".join(["ID"] + list(headers))
-    np.savetxt(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,model,files[0],files[-1]), np.hstack((rows, merged_inv_results)), delimiter=",", header=hd, fmt="%s")
+    dfs = [pd.read_csv(working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f)) for f in files]
+    listed_dfs = [list(d) for d in dfs]
+    df_tot = pd.concat(dfs, axis=0)
+    longest = max(enumerate(listed_dfs), key = lambda tup: len(tup[1]))[0]
+    df_tot['Sample_ID'] = files
+    df_tot.set_index('Sample_ID', inplace=True)
+    df_tot = df_tot[dfs[longest].columns]
+    df_tot.to_csv(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,model,files[0],files[-1]))
     print("Batch file successfully saved in:\n", save_path)
 
-def plot_data(filename, headers, ph_units):
+def plot_data(filename, headers, ph_units, save=False, save_as='png', fig_dpi=144):
     data = get_data(filename,headers,ph_units)
     # Graphiques du data
+    sample_name = filename.replace("\\", "/").split("/")[-1].split(".")[0]
     Z = data["Z"]
     dZ = data["Z_err"]
     f = data["freq"]
@@ -876,14 +872,14 @@ def plot_data(filename, headers, ph_units):
     Amp_dat = old_div(data["amp"],Zr0)
     Amp_err = old_div(data["amp_err"],Zr0)
 
-    fig, ax = plt.subplots(3, 1, figsize=(6,8))
-    for t in ax:
-        t.tick_params(labelsize=12)
+    fig, ax = plt.subplots(3, 1, figsize=(4,8))
+#    for t in ax:
+#        t.tick_params(labelsize=12)
     # Real-Imag
     plt.axes(ax[0])
-    plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.b', label=filename)
-    plt.xlabel(sym_labels['real'], fontsize=12)
-    plt.ylabel(sym_labels['imag'], fontsize=12)
+    plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+    plt.xlabel(sym_labels['real'])
+    plt.ylabel(sym_labels['imag'])
 
     plt.xlim([None, 1])
     plt.ylim([0, None])
@@ -891,22 +887,32 @@ def plot_data(filename, headers, ph_units):
 #    plt.title(filename, fontsize=10)
     # Freq-Phas
     plt.axes(ax[1])
-    plt.errorbar(f, -Pha_dat, Pha_err, None, '.b', label=filename)
+    plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     ax[1].set_yscale("log", nonposy='clip')
     ax[1].set_xscale("log")
-    plt.xlabel(sym_labels['freq'], fontsize=12)
-    plt.ylabel(sym_labels['phas'], fontsize=12)
+    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['phas'])
 #    plt.legend(loc=2, numpoints=1, fontsize=9)
     plt.ylim([1,1000])
     # Freq-Ampl
     plt.axes(ax[2])
-    plt.errorbar(f, Amp_dat, Amp_err, None, '.b', label=filename)
+    plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     ax[2].set_xscale("log")
-    plt.xlabel(sym_labels['freq'], fontsize=12)
-    plt.ylabel(sym_labels['ampl'], fontsize=12)
+    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['ampl'])
     plt.ylim([None,1.0])
 #    plt.legend(numpoints=1, fontsize=9)
     fig.tight_layout()
+
+    if save:
+        save_where = '/Figures/Data/'
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
+        print("\nSaving fit figure in:\n", save_path)
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'DATA-%s.%s'%(sample_name,save_as), dpi=fig_dpi, bbox_inches='tight')
+
 
     plt.close(fig)
     return fig
@@ -1040,23 +1046,24 @@ def plot_fit(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
 #            t.tick_params(labelsize=14)
         # Real-Imag
         plt.axes(ax[2])
-        plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-        p=plt.plot(zn_fit.real, -zn_fit.imag, '-', label="Model",zorder=2)
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, alpha=0.2, color=p[0].get_color(), zorder=1)
+        plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+        p=plt.plot(zn_fit.real, -zn_fit.imag, ls='-', c='k', label="Model",zorder=2)
+        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, alpha=0.1, color=p[0].get_color(), zorder=1, label='95% HPD')
         plt.xlabel(sym_labels['real'])
         plt.ylabel(sym_labels['imag'])
-        plt.legend(loc='best', fontsize=9, labelspacing=0.2)
+        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
         plt.xlim([None, 1])
         plt.ylim([0, max(-zn_dat.imag)])
         
         # Freq-Ampl
         plt.axes(ax[1])
         plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-        p=plt.semilogx(f, Amp_fit, '-', color="#ff7f0e", label='Model', zorder=2)
-        plt.fill_between(f, Amp_max, Amp_min, color=p[0].get_color(), alpha=0.2, zorder=1)
+        p=plt.semilogx(f, Amp_fit, ls='-', c='k', label='Model', zorder=2)
+        plt.fill_between(f, Amp_max, Amp_min, color=p[0].get_color(), alpha=0.1, zorder=1, label='95% HPD')
+        plt.xscale('log')
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['ampl'])
-        plt.legend(loc='best', fontsize=9, labelspacing=0.2)
+        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         
 #        locmaj = LogLocator(base=10,subs=(0, 1),numticks=12) 
@@ -1073,12 +1080,13 @@ def plot_fit(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
         # Freq-Phas
         plt.axes(ax[0])
         plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-        p=plt.loglog(f, -Pha_fit, '-', label='Model', zorder=2)
+        p=plt.plot(f, -Pha_fit, ls='-', c='k', label='Model', zorder=2)
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color=p[0].get_color(), alpha=0.2, zorder=1)
+        plt.xscale('log')
+        plt.fill_between(f, -Pha_max, -Pha_min, color=p[0].get_color(), alpha=0.1, zorder=1, label='95% HPD')
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['phas'])
-        plt.legend(loc='best', fontsize=9, labelspacing=0.2)
+        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
 
