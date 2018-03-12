@@ -45,6 +45,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.pyplot import rcParams
 from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import LogLocator
+from matplotlib.ticker import NullFormatter
 import numpy as np
 from os import path, makedirs
 from os import getcwd
@@ -88,7 +90,7 @@ def get_model_type(sol):
         model = ''.join([c for c in model if c.isupper()])
         
     if model == "ColeCole":
-        model = "%dmodes"%sol.cc_modes
+        model = "CC%d"%sol.cc_modes
         
     return model
 
@@ -116,7 +118,7 @@ def print_resul(sol):
         else:
             print(l, np.atleast_1d(pm[v]), '+/-', np.atleast_1d(pm[e]))
             
-def plot_histo(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144):
+def plot_histo(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -127,9 +129,11 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
+        keys.remove("cond")
         keys.remove("log_m_i")
         keys.remove("log_tau_i")
-        keys.remove("cond")
+#        keys.remove("m_i")
+#        keys.remove("tau_i")
 #        keys.remove("log_half_tau")
 #        keys.remove("log_peak_tau")
     except:
@@ -190,8 +194,8 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144
             except:
                 data = sorted(MDL.trace(stoc)[:])
             plt.axes(a)
-            plt.locator_params(axis = 'y', nbins = 7)
-            plt.locator_params(axis = 'x', nbins = 6)
+            plt.locator_params(axis = 'y', nbins = 6)
+            plt.locator_params(axis = 'x', nbins = 5)
             plt.xlabel(k)
             try:
                 hist = plt.hist(data, bins=20, normed=False, label=filename, edgecolor='#1f77b4', linewidth=1.0, color='#1f77b4', alpha=0.3)
@@ -223,7 +227,7 @@ def plot_histo(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144
         except: pass
         return fig
 
-def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True, fig_dpi=144):
+def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=False, fig_dpi=144):
     if True:
         save_as = 'png'
     else:
@@ -301,7 +305,7 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, save=False, save_as_png=True, f
         plt.close(fig)
         return fig
 
-def plot_hexbin(sol, var1, var2, save=False, save_as_png=True, fig_dpi=144):
+def plot_hexbin(sol, var1, var2, save=False, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -356,11 +360,19 @@ def plot_hexbin(sol, var1, var2, save=False, save_as_png=True, fig_dpi=144):
     plt.close(fig)
     return fig
 
-def plot_traces(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=144):
+def plot_traces(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
         save_as = 'pdf'
+    
+    comp_dic = {"log_mean_tau": 'tau_mean',
+                "R0": "rho0",
+                "log_half_tau": "tau_50",
+                "log_peak_tau": "tau_peaks_all",
+                "log_total_m": "m_tot",
+                }
+        
     MDL = sol.MDL
     model = get_model_type(sol)
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
@@ -369,9 +381,14 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=14
     sampler = MDL.get_state()["sampler"]
     try:
         keys.remove("zmod")
+        keys.remove("cond")
         keys.remove("log_m_i")
         keys.remove("log_tau_i")
-        keys.remove("cond")
+        keys.remove("log_noise_m")
+        keys.remove("log_noise_tau")
+        keys.remove("noise_rho")
+#        keys.remove("m_i")
+#        keys.remove("tau_i")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -438,19 +455,32 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=14
             plt.axes(a)
             plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
             plt.locator_params(axis = 'y', nbins = 6)
-            plt.ylabel(k)
-            plt.plot(x, data, '-')
+            plt.ylabel(k)    
+            try:
+                plt.plot(x, data,'-', color='C7', alpha=0.5)
+                plt.plot(x, np.mean(data)*np.ones(len(x)), color='C0',linestyle='-', linewidth=2)
+#                print(comp_dic[k])
+                ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0]
+                hpd = sol.MDL.stats()[k]['95% HPD interval']
+                plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
+                plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
+            except:
+                try:
+                    hpd = sol.MDL.stats()[stoc]['95% HPD interval'][:,stoc_num[0]-1]
+                    ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0][-stoc_num[0]]
+                    plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
+                    plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
+                except:
+                    print("File %s: could not plot %s trace. Parameter is None type." %(filename,k))
             
             if sampler["_burn"] == 0:
                 plt.xscale('log')
             else:
                 plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
                 
+            plt.grid('off')
             
-#            plt.xscale('log')
-            plt.grid('on')
-            
-        plt.tight_layout(pad=0.1, w_pad=0., h_pad=-1)
+        plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=-1)
         for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
             a.set_visible(False)
         
@@ -478,7 +508,7 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=True, fig_dpi=14
         plt.close(fig)
         return fig
 
-def plot_summary(sol, save=False, save_as_png=True, fig_dpi=144):
+def plot_summary(sol, save=False, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -489,9 +519,11 @@ def plot_summary(sol, save=False, save_as_png=True, fig_dpi=144):
     keys = sorted([x.__name__ for x in MDL.deterministics]) + sorted([x.__name__ for x in MDL.stochastics])
     try:
         keys.remove("zmod")
+        keys.remove("cond")
         keys.remove("log_m_i")
         keys.remove("log_tau_i")
-        keys.remove("cond")
+#        keys.remove("m_i")
+#        keys.remove("tau_i")
     except:
         pass
     for (i, k) in enumerate(keys):
@@ -559,7 +591,7 @@ def plot_summary(sol, save=False, save_as_png=True, fig_dpi=144):
 
     return fig
 
-def plot_autocorr(sol, save=False, save_as_png=True, fig_dpi=144):
+def plot_autocorr(sol, save=False, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -617,7 +649,7 @@ def plot_autocorr(sol, save=False, save_as_png=True, fig_dpi=144):
     except: pass
     return fig
 
-def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
+def plot_rtd(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -626,46 +658,45 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     model = get_model_type(sol)
     if draw or save:
         fig, ax = plt.subplots(figsize=(4,3))
-        uncer_m = sol.MDL.stats()["log_m_i"]["standard deviation"]
-        uncer_tau = sol.MDL.stats()["log_tau_i"]["standard deviation"]
-        
-        peaks = np.atleast_1d(sol.MDL.stats()["log_peak_tau"]["mean"])
-        uncer_peaks = sol.MDL.stats()["log_peak_tau"]['95% HPD interval']
-        uncer_peaks = uncer_peaks[1]-uncer_peaks[0]
-        
-        bot95 = sol.MDL.stats()["log_m_i"]['95% HPD interval'][0]
-        top95 = sol.MDL.stats()["log_m_i"]['95% HPD interval'][1]
-        
-        log_tau = sol.MDL.stats()["log_tau_i"]['mean']
-        log_m = sol.MDL.stats()["log_m_i"]['mean']
-        
-        
+        try:
+            bot95 = 10**sol.MDL.stats()["log_m_i"]['95% HPD interval'][0]
+            top95 = 10**sol.MDL.stats()["log_m_i"]['95% HPD interval'][1]
+            log_tau = 10**sol.MDL.stats()["log_tau_i"]['mean']
+            log_m = 10**sol.MDL.stats()["log_m_i"]['mean']
+        except:
+            bot95 = sol.MDL.stats()["m_i"]['95% HPD interval'][0]
+            top95 = sol.MDL.stats()["m_i"]['95% HPD interval'][1]
+            log_tau = 10**sol.MDL.log_tau
+            log_m = sol.MDL.stats()["m_i"]['mean']            
+            
+        peaks = 10**np.atleast_1d(sol.MDL.stats()["log_peak_tau"]["mean"])
+        uncer_peaks = 10**sol.MDL.stats()["log_peak_tau"]['95% HPD interval'].T.reshape(len(np.atleast_1d(sol.MDL.stats()["log_peak_tau"]['mean'])),2)
         m_peaks = log_m[[list(log_tau).index(find_nearest(log_tau, peaks[x])) for x in range(len(peaks))]]
-        plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD (95% HPD)")
-        plt.errorbar(peaks, m_peaks+0.1, None, uncer_peaks, color="C3", marker="v", linestyle="", label=r"$\tau_{peak}$ (95% HPD)")
-        plt.fill_between(np.log10(sol.ccd_priors['tau']), bot95, top95, color="C7", alpha=0.3)
-        plt.axvline(sol.MDL.stats()["log_mean_tau"]['mean'],color="#2ca02c",linestyle='--', label=r"$\bar{\tau}$ (95% HPD)")
-        plt.axvline(sol.MDL.stats()["log_half_tau"]['mean'],color='#1f77b4',linestyle=':', label=r"$\tau_{50}$ (95% HPD)")
-        inter = sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
-        plt.axvspan(inter[0], inter[1], alpha=0.3, color="#2ca02c")
-        inter = sol.MDL.stats()["log_half_tau"]['95% HPD interval']
-        plt.axvspan(inter[0], inter[1], alpha=0.3, color='#1f77b4')
-        plt.axvspan(min(log_tau), min(log_tau)+1, alpha=0.1, color='C7', hatch='xx')
-        plt.axvspan(max(log_tau)-1, max(log_tau), alpha=0.1, color='C7', hatch='xx')
-        plt.xlim([min(log_tau), max(log_tau)])
-        plt.xlabel(r"log$_{10}\tau$ ($\tau$ in s)")
-        plt.ylabel("log$_{10}$m")
-        plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)")
-        plt.ylabel(r"$log_{10}$m")
+        plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD")
+        if len(peaks) >= 1:
+            plt.errorbar(peaks, m_peaks*1.2, None, None, color="C3", marker="v", markersize=5, linestyle="", label=r"$\tau_{peak}$")
+            for i, u in enumerate(uncer_peaks):
+                plt.axvspan(u[0], u[1], alpha=0.2, color="C3")
+        plt.axvline(10**sol.MDL.stats()["log_half_tau"]['mean'],color="C0",linestyle=':', label=r"$\tau_{50}$")
+        plt.axvline(10**sol.MDL.stats()["log_mean_tau"]['mean'],color='C2',linestyle='--', label=r"$\bar{\tau}$")
+        inter = 10**sol.MDL.stats()["log_half_tau"]['95% HPD interval']
+        plt.axvspan(inter[0], inter[1], alpha=0.2, color="C0")
+        inter = 10**sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
+        plt.axvspan(inter[0], inter[1], alpha=0.2, color='C2')
+        plt.axvspan(min(log_tau), min(log_tau)*10, alpha=0.1, color='C7')
+        plt.axvspan(max(log_tau)/10, max(log_tau), alpha=0.1, color='C7')
+        plt.fill_between(log_tau, bot95, top95, color="C7", alpha=0.2)
+        plt.xlim([10**np.ceil(np.log10(min(log_tau))), 10**np.floor(np.log10(max(log_tau)))])
+#        plt.ylim([10**np.floor(np.log10(min(log_m))), 10**np.ceil(np.log10(max(log_m)))])
+        plt.xlabel(r"$\tau$ (s)")
+        plt.ylabel(r"$m$")
         plt.grid('off')
-        plt.legend(numpoints=1, fontsize=9, loc=1,labelspacing=0.1)
-        
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-
+        plt.legend(fontsize=9, loc=1,labelspacing=0.2, handlelength=1.5)
+        plt.xscale('log')
+#        plt.yscale('log')
         fig.tight_layout()
     if save:
-        save_where = '/Figures/Debye distributions/'
+        save_where = '/Figures/RTD/'
         working_path = getcwd().replace("\\", "/")+"/"
 
         save_path = working_path+save_where
@@ -673,13 +704,117 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         if not path.exists(save_path):
             makedirs(save_path)
         fig.savefig(save_path+'RTD-%s-%s.%s'%(model, filename,save_as), dpi=fig_dpi, bbox_inches='tight')
-#    try:    plt.close(fig)
-#    except: pass
     if draw:
         return fig
     else:       
         plt.close(fig)
         return None
+#
+#def plot_rtd(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
+#    if save_as_png:
+#        save_as = 'png'
+#    else:
+#        save_as = 'pdf'
+#    filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
+#    model = get_model_type(sol)
+#    if draw or save:
+#        fig, ax = plt.subplots(figsize=(4,3))
+#        uncer_m = sol.MDL.stats()["log_m_i"]["standard deviation"]
+#        uncer_tau = sol.MDL.stats()["log_tau_i"]["standard deviation"]
+#        
+#        peaks = np.atleast_1d(sol.MDL.stats()["log_peak_tau"]["mean"])
+#        uncer_peaks = sol.MDL.stats()["log_peak_tau"]['95% HPD interval']
+#        uncer_peaks = uncer_peaks[1]-uncer_peaks[0]
+#        
+#        bot95 = sol.MDL.stats()["log_m_i"]['95% HPD interval'][0]
+#        top95 = sol.MDL.stats()["log_m_i"]['95% HPD interval'][1]
+#        
+#        log_tau = sol.MDL.stats()["log_tau_i"]['mean']
+#        log_m = sol.MDL.stats()["log_m_i"]['mean']
+#        
+#        
+#        m_peaks = log_m[[list(log_tau).index(find_nearest(log_tau, peaks[x])) for x in range(len(peaks))]]
+#        plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD")
+#        plt.errorbar(peaks, m_peaks+0.1, None, uncer_peaks, color="C3", marker="v", linestyle="", label=r"$\tau_{peak}$")
+#        plt.fill_between(np.log10(sol.ccd_priors['tau']), bot95, top95, color="C7", alpha=0.2)
+#        plt.axvline(sol.MDL.stats()["log_mean_tau"]['mean'],color="#2ca02c",linestyle='--', label=r"$\bar{\tau}$")
+#        plt.axvline(sol.MDL.stats()["log_half_tau"]['mean'],color='#1f77b4',linestyle=':', label=r"$\tau_{50}$")
+#        inter = sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
+#        plt.axvspan(inter[0], inter[1], alpha=0.2, color="#2ca02c")
+#        inter = sol.MDL.stats()["log_half_tau"]['95% HPD interval']
+#        plt.axvspan(inter[0], inter[1], alpha=0.2, color='#1f77b4')
+#        plt.axvspan(min(log_tau), min(log_tau)+1, alpha=0.1, color='C7', hatch='xx')
+#        plt.axvspan(max(log_tau)-1, max(log_tau), alpha=0.1, color='C7', hatch='xx')
+#        plt.xlim([min(log_tau), max(log_tau)])
+#        plt.xlabel(r"$log_{10}\tau$ ($\tau$ in s)")
+#        plt.ylabel(r"$log_{10}$m")
+#        plt.grid('off')
+#        plt.legend(numpoints=1, fontsize=9, loc=1,labelspacing=0.1)
+#        
+#        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+#        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+#
+#        fig.tight_layout()
+#    if save:
+#        save_where = '/Figures/Debye distributions/'
+#        working_path = getcwd().replace("\\", "/")+"/"
+#
+#        save_path = working_path+save_where
+#        print("\nSaving relaxation time distribution figure in:\n", save_path)
+#        if not path.exists(save_path):
+#            makedirs(save_path)
+#        fig.savefig(save_path+'RTD-%s-%s.%s'%(model, filename,save_as), dpi=fig_dpi, bbox_inches='tight')
+##    try:    plt.close(fig)
+##    except: pass
+#    if draw:
+#        return fig
+#    else:       
+#        plt.close(fig)
+#        return None
+
+def save_csv_traces(sol):
+    """
+    Saves the traces contained in mcmcinv 
+    object sol to a single csv file.
+    call with sol.save_csv_traces()
+    """
+
+    # Get some basic information from the mcmc object
+    MDL, filepath = sol.MDL, sol.filename
+    model = get_model_type(sol)
+    sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
+    if sol.model in ['ColeCole', 'Dias', 'Shin']:
+        tagno = 1 
+    else:
+        tagno = 0
+    
+    # Decide where to save the csv
+    save_where = '/TraceResults/'
+    working_path = getcwd().replace("\\", "/")+"/"
+    save_path = working_path + save_where + "%s/"%sample_name # Add subfolder for the sample
+    
+    # Get names of parameters for save file
+    pm_names = [x.__name__ for x in MDL.stochastics]
+    pm_shapes = [x.shape for x in MDL.stochastics]
+    pm_shapes = [1 if len(v) == 0 else v[0] for v in pm_shapes]
+    all_pm_names = [x*[y] for x,y in zip(pm_shapes, pm_names)]
+    all_pm_names = [item for sublist in all_pm_names for item in sublist]
+    all_pm_names = [v + str(all_pm_names[:i].count(v) + tagno) if all_pm_names.count(v) > 1 else v for i, v in enumerate(all_pm_names)]
+    all_pm_names = [model+"_"+s for s in all_pm_names]
+    
+    headers = ','.join(list(all_pm_names))
+    
+    # Start getting the traces from mcmcinv object
+    trace_matrix = []
+    for n, s in zip(pm_names,pm_shapes):
+        trace_matrix.append(MDL.trace(n)[:])
+    trace_matrix = np.hstack([x[:,np.newaxis] if x.ndim==1 else x for x in trace_matrix])
+    
+    # Do the saving
+    print("\nSaving CSV traces in:\n", save_path)
+    if not path.exists(save_path):
+        makedirs(save_path)
+    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_matrix, delimiter=',', header=headers, comments="")
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
@@ -701,9 +836,9 @@ def save_resul(sol):
     headers = []
     keys = sorted(pm.keys())
     if sol.model == "CCD":
-        print("moving")
-        keys += [keys.pop(keys.index("peak_tau"))]
-    
+        keys += [keys.pop(keys.index("peak_tau"))] # Move to end
+        keys += [keys.pop(keys.index("peak_m"))] # Move to end
+
     keys = [k for k in keys if "_std" not in k]
         
     for c, key in enumerate(keys):
@@ -713,14 +848,21 @@ def save_resul(sol):
         B.append(list(np.array(pm[key+"_std"]).ravel()))        
 
         length = len(np.atleast_1d(pm[key]))
+
                 
+        
         if length > 1:
             for i in range(len(A[c])):
                 headers.append(model+"_"+key+"_%d" %(i+tag))
                 headers.append(model+"_"+key+("_%d"%(i+tag))+"_std")
         else:           
-            headers.append(model+"_"+key)
-            headers.append(model+"_"+key+"_std")
+            if (key == "peak_tau")|(key == "peak_m"):
+                headers.append(model+"_"+key+"_1")
+                headers.append(model+"_"+key+"_1"+"_std")                
+            else: 
+                headers.append(model+"_"+key)
+                headers.append(model+"_"+key+"_std")
+
 
     A=flatten(A)
     B=flatten(B)
@@ -735,11 +877,11 @@ def save_resul(sol):
 
     if sol.model == 'PDecomp': 
         tau_ = sol.data["tau"]
-        add = ["tau"+"%d"%(i) for i in range(len(tau_))]
+        add = ["%s_tau"%model+"%d"%(i) for i in range(len(tau_))]
         add = ',' + ','.join(add)
         headers += add
         results = np.concatenate((results,tau_))
-    headers = "Z_max,c_exponent," + headers
+    headers = "Z_max,Input_c_exponent," + headers
     results = np.concatenate((np.array([sol.data["Z_max"]]),np.array([sol.c_exp]),results))
     np.savetxt(save_path+'INV_%s-%s_%s.csv' %(sol.model,model,sample_name), results[None],
                header=headers, comments='', delimiter=',')
@@ -748,39 +890,28 @@ def save_resul(sol):
     MDL.write_csv(save_path+'STATS_%s-%s_%s.csv' %(sol.model,model,sample_name), variables=(vars_))
 
 def merge_results(sol,files):
+    import pandas as pd
     model = get_model_type(sol)
     save_where = '/Batch results/'
     working_path = getcwd().replace("\\", "/")+"/"
     save_path = working_path+save_where
-    
-    print("\nChecking for longest csv file")
-    lengths = []
-    for f in files:
-        to_merge_temp = working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f)
-        headers_temp = np.genfromtxt(to_merge_temp, delimiter=",", dtype=str, skip_footer=1)
-        lengths.append(len(headers_temp))
-    
-    to_merge_max = working_path+"/Results/%s/INV_%s-%s_%s.csv" %(files[lengths.index(max(lengths))],sol.model,model,files[lengths.index(max(lengths))])
-    headers = np.genfromtxt(to_merge_max, delimiter=",", dtype=str, skip_footer=1)
-
     print("\nMerging csv files")
     if not path.exists(save_path):
         makedirs(save_path)
-#    to_merge = working_path+"/Results/%s/INV_%s_%s.csv" %(files[0],model,files[0])
-#    headers = np.genfromtxt(to_merge, delimiter=",", dtype=str, skip_footer=1)
-    merged_inv_results = np.zeros((len(files), len(headers)))
-    merged_inv_results.fill(np.nan)
-    for i, f in enumerate(files):
-        to_add = np.loadtxt(working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f), delimiter=",", skiprows=1)
-        merged_inv_results[i][:to_add.shape[0]] = to_add
-    rows = np.array(files, dtype=str)[:, np.newaxis]
-    hd = ",".join(["ID"] + list(headers))
-    np.savetxt(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,model,files[0],files[-1]), np.hstack((rows, merged_inv_results)), delimiter=",", header=hd, fmt="%s")
+    dfs = [pd.read_csv(working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,model,f)) for f in files]
+    listed_dfs = [list(d) for d in dfs]
+    df_tot = pd.concat(dfs, axis=0)
+    longest = max(enumerate(listed_dfs), key = lambda tup: len(tup[1]))[0]
+    df_tot['Sample_ID'] = files
+    df_tot.set_index('Sample_ID', inplace=True)
+    df_tot = df_tot[dfs[longest].columns]
+    df_tot.to_csv(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,model,files[0],files[-1]))
     print("Batch file successfully saved in:\n", save_path)
 
-def plot_data(filename, headers, ph_units):
+def plot_data(filename, headers, ph_units, save=False, save_as='png', fig_dpi=144):
     data = get_data(filename,headers,ph_units)
     # Graphiques du data
+    sample_name = filename.replace("\\", "/").split("/")[-1].split(".")[0]
     Z = data["Z"]
     dZ = data["Z_err"]
     f = data["freq"]
@@ -792,14 +923,14 @@ def plot_data(filename, headers, ph_units):
     Amp_dat = old_div(data["amp"],Zr0)
     Amp_err = old_div(data["amp_err"],Zr0)
 
-    fig, ax = plt.subplots(3, 1, figsize=(6,8))
-    for t in ax:
-        t.tick_params(labelsize=12)
+    fig, ax = plt.subplots(3, 1, figsize=(4,8))
+#    for t in ax:
+#        t.tick_params(labelsize=12)
     # Real-Imag
     plt.axes(ax[0])
-    plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.b', label=filename)
-    plt.xlabel(sym_labels['real'], fontsize=12)
-    plt.ylabel(sym_labels['imag'], fontsize=12)
+    plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+    plt.xlabel(sym_labels['real'])
+    plt.ylabel(sym_labels['imag'])
 
     plt.xlim([None, 1])
     plt.ylim([0, None])
@@ -807,27 +938,37 @@ def plot_data(filename, headers, ph_units):
 #    plt.title(filename, fontsize=10)
     # Freq-Phas
     plt.axes(ax[1])
-    plt.errorbar(f, -Pha_dat, Pha_err, None, '.b', label=filename)
+    plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     ax[1].set_yscale("log", nonposy='clip')
     ax[1].set_xscale("log")
-    plt.xlabel(sym_labels['freq'], fontsize=12)
-    plt.ylabel(sym_labels['phas'], fontsize=12)
+    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['phas'])
 #    plt.legend(loc=2, numpoints=1, fontsize=9)
     plt.ylim([1,1000])
     # Freq-Ampl
     plt.axes(ax[2])
-    plt.errorbar(f, Amp_dat, Amp_err, None, '.b', label=filename)
+    plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     ax[2].set_xscale("log")
-    plt.xlabel(sym_labels['freq'], fontsize=12)
-    plt.ylabel(sym_labels['ampl'], fontsize=12)
+    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['ampl'])
     plt.ylim([None,1.0])
 #    plt.legend(numpoints=1, fontsize=9)
     fig.tight_layout()
 
+    if save:
+        save_where = '/Figures/Data/'
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
+        print("\nSaving fit figure in:\n", save_path)
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'DATA-%s.%s'%(sample_name,save_as), dpi=fig_dpi, bbox_inches='tight')
+
+
     plt.close(fig)
     return fig
 
-def plot_deviance(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
+def plot_deviance(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -842,7 +983,7 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.plot(x, deviance, "-", color="C3", label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
         plt.xlabel("Iteration")
         plt.ylabel("Model deviance")
-        plt.legend(numpoints=1, loc="best")
+        plt.legend(numpoints=1, loc="best", fontsize=9)
         plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
@@ -886,7 +1027,7 @@ def logp_trace(model):
         logp[i_sample] = model.logp
     return logp
 
-def plot_logp(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
+def plot_logp(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -901,7 +1042,7 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
         plt.plot(x, logp, "-", color="C3")
         plt.xlabel("Iteration")
         plt.ylabel("Log-likelihood")
-        plt.legend(numpoints=1, loc="best")
+        plt.legend(numpoints=1, loc="best", fontsize=9)
         plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
@@ -922,7 +1063,7 @@ def plot_logp(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
     if draw:    return fig
     else:       return None
 
-def plot_fit(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
+def plot_fit(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
     if save_as_png:
         save_as = 'png'
     else:
@@ -956,35 +1097,47 @@ def plot_fit(sol, save=False, draw=True, save_as_png=True, fig_dpi=144):
 #            t.tick_params(labelsize=14)
         # Real-Imag
         plt.axes(ax[2])
-        plt.errorbar(zn_fit.real, -zn_dat.imag, zn_err.imag, zn_err.real, '.', color="#1f77b4", label='Data')
-        plt.plot(zn_fit.real, -zn_fit.imag, '-', color="#ff7f0e", label='Model')
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, color="#ff7f0e", alpha=0.2, label="95% HPD")
+        plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+        p=plt.plot(zn_fit.real, -zn_fit.imag, ls='-', c='k', label="Model",zorder=2)
+        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, alpha=0.1, color=p[0].get_color(), zorder=1, label='95% HPD')
         plt.xlabel(sym_labels['real'])
         plt.ylabel(sym_labels['imag'])
-        plt.legend(loc='best', fontsize=9, numpoints=1)
+        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
         plt.xlim([None, 1])
         plt.ylim([0, max(-zn_dat.imag)])
         
         # Freq-Ampl
         plt.axes(ax[1])
-        plt.errorbar(f, Amp_dat, Amp_err, None, '.', color="#1f77b4", label='Data')
-        plt.semilogx(f, Amp_fit, '-', color="#ff7f0e", label='Model')
-        plt.fill_between(f, Amp_max, Amp_min, color="#ff7f0e", alpha=0.2, label="95% HPD")
+        plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+        p=plt.semilogx(f, Amp_fit, ls='-', c='k', label='Model', zorder=2)
+        plt.fill_between(f, Amp_max, Amp_min, color=p[0].get_color(), alpha=0.1, zorder=1, label='95% HPD')
+        plt.xscale('log')
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['ampl'])
-        plt.legend(loc='best', fontsize=9, numpoints=1)
+        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
+        
+#        locmaj = LogLocator(base=10,subs=(0, 1),numticks=12) 
+#        ax[1].xaxis.set_major_locator(locmaj)
+#        ax[1].xaxis.set_major_formatter(NullFormatter())
+#
+#        
+#        locmin = LogLocator(base=10.0,subs=(0.2,0.4,0.6,0.8),numticks=12)
+#        ax[1].xaxis.set_minor_locator(locmin)
+#        ax[1].xaxis.set_minor_formatter(NullFormatter())
+        
         plt.ylim([None,1.0])
 
         # Freq-Phas
         plt.axes(ax[0])
-        plt.errorbar(f, -Pha_dat, Pha_err, None, '.', color="#1f77b4", label='Data')
-        plt.loglog(f, -Pha_fit, '-', color="#ff7f0e", label='Model')
+        plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+        p=plt.plot(f, -Pha_fit, ls='-', c='k', label='Model', zorder=2)
         ax[0].set_yscale("log", nonposy='clip')
-        plt.fill_between(f, -Pha_max, -Pha_min, color="#ff7f0e", alpha=0.2, label="95% HPD")
+        plt.xscale('log')
+        plt.fill_between(f, -Pha_max, -Pha_min, color=p[0].get_color(), alpha=0.1, zorder=1, label='95% HPD')
         plt.xlabel(sym_labels['freq'])
         plt.ylabel(sym_labels['phas'])
-        plt.legend(loc='best', fontsize=9, numpoints=1)
+        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
         plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
         plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
 

@@ -33,24 +33,24 @@ def save_object(obj, filename):
 #model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-#model = "PDecomp"
+model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
-model = "CCD"
+#model = "CCD"
 
 #==============================================================================
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 1000,
-          "nb_burn"    : 800,
+          "nb_iter"    : 10000,
+          "nb_burn"    : 8000,
           "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False, 
-          "cov_inter"  : 100,
-          "cov_delay"  : 100,
+          "cov_inter"  : 1000,
+          "cov_delay"  : 1000,
           }
 sol = []
 
@@ -74,14 +74,16 @@ for noise in [1]:
     reflist = [x for x in reflist if ("AVG" in x)]
 #    reflist = [x for x in reflist if ("Reciprocals" in x) or ("MLA12" in x)]
 #    reflist = [x for x in reflist if "Reciprocals" in x]
-#    reflist = [x for x in reflist if "MLA12" in x]
+    reflist = [x for x in reflist if "MLA12" in x]
 #    reflist = [x for x in reflist if "_stable" in x]
 #    reflist = [x for x in reflist if "55" in x]
 #    reflist = reflist[-87:]
 #    reflist = [reflist[1]]
 #    reflist = reflist[1:11]
 #    reflist = ["SIP-K389055.dat"]
-#    reflist = [reflist[x] for x in [2,0,3,1,-2]]
+#    reflist = [reflist[x] for x in [2,4,5,0,3,1,-2]]
+    reflist = [reflist[x] for x in [3]]
+
 #    reflist = [reflist[x] for x in [4,5,6,7,-1]]
 #    reflist = [reflist[x] for x in [4,5]]
 
@@ -113,36 +115,34 @@ for noise in [1]:
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
         sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, 
                            ph_units=ph_units, decomp_poly=4, cc_modes=2, 
-                           c_exp=1.0, log_min_tau=-3, guess_noise=False, 
+                           c_exp=0.5, log_min_tau=None, guess_noise=False, 
                            keep_traces=False))
     
         """Plot fit and data ?"""
-        sol[i].plot_fit(save=True, draw=False)
+#        sol[i].plot_fit(save=False, draw=True)
                 
         """Save results ?"""
         sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
-        sol[i].plot_rtd(save=True, draw=False)
+#        sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""
-        if False:
-            sol[i].print_results()
+        sol[i].print_results()
     
         """Plot parameter histograms ?"""
-        if False:
-            fig_histo = sol[i].plot_histograms(save=True)
+#        fig_histo = sol[i].plot_histograms(save=True)
+#        fig_trace = sol[i].plot_traces(save=True)
     
-        if False:
-            fig_trace = sol[i].plot_traces(save=True)
+    
     
 #        """Plot parameter summary and Gelman-Rubin convergence test ?"""
 #        if False:
 #            fig_kde = iR.plot_KDE(sol, "a0", "a1", save=False)
 
-#sol = sol[0]
+sol = sol[0]
 
-sol[0].merge_results([x.split(".")[0] for x in reflist])
+#sol[0].merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]

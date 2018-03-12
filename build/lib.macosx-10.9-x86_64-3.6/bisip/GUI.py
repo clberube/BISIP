@@ -139,7 +139,7 @@ class MainApplication(object):
         self.save_options = {"Save all hexbins (will make error)":            tk.BooleanVar(),
                              "Save all bivariate KDE (will make error)":      tk.BooleanVar(),
                              "Save fit figures":            tk.BooleanVar(),
-                             "Save traces":                 tk.BooleanVar(),
+                             "Save traces figure":          tk.BooleanVar(),
                              "Save histograms":             tk.BooleanVar(),
                              "Save autocorrelations":       tk.BooleanVar(),
                              "Save Debye RTD":              tk.BooleanVar(),
@@ -147,6 +147,7 @@ class MainApplication(object):
                              "Save deviance":               tk.BooleanVar(),
                              "Save loglikelihood":          tk.BooleanVar(),
                              "Save traces as txt":          tk.BooleanVar(),
+                             "Save traces in CSV":          tk.BooleanVar(),
                              "Tuning verbose":              tk.BooleanVar(),
                              "No subplots":                 tk.BooleanVar(),
                              "PNG figures":                 tk.BooleanVar(),
@@ -304,6 +305,8 @@ class MainApplication(object):
                 self.ccdt_config = cfg_single.cfg_single()
                 self.ccdt_config['fixed_lambda'] = self.lamb_da.get()
                 self.ccdt_config['norm'] = 10   
+            else:
+                self.ccdt_config = None
             
             print("=====================")
             self.activity()
@@ -317,7 +320,8 @@ class MainApplication(object):
                                c_exp=self.c_exp.get(), 
                                keep_traces=self.save_options["Save traces as txt"].get(),
                                ccdt_priors='auto', 
-                               ccdt_cfg=self.ccdt_config)
+                               ccdt_cfg=self.ccdt_config,
+                               )
 #            print(self.model.get(), self.sel_files[i])
             self.all_results[self.f_n] = {"pm":self.sol.pm,"MDL":self.sol.MDL,"data":self.sol.data,"fit":self.sol.fit, "sol":self.sol}
 #           Impression ou non des résultats, graphiques, histogrammes
@@ -329,7 +333,9 @@ class MainApplication(object):
                 self.sol.print_results()
             if self.run_options["Save CSV results"].get():
                 self.sol.save_results()
-            
+            if self.save_options["Save traces in CSV"].get():
+                self.sol.save_csv_traces()
+                
             if self.save_options["Save fit figures"].get():
                 self.sol.plot_fit(save=True, save_as_png=self.save_options["PNG figures"].get(), draw=False)
             
@@ -348,7 +354,7 @@ class MainApplication(object):
                     self.all_results[self.f_n]["sol"].plot_KDE(v1, v2, save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save histograms"].get():
                     self.all_results[self.f_n]["sol"].plot_histograms(no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
-            if self.save_options["Save traces"].get():
+            if self.save_options["Save traces figure"].get():
                 self.all_results[self.f_n]["sol"].plot_traces(no_subplots=self.save_options["No subplots"].get(), save=True, save_as_png=self.save_options["PNG figures"].get())
             if self.save_options["Save summaries"].get():
                 try:
