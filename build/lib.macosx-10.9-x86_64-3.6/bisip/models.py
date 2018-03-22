@@ -65,8 +65,15 @@ from scipy.interpolate import interp1d
 from bisip import invResults as iR
 from bisip.utils import format_results, get_data
 
-import lib_dd.decomposition.ccd_single as ccd_single
-import lib_dd.config.cfg_single as cfg_single
+try:
+    import lib_dd.decomposition.ccd_single as ccd_single
+    import lib_dd.config.cfg_single as cfg_single
+    print("\nCCDtools available")
+except:
+    pass
+
+import matplotlib as mpl
+mpl.rc_file_defaults()    
 
 #==============================================================================
 # Function to run MCMC simulation on selected model

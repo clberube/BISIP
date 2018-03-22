@@ -641,8 +641,8 @@ class MainApplication(object):
 #==============================================================================
     def model_choice(self):
         # Available models
-        models = [("Pelton \nCole-Cole","ColeCole"),
-                  ("Dias \nmodel","Dias"),
+        models = [("Pelton Cole-Cole","ColeCole"),
+                  ("Dias model","Dias"),
                   ("Polynomial decomposition","PDecomp"),
                   ("Stochastic CCDtools", "CCD"),
                   ]
@@ -743,15 +743,15 @@ class MainApplication(object):
         stdout.flush()
 
     def preview_data(self):
-        try:
-            for i in self.text_files.curselection():
+#        try:
+        for i in self.text_files.curselection():
                 sel = str(self.open_files[i])
                 fn = sel.split("/")[-1].split(".")[0]
-                fig_data = sel.plot_data(self.head.get(), self.units.get())
+                fig_data = iR.plot_data(sel, self.head.get(), self.units.get())
                 self.plot_window(fig_data, "Data preview: "+fn)
-        except:
-            tkinter.messagebox.showwarning("Preview error",
-                                     "Can't draw data\nImport and select at least one data file first", parent=self.master)
+#        except:
+#            tkinter.messagebox.showwarning("Preview error",
+#                                     "Can't draw data\nImport and select at least one data file first", parent=self.master)
 
     def plot_diagnostic(self, which):
         f_n = self.var_review.get()

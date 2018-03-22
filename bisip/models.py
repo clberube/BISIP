@@ -71,7 +71,10 @@ try:
     print("\nCCDtools available")
 except:
     pass
-    
+
+import matplotlib as mpl
+mpl.rc_file_defaults()    
+
 #==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>

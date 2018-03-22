@@ -55,14 +55,23 @@ from pymc import raftery_lewis, gelman_rubin, geweke
 from scipy.stats import norm, gaussian_kde
 from bisip.utils import get_data
 
+import matplotlib as mpl
+mpl.rc_file_defaults()
 
 #==============================================================================
-sym_labels = dict([('resi', r"$\rho\/(\Omega\cdot m)$"),
+sym_labels = dict([('resi', r"$\rho$ ($\Omega$m)"),
                    ('freq', r"Frequency (Hz)"),
                    ('phas', r"-Phase (mrad)"),
                    ('ampl', r"$|\rho|$ (normalized)"),
                    ('real', r"$\rho$' (normalized)"),
-                   ('imag', r"$-\rho$'' (normalized)")])
+                   ('imag', r"$-\rho$'' (normalized)"),
+                   ('realrho', r"$\rho$' ($\Omega$m)"),
+                   ('imagrho', r"$-\rho$'' ($\Omega$m)"),                   
+                   
+                   
+                   
+                   
+                   ])
 
 def flatten(x):
     result = []
@@ -108,7 +117,6 @@ def print_resul(sol):
     except:
         pass
     e_keys = sorted([s for s in list(pm.keys()) if "_std" in s])
-
     v_keys = [e.replace("_std", "") for e in e_keys]
     labels = ["{:<8}".format(x+":") for x in v_keys]
     np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
@@ -401,112 +409,74 @@ def plot_traces(sol, no_subplots=False, save=False, save_as_png=False, fig_dpi=1
     keys = list(flatten(keys))
     ncols = 2
     nrows = int(ceil(len(keys)*1.0 / ncols))
-    if no_subplots:
-        figs = {}
-        for c, k in enumerate(keys):
-            fig, ax = plt.subplots(figsize=(8,4))
-            plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-            if k == "R0":
-                stoc = "R0"
-            else:
-                stoc =  ''.join([i for i in k if not i.isdigit()])
-                stoc_num = [int(i) for i in k if i.isdigit()]
-            try:
-                data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
-            except:
-                data = MDL.trace(stoc)[:]
-            x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
-            plt.ylabel("%s value" %k)
-            plt.xlabel("Iteration number")
-            
-            if sampler["_burn"] == 0:
-                plt.xscale('log')
-            else:
-                plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-                
-            plt.plot(x, data, '-', label=k)
-            plt.grid('on')
-            if save:
-                save_where = '/Figures/Traces/%s/' %filename
-                working_path = getcwd().replace("\\", "/")+"/"
-                save_path = working_path+save_where
-                if c == 0:
-                    print("\nSaving traces figure in:\n", save_path)
-                if not path.exists(save_path):
-                    makedirs(save_path)
-                fig.savefig(save_path+'Trace-%s-%s-%s.%s'%(model,filename,k,save_as))
-            figs[k] = fig
-            plt.close(fig)
-        return figs
-
-    else:
-        fig, ax = plt.subplots(nrows, ncols, figsize=(8,nrows*1.4))
-        for c, (a, k) in enumerate(zip(ax.flat, keys)):
-            if k == "R0":
-                stoc = "R0"
-            else:
-                stoc =  ''.join([i for i in k if not i.isdigit()])
-                stoc_num = [int(i) for i in k if i.isdigit()]
-            try:
-                data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
-            except:
-                data = MDL.trace(stoc)[:]
-            x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
-            plt.axes(a)
-            plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-            plt.locator_params(axis = 'y', nbins = 6)
-            plt.ylabel(k)    
-            try:
-                plt.plot(x, data,'-', color='C7', alpha=0.5)
-                plt.plot(x, np.mean(data)*np.ones(len(x)), color='C0',linestyle='-', linewidth=2)
+    
+    fig, ax = plt.subplots(nrows, ncols, figsize=(8,nrows*1.4))
+    for c, (a, k) in enumerate(zip(ax.flat, keys)):
+        if k == "R0":
+            stoc = "R0"
+        else:
+            stoc =  ''.join([i for i in k if not i.isdigit()])
+            stoc_num = [int(i) for i in k if i.isdigit()]
+        try:
+            data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
+        except:
+            data = MDL.trace(stoc)[:]
+        x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
+        plt.axes(a)
+        plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+        plt.locator_params(axis = 'y', nbins = 6)
+        plt.ylabel(k)    
+        try:
+            plt.plot(x, data,'-', color='C7', alpha=0.5)
+            plt.plot(x, np.mean(data)*np.ones(len(x)), color='C0',linestyle='-', linewidth=2)
 #                print(comp_dic[k])
-                ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0]
-                hpd = sol.MDL.stats()[k]['95% HPD interval']
+            ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0]
+            hpd = sol.MDL.stats()[k]['95% HPD interval']
+            plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
+            plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
+        except:
+            try:
+                hpd = sol.MDL.stats()[stoc]['95% HPD interval'][:,stoc_num[0]-1]
+                ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0][-stoc_num[0]]
                 plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
                 plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
             except:
-                try:
-                    hpd = sol.MDL.stats()[stoc]['95% HPD interval'][:,stoc_num[0]-1]
-                    ccdt_val = sol.ccdt_last_it.stat_pars[comp_dic[stoc]][0][-stoc_num[0]]
-                    plt.plot(x, ccdt_val*np.ones(len(x)), color='C3',linestyle='--', linewidth=2)
-                    plt.fill_between(x, hpd[0], hpd[1], alpha=0.1)
-                except:
-                    print("File %s: could not plot %s trace. Parameter is None type." %(filename,k))
-            
-            if sampler["_burn"] == 0:
-                plt.xscale('log')
-            else:
-                plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-                
-            plt.grid('off')
-            
-        plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=-1)
-        for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
-            a.set_visible(False)
+                print("File %s: could not plot %s trace. Parameter is None type." %(filename,k))
         
-        ax[:,0][-1].set_xlabel("Iteration number")
-        for a in ax[:-1]:
-            a[0].axes.get_xaxis().set_ticklabels([])
-        
-        if len(keys) % 2 == 0:
-            ax[:,1][-1].set_xlabel("Iteration number")
-            for a in ax[:-1]:
-                a[1].axes.get_xaxis().set_ticklabels([])
+        if sampler["_burn"] == 0:
+            plt.xscale('log')
         else:
-            ax[:,1][-2].set_xlabel("Iteration number")
-            for a in ax[:-2]:    
-                a[1].axes.get_xaxis().set_ticklabels([])
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
             
-        if save:
-            save_where = '/Figures/Traces/'
-            working_path = getcwd().replace("\\", "/")+"/"
-            save_path = working_path+save_where
-            print("\nSaving trace figures in:\n", save_path)
-            if not path.exists(save_path):
-                makedirs(save_path)
-            fig.savefig(save_path+'Trace-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
-        plt.close(fig)
-        return fig
+        plt.grid('off')
+        
+    plt.tight_layout(pad=0.1, w_pad=0.5, h_pad=-1)
+    for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
+        a.set_visible(False)
+    
+    ax[:,0][-1].set_xlabel("Iteration number")
+    for a in ax[:-1]:
+        a[0].axes.get_xaxis().set_ticklabels([])
+    
+    if len(keys) % 2 == 0:
+        ax[:,1][-1].set_xlabel("Iteration number")
+        for a in ax[:-1]:
+            a[1].axes.get_xaxis().set_ticklabels([])
+    else:
+        ax[:,1][-2].set_xlabel("Iteration number")
+        for a in ax[:-2]:    
+            a[1].axes.get_xaxis().set_ticklabels([])
+        
+    if save:
+        save_where = '/Figures/Traces/'
+        working_path = getcwd().replace("\\", "/")+"/"
+        save_path = working_path+save_where
+        print("\nSaving trace figures in:\n", save_path)
+        if not path.exists(save_path):
+            makedirs(save_path)
+        fig.savefig(save_path+'Trace-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
+    plt.close(fig)
+    return fig
 
 def plot_summary(sol, save=False, save_as_png=False, fig_dpi=144):
     if save_as_png:
@@ -779,53 +749,53 @@ def save_csv_traces(sol):
     call with sol.save_csv_traces()
     """
     
+    def var_depth(var):
+        # Pass stochastic or deterministic
+        return int(var.trace().size/len(var.trace()))
+    
     # Get some basic information from the mcmc object
     MDL, filepath = sol.MDL, sol.filename
     model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
-    if sol.model in ['ColeCole', 'Dias', 'Shin']:
-        tagno = 1 # Tags for CC model starts with 1 (m1, m2, tau1, tau2, c1, c2)
-    else:
-        tagno = 0 # Tags for DD model starts with 0 (a0, a1, a2, a3, a4, ...)
-    
+
     # Decide where to save the csv
     save_where = '/TraceResults/'
     working_path = getcwd().replace("\\", "/")+"/"
     save_path = working_path + save_where + "%s/"%sample_name # Add subfolder for the sample
     
+    # Get stochastics and deterministics
+    sto = MDL.stochastics
+    det = MDL.deterministics
     # Get names of parameters for save file
-    pm_names = [s.__name__ for s in MDL.stochastics] + [d.__name__ for d in MDL.deterministics]
-#    pm_shapes = [s.shape for s in MDL.stochastics] + [d.shape for d in MDL.deterministics]
-#    pm_shapes = [1 if len(v) == 0 else v[0] for v in pm_shapes]
+    pm_names = [s.__name__ for s in sto] + [d.__name__ for d in det]
     
     # Get all stochastic and deterministic variables
-    trl = [s.trace() for s in MDL.stochastics] + [d.trace() for d in MDL.deterministics]
-    
-    trace_matrix = np.hstack([t.reshape(-1, int(t.size/len(t))) for t in trl])
+    trl = [s for s in sto] + [d for d in det]
 
-    num_names = [int(s.trace().size/len(s.trace())) for s in MDL.stochastics] + [int(d.trace().size/len(d.trace())) for d in MDL.deterministics]    
-       
+    # Concatenate all traces in 1 matrix
+    trace_mat = np.hstack([t.trace().reshape(-1, var_depth(t)) for t in trl])
+    # Insert normalization resistivity in first column
+    trace_mat = np.insert(trace_mat, 0, sol.data['Z_max'], axis=1) 
+
+    # Get numbers for each subheader
+    num_names = [var_depth(s) for s in sto] + [var_depth(d) for d in det]    
+    # Make list of headers
     headers = [['%s%d'%(pm_names[p],x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))]
-    header = ','.join([item for sublist in headers for item in sublist])
     
-#    # Reshaping names for proper format
-#    all_pm_names = [x*[y] for x,y in zip(pm_shapes, pm_names)]
-#    all_pm_names = [item for sublist in all_pm_names for item in sublist]
-#    all_pm_names = [v + str(all_pm_names[:i].count(v) + tagno) if all_pm_names.count(v) > 1 else v for i, v in enumerate(all_pm_names)]
-#    all_pm_names = [model+"_"+s for s in all_pm_names]
-#    headers = ','.join(list(all_pm_names)) # Headers for CSV file
-
-#    # Start getting the traces from mcmcinv object
-#    trace_matrix = []
-#    for n, s in zip(pm_names,pm_shapes):
-#        trace_matrix.append(MDL.trace(n)[:])
-#    trace_matrix = np.hstack([x[:,np.newaxis] if x.ndim==1 else x for x in trace_matrix])
+    # Change zmod numbers for real and imaginary parts
+    for h, head in enumerate(headers):
+        if 'zmod' in head[0]:   
+            headers[h] = [head[i]+'.real' for i in range(int(len(head)/2))] + [head[i]+'.imag' for i in range(int(len(head)/2))]    
+    
+    flat_headers = [item for sublist in headers for item in sublist] # Flaten list 
+    flat_headers.insert(0, 'rho_max') # Insert normalization resistivity in first column
+    header = ','.join(flat_headers) # Join list into csv string 
     
     # Do the saving
     print("\nSaving CSV traces in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
-    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_matrix, delimiter=',', header=header, comments="")
+    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_mat, delimiter=',', header=header, comments="")
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
@@ -919,71 +889,75 @@ def merge_results(sol,files):
     df_tot.to_csv(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,model,files[0],files[-1]))
     print("Batch file successfully saved in:\n", save_path)
 
-def plot_data(filename, headers, ph_units, save=False, save_as='png', fig_dpi=144):
+def plot_data(filename, headers, ph_units, save=False, save_as_png=False, dpi=144):
+    ext = ['png' if save_as_png else 'pdf'][0]
     data = get_data(filename,headers,ph_units)
     # Graphiques du data
-    sample_name = filename.replace("\\", "/").split("/")[-1].split(".")[0]
+    filename = filename.replace("\\", "/").split("/")[-1].split(".")[0]
     Z = data["Z"]
     dZ = data["Z_err"]
     f = data["freq"]
     Zr0 = max(abs(Z))
-    zn_dat = old_div(Z,Zr0)
-    zn_err = old_div(dZ,Zr0)
+    zn_dat = Z
+    zn_err = dZ
     Pha_dat = 1000*data["pha"]
     Pha_err = 1000*data["pha_err"]
-    Amp_dat = old_div(data["amp"],Zr0)
-    Amp_err = old_div(data["amp_err"],Zr0)
+    Amp_dat = data["amp"]
+    Amp_err = data["amp_err"]
 
-    fig, ax = plt.subplots(3, 1, figsize=(4,8))
+    fig, ax = plt.subplots(2, 2, figsize=(8,5), sharex=True)
 #    for t in ax:
 #        t.tick_params(labelsize=12)
     # Real-Imag
-    plt.axes(ax[0])
-    plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-    plt.xlabel(sym_labels['real'])
-    plt.ylabel(sym_labels['imag'])
+    plt.axes(ax[0,0])
+    plt.errorbar(f, zn_dat.real, zn_err.real, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+    ax[0,0].set_xscale("log")
+#    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['realrho'])
 
-    plt.xlim([None, 1])
-    plt.ylim([0, None])
+    plt.axes(ax[0,1])
+    plt.errorbar(f, -zn_dat.imag, zn_err.imag, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+    ax[0,1].set_xscale("log")
+#    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['imagrho'])
+
 #    plt.legend(numpoints=1, fontsize=9)
 #    plt.title(filename, fontsize=10)
     # Freq-Phas
-    plt.axes(ax[1])
+    plt.axes(ax[1,1])
     plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-    ax[1].set_yscale("log", nonposy='clip')
-    ax[1].set_xscale("log")
+    ax[1,1].set_yscale("log", nonposy='clip')
+    ax[1,1].set_xscale("log")
     plt.xlabel(sym_labels['freq'])
     plt.ylabel(sym_labels['phas'])
 #    plt.legend(loc=2, numpoints=1, fontsize=9)
-    plt.ylim([1,1000])
+    # Adjust for low or high phase response
+    if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
+        plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])  
+    if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
+        plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
+    
     # Freq-Ampl
-    plt.axes(ax[2])
+    plt.axes(ax[1,0])
     plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-    ax[2].set_xscale("log")
+    ax[1,0].set_xscale("log")
     plt.xlabel(sym_labels['freq'])
-    plt.ylabel(sym_labels['ampl'])
-    plt.ylim([None,1.0])
-#    plt.legend(numpoints=1, fontsize=9)
+    plt.ylabel(sym_labels['resi'])
+
+    for a in ax.flat:
+        a.grid('on')
+
     fig.tight_layout()
 
-    if save:
-        save_where = '/Figures/Data/'
-        working_path = getcwd().replace("\\", "/")+"/"
-        save_path = working_path+save_where
-        print("\nSaving fit figure in:\n", save_path)
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'DATA-%s.%s'%(sample_name,save_as), dpi=fig_dpi, bbox_inches='tight')
+    if save: 
+        fn = 'DAT-%s.%s'%(filename,ext)
+        save_figure(fig, subfolder='Data', fname=fn, dpi=dpi)
 
-
-    plt.close(fig)
+    plt.close(fig)        
     return fig
 
-def plot_deviance(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
-    if save_as_png:
-        save_as = 'png'
-    else:
-        save_as = 'pdf'
+def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=144):
+    ext = ['png' if save_as_png else 'pdf'][0]
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
@@ -991,7 +965,7 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
         deviance = sol.MDL.trace('deviance')[:]
         sampler_state = sol.MDL.get_state()["sampler"]
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
-        plt.plot(x, deviance, "-", color="C3", label="Model deviance\nDIC = %.2f\nBPIC = %.2f" %(sol.MDL.DIC,sol.MDL.BPIC))
+        plt.plot(x, deviance, "-", color="C3", label="DIC = %d\nBPIC = %d" %(sol.MDL.DIC,sol.MDL.BPIC))
         plt.xlabel("Iteration")
         plt.ylabel("Model deviance")
         plt.legend(numpoints=1, loc="best", fontsize=9)
@@ -1002,16 +976,11 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
             plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         fig.tight_layout()
-    if save:
-        save_where = '/Figures/ModelDeviance/'
-        working_path = getcwd().replace("\\", "/")+"/"
-        save_path = working_path+save_where
-        print("\nSaving model deviance figure in:\n", save_path)
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'ModelDeviance-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
-    try:    plt.close(fig)
-    except: pass
+    if save: 
+        fn = 'MDEV-%s-%s.%s'%(model,filename,ext)
+        save_figure(fig, subfolder='ModelDeviance', fname=fn, dpi=dpi)
+
+    plt.close(fig)        
     if draw:    return fig
     else:       return None
 
@@ -1038,11 +1007,8 @@ def logp_trace(model):
         logp[i_sample] = model.logp
     return logp
 
-def plot_logp(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
-    if save_as_png:
-        save_as = 'png'
-    else:
-        save_as = 'pdf'
+def plot_logp(sol, save=False, draw=True, save_as_png=False, dpi=144):
+    ext = ['png' if save_as_png else 'pdf'][0]
     filename = sol.filename.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
     if draw or save:
@@ -1050,10 +1016,9 @@ def plot_logp(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
         logp = logp_trace(sol.MDL)
         sampler_state = sol.MDL.get_state()["sampler"]
         x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
-        plt.plot(x, logp, "-", color="C3")
+        plt.plot(x, logp, "-")
         plt.xlabel("Iteration")
         plt.ylabel("Log-likelihood")
-        plt.legend(numpoints=1, loc="best", fontsize=9)
         plt.grid('on')
         if sampler_state["_burn"] == 0:
             plt.xscale('log')
@@ -1061,128 +1026,111 @@ def plot_logp(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
             plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         fig.tight_layout()
-    if save:
-        save_where = '/Figures/LogLikelihood/'
-        working_path = getcwd().replace("\\", "/")+"/"
-        save_path = working_path+save_where
-        print("\nSaving logp trace figure in:\n", save_path)
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'LogLikelihood-%s-%s.%s'%(model,filename,save_as), dpi=fig_dpi, bbox_inches='tight')
-    try:    plt.close(fig)
-    except: pass
+    
+    if save: 
+        fn = 'LOGP-%s-%s.%s'%(model,filename,ext)
+        save_figure(fig, subfolder='LogLikelihood', fname=fn, dpi=dpi)
+
+    plt.close(fig)        
     if draw:    return fig
     else:       return None
 
-def plot_fit(sol, save=False, draw=True, save_as_png=False, fig_dpi=144):
-    if save_as_png:
-        save_as = 'png'
-    else:
-        save_as = 'pdf'
+def plot_fit(sol, save=False, draw=True, save_as_png=False, dpi=144):
+    ext = ['png' if save_as_png else 'pdf'][0]
     filepath = sol.filename
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     model = get_model_type(sol)
-    data = sol.data
-    fit = sol.fit
+
     # Graphiques du fit
-    f = data["freq"]
-    Zr0 = max(abs(data["Z"]))
-    zn_dat = old_div(data["Z"],Zr0)
-    zn_err = old_div(data["Z_err"],Zr0)
-    zn_fit = old_div(fit["best"],Zr0)
-    zn_min = old_div(fit["lo95"],Zr0)
-    zn_max = old_div(fit["up95"],Zr0)
-    Pha_dat = 1000*data["pha"]
-    Pha_err = 1000*data["pha_err"]
-    Pha_fit = 1000*np.angle(fit["best"])
-    Pha_min = 1000*np.angle(fit["lo95"])
-    Pha_max = 1000*np.angle(fit["up95"])
-    Amp_dat = old_div(data["amp"],Zr0)
-    Amp_err = old_div(data["amp_err"],Zr0)
-    Amp_fit = old_div(abs(fit["best"]),Zr0)
-    Amp_min = old_div(abs(fit["lo95"]),Zr0)
-    Amp_max = old_div(abs(fit["up95"]),Zr0)
-    if draw or save:
-        fig, ax = plt.subplots(1, 3, figsize=(11,3))
-#        for t in ax:
-#            t.tick_params(labelsize=14)
-        # Real-Imag
-        plt.axes(ax[2])
-        plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-        p=plt.plot(zn_fit.real, -zn_fit.imag, ls='-', c='k', label="Model",zorder=2)
-        plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, alpha=0.1, color=p[0].get_color(), zorder=1, label='95% HPD')
-        plt.xlabel(sym_labels['real'])
-        plt.ylabel(sym_labels['imag'])
-        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
-        plt.xlim([None, 1])
-        plt.ylim([0, max(-zn_dat.imag)])
-        
-        # Freq-Ampl
-        plt.axes(ax[1])
-        plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-        p=plt.semilogx(f, Amp_fit, ls='-', c='k', label='Model', zorder=2)
-        plt.fill_between(f, Amp_max, Amp_min, color=p[0].get_color(), alpha=0.1, zorder=1, label='95% HPD')
-        plt.xscale('log')
-        plt.xlabel(sym_labels['freq'])
-        plt.ylabel(sym_labels['ampl'])
-        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
-        plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
-        
-#        locmaj = LogLocator(base=10,subs=(0, 1),numticks=12) 
-#        ax[1].xaxis.set_major_locator(locmaj)
-#        ax[1].xaxis.set_major_formatter(NullFormatter())
-#
-#        
-#        locmin = LogLocator(base=10.0,subs=(0.2,0.4,0.6,0.8),numticks=12)
-#        ax[1].xaxis.set_minor_locator(locmin)
-#        ax[1].xaxis.set_minor_formatter(NullFormatter())
-        
-        plt.ylim([None,1.0])
+    f = sol.data["freq"]
+    Zr0 = sol.data["Z_max"]
+    zn_dat = sol.data["Z"]/Zr0
+    zn_err = sol.data["Z_err"]/Zr0
+    zn_fit = sol.fit["best"]/Zr0
+    zn_min = sol.fit["lo95"]/Zr0
+    zn_max = sol.fit["up95"]/Zr0
+    Pha_dat = 1000*sol.data["pha"]
+    Pha_err = 1000*sol.data["pha_err"]
+    Pha_fit = 1000*np.angle(sol.fit["best"])
+    Pha_min = 1000*np.angle(sol.fit["lo95"])
+    Pha_max = 1000*np.angle(sol.fit["up95"])
+    Amp_dat = sol.data["amp"]/Zr0
+    Amp_err = sol.data["amp_err"]/Zr0
+    Amp_fit = abs(sol.fit["best"])/Zr0
+    Amp_min = abs(sol.fit["lo95"])/Zr0
+    Amp_max = abs(sol.fit["up95"])/Zr0
+    
+    fig, ax = plt.subplots(1, 3, figsize=(11,3))
+    # Real-Imag
+    plt.axes(ax[2])
+    plt.errorbar(zn_dat.real, -zn_dat.imag, zn_err.imag, zn_err.real, color='k', fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
+    p=plt.plot(zn_fit.real, -zn_fit.imag, ls='-', c='C0', label="Model",zorder=2)
+    plt.fill_between(zn_fit.real, -zn_max.imag, -zn_min.imag, alpha=0.2, color=p[0].get_color(), zorder=1, label='95% HPD')
+    plt.xlabel(sym_labels['real'])
+    plt.ylabel(sym_labels['imag'])
+    plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
+    plt.xlim([None, 1])
+    plt.ylim([0, max(-zn_dat.imag)])
+    
+    # Freq-Ampl
+    plt.axes(ax[1])
+    plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', color='k', mfc='white', markersize=5, label='Data', zorder=0)
+    p=plt.semilogx(f, Amp_fit, ls='-', c='C0', label='Model', zorder=2)
+    plt.fill_between(f, Amp_max, Amp_min, color=p[0].get_color(), alpha=0.2, zorder=1, label='95% HPD')
+    plt.xscale('log')
+    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['ampl'])
+    plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
+    plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
+    plt.ylim([None,1.0])
 
-        # Freq-Phas
-        plt.axes(ax[0])
-        plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-        p=plt.plot(f, -Pha_fit, ls='-', c='k', label='Model', zorder=2)
-        ax[0].set_yscale("log", nonposy='clip')
-        plt.xscale('log')
-        plt.fill_between(f, -Pha_max, -Pha_min, color=p[0].get_color(), alpha=0.1, zorder=1, label='95% HPD')
-        plt.xlabel(sym_labels['freq'])
-        plt.ylabel(sym_labels['phas'])
-        plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
-        plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
-        plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
+    # Freq-Phas
+    plt.axes(ax[0])
+    plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', color='k', mfc='white', markersize=5, label='Data', zorder=0)
+    p=plt.plot(f, -Pha_fit, ls='-', c='C0', label='Model', zorder=2)
+    ax[0].set_yscale("log", nonposy='clip')
+    plt.xscale('log')
+    plt.fill_between(f, -Pha_max, -Pha_min, color=p[0].get_color(), alpha=0.2, zorder=1, label='95% HPD')
+    plt.xlabel(sym_labels['freq'])
+    plt.ylabel(sym_labels['phas'])
+    plt.legend(loc='best', fontsize=9, labelspacing=0.2, handlelength=1, framealpha=1)
+    plt.xlim([10**np.floor(min(np.log10(f))), 10**np.ceil(max(np.log10(f)))])
+    plt.ylim([1,10**np.ceil(max(np.log10(-Pha_dat)))])
 
-        for a in ax:
-            a.grid('on')
+    for a in ax:
+        a.grid('on')
 
-        if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
-            plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])  
-        if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
-            plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
-        
-        plt.tight_layout(pad=1, h_pad=0, w_pad=0.5)
+    # Adjust for low or high phase response
+    if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
+        plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])  
+    if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
+        plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
+    
+    plt.tight_layout(pad=0, h_pad=0, w_pad=0.5)
         
     if save:
-        save_where = '/Figures/Fit figures/'
-        working_path = getcwd().replace("\\", "/")+"/"
-        save_path = working_path+save_where
-        print("\nSaving fit figure in:\n", save_path)
-        if not path.exists(save_path):
-            makedirs(save_path)
-        fig.savefig(save_path+'FIT-%s-%s.%s'%(model,sample_name,save_as), dpi=fig_dpi, bbox_inches='tight')
-#    try:    plt.close(fig)
-#    except: pass
-    if draw:    
-        return fig
-    else:       
-        plt.close(fig)
-        return None
+        fn = 'FIT-%s-%s.%s'%(model,sample_name,ext)
+        save_figure(fig, subfolder='Fit figures', fname=fn, dpi=dpi)
+
+    plt.close(fig)        
+    if draw:    return fig
+    else:       return None
+
+
+def save_figure(fig, subfolder, fname='Untitled', dpi=144):
+    folder = 'Figures'
+    cwd = getcwd().replace("\\", "/")
+    save_path = cwd+"/"+folder+"/"+subfolder+"/"
+    print("\nSaving figure:\n", save_path)
+    if not path.exists(save_path):
+        makedirs(save_path)
+    fig.savefig(save_path+fname, dpi=dpi, bbox_inches='tight')
+
 
 def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
 
 def plot_par():
-#    rc = rcParams.items()    
     rc = {u'figure.dpi': 72.0,
           u'figure.edgecolor': 'white',
           u'figure.facecolor': 'white',
@@ -1193,6 +1141,8 @@ def plot_par():
           u'savefig.facecolor': u'white',
           u'axes.formatter.use_mathtext': True,
           u'mathtext.default' : 'regular',
+          u'xtick.direction'  : 'in',
+          u'ytick.direction'  : 'in',
           }
     return rc
 rcParams.update(plot_par())

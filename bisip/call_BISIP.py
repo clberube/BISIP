@@ -43,14 +43,14 @@ model = "ColeCole"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 100000,
-          "nb_burn"    : 80000,
+          "nb_iter"    : 10000,
+          "nb_burn"    : 8000,
           "thin"       : 100,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False, 
-          "cov_inter"  : 5000,
-          "cov_delay"  : 10000,
+          "cov_inter"  : 1000,
+          "cov_delay"  : 1000,
           }
 sol = []
 
