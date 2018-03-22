@@ -779,6 +779,10 @@ def save_csv_traces(sol):
     call with sol.save_csv_traces()
     """
     
+    def var_depth(var):
+        # Pass stochastic or deterministic
+        return int(var.trace().size/len(var.trace()))
+    
     # Get some basic information from the mcmc object
     MDL, filepath = sol.MDL, sol.filename
     model = get_model_type(sol)
@@ -789,19 +793,22 @@ def save_csv_traces(sol):
     working_path = getcwd().replace("\\", "/")+"/"
     save_path = working_path + save_where + "%s/"%sample_name # Add subfolder for the sample
     
+    # Get stochastics and deterministics
+    sto = MDL.stochastics
+    det = MDL.deterministics
     # Get names of parameters for save file
-    pm_names = [s.__name__ for s in MDL.stochastics] + [d.__name__ for d in MDL.deterministics]
+    pm_names = [s.__name__ for s in sto] + [d.__name__ for d in det]
     
-    # Get all stochastic and deterministic variable traces
-    trl = [s.trace() for s in MDL.stochastics] + [d.trace() for d in MDL.deterministics]
+    # Get all stochastic and deterministic variables
+    trl = [s for s in sto] + [d for d in det]
     
     # Concatenate all traces in 1 matrix
-    trace_matrix = np.hstack([t.reshape(-1, int(t.size/len(t))) for t in trl])
-    # Denormalize data
-    trace_matrix = np.insert(trace_matrix, 0, sol.data['Z_max'], axis=1) 
+    trace_mat = np.hstack([t.trace().reshape(-1, var_depth(t)) for t in trl])
+    # Insert normalization resistivity in first column
+    trace_mat = np.insert(trace_mat, 0, sol.data['Z_max'], axis=1) 
 
     # Get numbers for each subheader
-    num_names = [int(s.trace().size/len(s.trace())) for s in MDL.stochastics] + [int(d.trace().size/len(d.trace())) for d in MDL.deterministics]    
+    num_names = [var_depth(s) for s in sto] + [var_depth(d) for d in det]    
     # Make list of headers
     headers = [['%s%d'%(pm_names[p],x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))]
     
@@ -818,7 +825,7 @@ def save_csv_traces(sol):
     print("\nSaving CSV traces in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
-    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_matrix, delimiter=',', header=header, comments="")
+    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_mat, delimiter=',', header=header, comments="")
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats
