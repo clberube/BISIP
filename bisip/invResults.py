@@ -783,11 +783,7 @@ def save_csv_traces(sol):
     MDL, filepath = sol.MDL, sol.filename
     model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
-    if sol.model in ['ColeCole', 'Dias', 'Shin']:
-        tagno = 1 # Tags for CC model starts with 1 (m1, m2, tau1, tau2, c1, c2)
-    else:
-        tagno = 0 # Tags for DD model starts with 0 (a0, a1, a2, a3, a4, ...)
-    
+
     # Decide where to save the csv
     save_where = '/TraceResults/'
     working_path = getcwd().replace("\\", "/")+"/"
@@ -795,44 +791,28 @@ def save_csv_traces(sol):
     
     # Get names of parameters for save file
     pm_names = [s.__name__ for s in MDL.stochastics] + [d.__name__ for d in MDL.deterministics]
-#    pm_shapes = [s.shape for s in MDL.stochastics] + [d.shape for d in MDL.deterministics]
-#    pm_shapes = [1 if len(v) == 0 else v[0] for v in pm_shapes]
     
-    # Get all stochastic and deterministic variables
+    # Get all stochastic and deterministic variable traces
     trl = [s.trace() for s in MDL.stochastics] + [d.trace() for d in MDL.deterministics]
     
+    # Concatenate all traces in 1 matrix
     trace_matrix = np.hstack([t.reshape(-1, int(t.size/len(t))) for t in trl])
+    # Denormalize data
     trace_matrix = np.insert(trace_matrix, 0, sol.data['Z_max'], axis=1) 
 
-    # Denormalize data
-
+    # Get numbers for each subheader
     num_names = [int(s.trace().size/len(s.trace())) for s in MDL.stochastics] + [int(d.trace().size/len(d.trace())) for d in MDL.deterministics]    
-       
+    # Make list of headers
     headers = [['%s%d'%(pm_names[p],x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))]
     
+    # Change zmod numbers for real and imaginary parts
     for h, head in enumerate(headers):
         if 'zmod' in head[0]:   
             headers[h] = [head[i]+'.real' for i in range(int(len(head)/2))] + [head[i]+'.imag' for i in range(int(len(head)/2))]    
     
-    flat_headers = [item for sublist in headers for item in sublist]
-    flat_headers.insert(0, 'rho_max')
-    
-    header = ','.join(flat_headers)
-    
-
-    
-#    # Reshaping names for proper format
-#    all_pm_names = [x*[y] for x,y in zip(pm_shapes, pm_names)]
-#    all_pm_names = [item for sublist in all_pm_names for item in sublist]
-#    all_pm_names = [v + str(all_pm_names[:i].count(v) + tagno) if all_pm_names.count(v) > 1 else v for i, v in enumerate(all_pm_names)]
-#    all_pm_names = [model+"_"+s for s in all_pm_names]
-#    headers = ','.join(list(all_pm_names)) # Headers for CSV file
-
-#    # Start getting the traces from mcmcinv object
-#    trace_matrix = []
-#    for n, s in zip(pm_names,pm_shapes):
-#        trace_matrix.append(MDL.trace(n)[:])
-#    trace_matrix = np.hstack([x[:,np.newaxis] if x.ndim==1 else x for x in trace_matrix])
+    flat_headers = [item for sublist in headers for item in sublist] # Flaten list 
+    flat_headers.insert(0, 'rho_max') # Insert normalization resistivity in first column
+    header = ','.join(flat_headers) # Join list into csv string 
     
     # Do the saving
     print("\nSaving CSV traces in:\n", save_path)
