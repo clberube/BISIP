@@ -778,15 +778,15 @@ def save_csv_traces(sol):
     object sol to a single csv file.
     call with sol.save_csv_traces()
     """
-
+    
     # Get some basic information from the mcmc object
     MDL, filepath = sol.MDL, sol.filename
     model = get_model_type(sol)
     sample_name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     if sol.model in ['ColeCole', 'Dias', 'Shin']:
-        tagno = 1 
+        tagno = 1 # Tags for CC model starts with 1 (m1, m2, tau1, tau2, c1, c2)
     else:
-        tagno = 0
+        tagno = 0 # Tags for DD model starts with 0 (a0, a1, a2, a3, a4, ...)
     
     # Decide where to save the csv
     save_where = '/TraceResults/'
@@ -794,27 +794,38 @@ def save_csv_traces(sol):
     save_path = working_path + save_where + "%s/"%sample_name # Add subfolder for the sample
     
     # Get names of parameters for save file
-    pm_names = [x.__name__ for x in MDL.stochastics]
-    pm_shapes = [x.shape for x in MDL.stochastics]
-    pm_shapes = [1 if len(v) == 0 else v[0] for v in pm_shapes]
-    all_pm_names = [x*[y] for x,y in zip(pm_shapes, pm_names)]
-    all_pm_names = [item for sublist in all_pm_names for item in sublist]
-    all_pm_names = [v + str(all_pm_names[:i].count(v) + tagno) if all_pm_names.count(v) > 1 else v for i, v in enumerate(all_pm_names)]
-    all_pm_names = [model+"_"+s for s in all_pm_names]
+    pm_names = [s.__name__ for s in MDL.stochastics] + [d.__name__ for d in MDL.deterministics]
+#    pm_shapes = [s.shape for s in MDL.stochastics] + [d.shape for d in MDL.deterministics]
+#    pm_shapes = [1 if len(v) == 0 else v[0] for v in pm_shapes]
     
-    headers = ','.join(list(all_pm_names))
+    # Get all stochastic and deterministic variables
+    trl = [s.trace() for s in MDL.stochastics] + [d.trace() for d in MDL.deterministics]
     
-    # Start getting the traces from mcmcinv object
-    trace_matrix = []
-    for n, s in zip(pm_names,pm_shapes):
-        trace_matrix.append(MDL.trace(n)[:])
-    trace_matrix = np.hstack([x[:,np.newaxis] if x.ndim==1 else x for x in trace_matrix])
+    trace_matrix = np.hstack([t.reshape(-1, int(t.size/len(t))) for t in trl])
+
+    num_names = [int(s.trace().size/len(s.trace())) for s in MDL.stochastics] + [int(d.trace().size/len(d.trace())) for d in MDL.deterministics]    
+       
+    headers = [['%s%d'%(pm_names[p],x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))]
+    header = ','.join([item for sublist in headers for item in sublist])
+    
+#    # Reshaping names for proper format
+#    all_pm_names = [x*[y] for x,y in zip(pm_shapes, pm_names)]
+#    all_pm_names = [item for sublist in all_pm_names for item in sublist]
+#    all_pm_names = [v + str(all_pm_names[:i].count(v) + tagno) if all_pm_names.count(v) > 1 else v for i, v in enumerate(all_pm_names)]
+#    all_pm_names = [model+"_"+s for s in all_pm_names]
+#    headers = ','.join(list(all_pm_names)) # Headers for CSV file
+
+#    # Start getting the traces from mcmcinv object
+#    trace_matrix = []
+#    for n, s in zip(pm_names,pm_shapes):
+#        trace_matrix.append(MDL.trace(n)[:])
+#    trace_matrix = np.hstack([x[:,np.newaxis] if x.ndim==1 else x for x in trace_matrix])
     
     # Do the saving
     print("\nSaving CSV traces in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
-    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_matrix, delimiter=',', header=headers, comments="")
+    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,model,sample_name), trace_matrix, delimiter=',', header=header, comments="")
 
 def save_resul(sol):
     # Fonction pour enregistrer les résultats

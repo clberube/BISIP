@@ -48,9 +48,9 @@ setup(
   name = 'bisip',
   packages=['bisip',], # this must be the same as the name above
   py_models=['models','invResults','GUI'],
-  version = '0.0.13',
+  version = '0.0.14',
   license = 'MIT',
-  install_requires=['pymc', 'ccd_tools'],
+  install_requires=['pymc'],
   description = 'Bayesian inversion of SIP data',
   long_description = 'README.md',
   author = 'Charles L. Berube',

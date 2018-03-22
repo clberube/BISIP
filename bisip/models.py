@@ -65,9 +65,13 @@ from scipy.interpolate import interp1d
 from bisip import invResults as iR
 from bisip.utils import format_results, get_data
 
-import lib_dd.decomposition.ccd_single as ccd_single
-import lib_dd.config.cfg_single as cfg_single
-
+try:
+    import lib_dd.decomposition.ccd_single as ccd_single
+    import lib_dd.config.cfg_single as cfg_single
+    print("\nCCDtools available")
+except:
+    pass
+    
 #==============================================================================
 # Function to run MCMC simulation on selected model
 # Arguments: model <function>, mcmc parameters <dict>,traces path <string>
@@ -122,6 +126,7 @@ class mcmcinv(object):
                    "cov_delay"  : 1000,
                     }
     
+    # Define some attributes of mcmcinv
     print_results = iR.print_resul
     plot_fit = iR.plot_fit
     plot_histograms = iR.plot_histo
@@ -138,12 +143,6 @@ class mcmcinv(object):
     plot_hexbin = iR.plot_hexbin
     plot_KDE = iR.plot_KDE
     get_model_type = iR.get_model_type
-    
-    
-
-    
-    
-    
     
     def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
                    ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, 
@@ -174,21 +173,6 @@ class mcmcinv(object):
         self.start()
         
 
-                
-#    def print_resul(self):
-#    #==============================================================================
-#        # Impression des résultats
-#        pm, model, filename = self.pm, self.model, self.filename
-#        print('\n\nInversion success!')
-#        print('Name of file:', filename)
-#        print('Model used:', model)
-#        e_keys = sorted([s for s in list(pm.keys()) if "_std" in s])
-#        v_keys = [e.replace("_std", "") for e in e_keys]
-#        labels = ["{:<8}".format(x+":") for x in v_keys]
-#        np.set_printoptions(formatter={'float': lambda x: format(x, '6.3E')})
-#        for l, v, e in zip(labels, v_keys, e_keys):
-#            print(l, pm[v], '+/-', pm[e], np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
-    
     def get_ccd_priors(self, config=None):
         data = get_data(self.filename, self.headers, self.ph_units)
         data_ccdtools = np.hstack((data['amp'][::-1], 1000*data['pha'][::-1]))
@@ -241,6 +225,12 @@ class mcmcinv(object):
             @pymc.deterministic(plot=False)
             def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
                 return ColeCole_cyth1(w, R0, m, lt, c)
+            @pymc.deterministic(plot=False)
+            def NRMSE_r(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+            @pymc.deterministic(plot=False)
+            def NRMSE_i(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
             # Likelihood
             obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size=(2,len(w)), observed=True)
             return locals()
@@ -273,6 +263,12 @@ class mcmcinv(object):
             @pymc.deterministic(plot=False)
             def m(R=R):
                 return seigle_m*( old_div(max(R), (max(R) + min(R))))
+            @pymc.deterministic(plot=False)
+            def NRMSE_r(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+            @pymc.deterministic(plot=False)
+            def NRMSE_i(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
             #Likelihood
             obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2,len(w)), observed=True)
             return locals()
@@ -300,6 +296,12 @@ class mcmcinv(object):
                 return Dias_cyth(w, R0, m, lt, eta, delta)
             # Likelihood
             obs = pymc.Normal('obs', mu=zmod, tau=old_div(1.0,(self.data["zn_err"]**2)), value=self.data["zn"], size = (2,len(w)), observed=True)
+            @pymc.deterministic(plot=False)
+            def NRMSE_r(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+            @pymc.deterministic(plot=False)
+            def NRMSE_i(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
             return locals()
     
     
@@ -327,31 +329,21 @@ class mcmcinv(object):
         
         def stoCCD(c_exp, ccd_priors):
             # Stochastic variables (noise on CCDtools output)
-            # The only assumption we make is that the RTD noise is below 20%
-#            noise_rho = pymc.Uniform('noise_rho', lower=-0.2, upper=0.2)
-#            noise_tau = pymc.Uniform('log_noise_tau', lower=-0.2, upper=0.2)
-#            noise_m = pymc.Uniform('log_noise_m', lower=-0.2, upper=0.2)
-            noise_tau = pymc.Normal('log_noise_tau', mu=0, tau=1/(0.1**2))
-            noise_m = pymc.Normal('log_noise_m', mu=0, tau=1/(0.1**2))
-            noise_rho = pymc.Normal('log_noise_rho', mu=0, tau=1/(0.1**2))
+            # The only assumption we make is that the RTD noise is 
+            # assumed to be equal to 0 and below 20% with 1 standard deviation
+            noise_tau = pymc.Normal('log_noise_tau', mu=0, tau=1/(0.2**2))
+            noise_m = pymc.Normal('log_noise_m', mu=0, tau=1/(0.2**2))
+            noise_rho = pymc.Normal('log_noise_rho', mu=0, tau=1/(0.2**2))
 
             # Deterministic variables of CCD
             @pymc.deterministic(plot=False) 
             def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
                 # log chargeability array
                 return logm + dm
-#            @pymc.deterministic(plot=False) 
-#            def m_i(logm=log_m_i):
-#                # chargeability array
-#                return 10**logm
             @pymc.deterministic(plot=False) 
             def log_tau_i(logt=ccd_priors['log_tau'], dt=noise_tau):
                 # log tau array
                 return logt + dt
-#            @pymc.deterministic(plot=False) 
-#            def tau_i(logt=log_tau_i):
-#                # tau array
-#                return 10**logt
             @pymc.deterministic(plot=False) 
             def R0(R=ccd_priors['R0'], dR=noise_rho):
                 # DC resistivity (normalized)
@@ -361,8 +353,6 @@ class mcmcinv(object):
                 # Condition on log_tau to compute integrating parameters
                 log_tau_min = np.log10(1./w.max())
                 log_tau_max = np.log10(1./w.min())
-#                log_tau_min = np.log10(self.ccdt_last_it.Data.obj.tau_data_min)
-#                log_tau_max = np.log10(self.ccdt_last_it.Data.obj.tau_data_max)
                 return (log_tau >= log_tau_min)&(log_tau <= log_tau_max)
             @pymc.deterministic(plot=False)
             def log_total_m(m=10**log_m_i[cond]):
@@ -396,7 +386,13 @@ class mcmcinv(object):
             def zmod(R0=R0, m=10**log_m_i, tau=10**log_tau_i):
                 Z = R0 * (1 - np.sum(m*(1 - 1.0/(1 + ((1j*w[:,np.newaxis]*tau)**c_exp))), axis=1))
                 return np.array([Z.real, Z.imag])
-            
+            @pymc.deterministic(plot=False)
+            def NRMSE_r(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+            @pymc.deterministic(plot=False)
+            def NRMSE_i(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+              
             # Likelihood function
             obs = pymc.Normal('obs', mu=zmod, tau=1./(2*self.data["zn_err"]**2), value=self.data["zn"], size = (2, len(w)), observed=True)
             return locals()
@@ -482,7 +478,13 @@ class mcmcinv(object):
 #            def peak_m(m=m_i[cond], log_tau=log_tau[cond]):
 #                # Peak chargeability
 #                return m[argrelextrema(m, np.greater)]
-
+            @pymc.deterministic(plot=False)
+            def NRMSE_r(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+            @pymc.deterministic(plot=False)
+            def NRMSE_i(zmod=zmod, data=self.data["zn"]):
+                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+          
             if self.guess_noise:
                 obs_r = pymc.Normal('obs_r', mu=zmod[0], tau=1./((noise_r)**2), value=self.data["zn"][0], size = len(w), observed=True)
                 obs_i = pymc.Normal('obs_i', mu=zmod[1], tau=1./((noise_i)**2), value=self.data["zn"][1], size = len(w), observed=True)

@@ -30,10 +30,10 @@ def save_object(obj, filename):
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-#model = "ColeCole"
+model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-model = "PDecomp"
+#model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 #model = "CCD"
@@ -43,14 +43,14 @@ model = "PDecomp"
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
           "nb_chain"   : 1,
-          "nb_iter"    : 10000,
-          "nb_burn"    : 8000,
-          "thin"       : 1,
+          "nb_iter"    : 100000,
+          "nb_burn"    : 80000,
+          "thin"       : 100,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False, 
-          "cov_inter"  : 1000,
-          "cov_delay"  : 1000,
+          "cov_inter"  : 5000,
+          "cov_delay"  : 10000,
           }
 sol = []
 
@@ -68,7 +68,6 @@ for noise in [1]:
     #==============================================================================
     """ 3.
         Paths to files ?"""
-        
     reflist = os.listdir("/Users/Charles/Documents/SIP dat files")
     reflist = [x for x in reflist if not x.startswith('.')]
     reflist = [x for x in reflist if ("AVG" in x)]
@@ -81,14 +80,14 @@ for noise in [1]:
 #    reflist = [reflist[1]]
 #    reflist = reflist[1:11]
 #    reflist = ["SIP-K389055.dat"]
-#    reflist = [reflist[x] for x in [2,4,5,0,3,1,-2]]
+    reflist = [reflist[x] for x in [2,4,5,0,3,1,-2]]
     reflist = [reflist[x] for x in [3]]
 
 #    reflist = [reflist[x] for x in [4,5,6,7,-1]]
 #    reflist = [reflist[x] for x in [4,5]]
 
     filename = ["/Users/Charles/Documents/SIP dat files/"+x for x in reflist]
-#    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389701.dat"]
+#    filename = ["/Users/Charles/Documents/SIP dat files/AVG_SIP-Reciprocals_K389369.dat"]
 #    filename = [
 ##            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_2_sandstones_nord_avg.dat',
 #            '/Users/Charles/Documents/SIP dat files/SIP-Bravo_11mhz_test_5_sandstones_sud_avg.dat',
@@ -99,7 +98,7 @@ for noise in [1]:
     #==============================================================================
     """ 4.
         Number of headers to skip ?"""
-    skip_header = 3
+    skip_header = 1
     
     #==============================================================================
     """ 5.
@@ -115,20 +114,20 @@ for noise in [1]:
         print('\nReading file:', fn, '(#%d/%d)' %(i+1,len(filename)))
         sol.append(mcmcinv(model, fn, mcmc=mcmc_p, headers=skip_header, 
                            ph_units=ph_units, decomp_poly=4, cc_modes=2, 
-                           c_exp=0.5, log_min_tau=None, guess_noise=False, 
+                           c_exp=1.0, log_min_tau=None, guess_noise=False, 
                            keep_traces=False))
     
         """Plot fit and data ?"""
-#        sol[i].plot_fit(save=False, draw=True)
+#        sol[i].plot_fit(save=True, draw=False)
                 
         """Save results ?"""
-        sol[i].save_results()
+#        sol[i].save_results()
     
         """Plot Debye relaxation time distribution ?"""
 #        sol[i].plot_rtd(save=True, draw=False)
     
         """Print numerical results ?"""
-        sol[i].print_results()
+#        sol[i].print_results()
     
         """Plot parameter histograms ?"""
 #        fig_histo = sol[i].plot_histograms(save=True)
@@ -142,13 +141,22 @@ for noise in [1]:
 
 sol = sol[0]
 
-#sol[0].merge_results([x.split(".")[0] for x in reflist])
+#sol.merge_results([x.split(".")[0] for x in reflist])
 
 # For further use in Python
 #saved_sol = [{key: value for key, value in list(s.items()) if key not in ["pymc_model"]} for s in sol]
 #save_object(saved_sol, save_as)
 #print "Solutions saved in list under", save_as
-
+        
+        
+        
+# =============================================================================
+# Uncertainties      
+# =============================================================================
+#unc = ['%f+/-%f'%(np.atleast_1d(s.pm['peak_tau'])[-1], np.atleast_1d(s.pm['peak_tau_std'])[-1]) for s in sol]
+#from uncertainties import ufloat_fromstr
+#[r'\SI{'+ufloat_fromstr(u).format('%.1ueS')+r'}{\second}' for u in unc]
+        
 #==============================================================================
 #===========================DATA FILE TEMPLATE=================================
 #==============================================================================
