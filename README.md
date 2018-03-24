@@ -12,7 +12,7 @@
 #### [Latest releases](https://github.com/clberube/BISIP/releases)
 #### Download the latest binaries for [Mac OS X (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_OS_X_64bit.zip) and [Windows (64bit)](https://github.com/clberube/BISIP/releases/download/v1.0/BISIP_Workplace_Windows_64bit.zip)
 
-![Alt text](screenshots/K3894.png "Fit!")
+![Alt text](screenshots/ExampleFit_K389369.png "Fit!")
 
 
 
