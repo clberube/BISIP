@@ -7,6 +7,30 @@ Created on Tue Oct  3 10:07:10 2017
 """
 
 import numpy as np
+from past.builtins import basestring
+import os
+
+# =============================================================================
+def save_figure(fig, subfolder, fname='Untitled', dpi=144):
+    """
+    Called at the end of any plot function attribute of 
+    mcmcinv object if save=True is passed to the plot function
+    """
+    folder = 'Figures'
+    cwd = os.getcwd().replace("\\", "/")
+    save_path = cwd+"/"+folder+"/"+subfolder+"/"
+    print("\nSaving figure:\n", save_path)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    fig.savefig(save_path+fname, dpi=dpi, bbox_inches='tight')
+
+# =============================================================================
+def split_filepath(p):
+    """
+    Splits filepath into the name of the sample
+    Pass string returns string
+    """
+    return p.replace("\\", "/").split("/")[-1].split(".")[0]
 
 #==============================================================================
 # To extract important information from the model (MDL)
@@ -25,9 +49,11 @@ def format_results(M, Z_max):
     return pm           # returns parameters and uncertainty
     
 #==============================================================================
-# To import data
-# Arguments: file name, number of header lines to skip, phase units
 def get_data(filename,headers,ph_units):
+    """
+    To import data
+    Arguments: file name, number of header lines to skip, phase units
+    """
     # Importation des données .DAT
     dat_file = np.loadtxt("%s"%(filename),skiprows=headers,delimiter=',')
     labels = ["freq", "amp", "pha", "amp_err", "pha_err"]
@@ -49,3 +75,55 @@ def get_data(filename,headers,ph_units):
     data["zn"] = np.array([zn.real, zn.imag]) # 2D array with first column = real values, second column = imag values
     data["zn_err"] = np.array([zn_e.real, zn_e.imag]) # 2D array with first column = real values, second column = imag values
     return data
+
+# =============================================================================
+def get_model_type(sol):
+    """
+    Pass mcmcinv object
+    Returns a string with the specifics about 
+    the model type e.g. c_exp in Debye decomposition or 
+    n_modes in ColeCole model
+    """
+    model = sol.model
+    if model in ["PDecomp", "CCD"]:
+        if sol.model_type["c_exp"] == 0.5:
+            model = "WarburgDecomp"
+        elif sol.model_type["c_exp"] == 1.0:
+            model = "DebyeDecomp"
+        else:
+            model = "ColeColeDecomp"
+        
+        model = ''.join([c for c in model if c.isupper()])
+    if model == "ColeCole":
+        model = "CC%d"%sol.cc_modes
+    return model
+
+# =============================================================================
+def var_depth(var):
+    """
+    Pass stochastic or deterministic
+    returns the size of the extra dimensions
+    (other than the one with length nb_iter-nb_burn)
+    """
+    return int(var.trace().size/len(var.trace()))
+
+# =============================================================================  
+def flatten(x):
+    """
+    Flattens a N-D list
+    """
+    result = []
+    for el in x:
+        if hasattr(el, "__iter__") and not isinstance(el, basestring):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
+
+# =============================================================================
+def find_nearest(array,val):
+    """
+    Returns the nearest value to val in an array
+    """
+    idx = (np.abs(array-val)).argmin()
+    return array[idx]

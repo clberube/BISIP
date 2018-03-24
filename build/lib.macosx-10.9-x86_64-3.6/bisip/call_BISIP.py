@@ -30,10 +30,10 @@ def save_object(obj, filename):
 """ 1.
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
-model = "ColeCole"
+#model = "ColeCole"
 #model = "Dias"
 #model = "PDebye"
-#model = "PDecomp"
+model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 #model = "CCD"
@@ -42,26 +42,27 @@ model = "ColeCole"
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
-          "nb_chain"   : 1,
+          "nb_chain"   : 5,
           "nb_iter"    : 10000,
           "nb_burn"    : 8000,
-          "thin"       : 100,
+          "thin"       : 1,
           "tune_inter" : 10000,
           "prop_scale" : 1.0,
           "verbose"    : False, 
           "cov_inter"  : 1000,
           "cov_delay"  : 1000,
           }
-sol = []
 
-#for noise in [10, 5, 1]:
-#for noise in range(1,11):
+sol = []
 for noise in [1]:
+#for noise in range(1,11):
+#for i, r in enumerate(range(1,22,2)):
+#    mcmc_p.update({'nb_chain':r})
 #noise = 5
-    adapt = True
+#    adapt = True
 #    adapt = False
-    repeat = 1
-    save_as = "%dmrad_%s_%d_MCMC_Solutions_Adaptive_%s.pkl" %(noise,model,repeat,str(adapt))
+#    repeat = 1
+#    save_as = "%dmrad_%s_%d_MCMC_Solutions_Adaptive_%s.pkl" %(noise,model,repeat,str(adapt))
     #save_as = "%dmrad_%d_MCMC_Traces_Adaptive_%s.pkl" %(noise,repeat,str(adapt))
     #save_as = "tests.pkl"
     
@@ -81,7 +82,7 @@ for noise in [1]:
 #    reflist = reflist[1:11]
 #    reflist = ["SIP-K389055.dat"]
     reflist = [reflist[x] for x in [2,4,5,0,3,1,-2]]
-    reflist = [reflist[x] for x in [3]]
+    reflist = [reflist[x] for x in [-2]]
 
 #    reflist = [reflist[x] for x in [4,5,6,7,-1]]
 #    reflist = [reflist[x] for x in [4,5]]
@@ -118,13 +119,16 @@ for noise in [1]:
                            keep_traces=False))
     
         """Plot fit and data ?"""
-#        sol[i].plot_fit(save=True, draw=False)
-                
+#        sol[i].plot_fit(save=True, draw=True)
         """Save results ?"""
 #        sol[i].save_results()
-    
+#        print(sol[i].pm['peak_m'])
+        sol[i].plot_summary(save=True)
         """Plot Debye relaxation time distribution ?"""
 #        sol[i].plot_rtd(save=True, draw=False)
+    
+        # rhats for n = 2...N chains
+#        r_hats = [gelman_rubin([sol[0].MDL.trace("R0", x)[:] for x in range(y)]) for y in range(2,sol[0].mcmc['nb_chain'])]
     
         """Print numerical results ?"""
 #        sol[i].print_results()

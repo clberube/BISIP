@@ -32,19 +32,8 @@ https://github.com/clberube/bisip
 
 This python module may be used to import SIP data, run MCMC inversion and
 return the results.
-
-It is imported as:
-
-Call with minimal arguments:
-
-sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
-
-Call with all optional arguments:
-
-sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
-                 mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
-                 debye_poly=4, c_exp = 1.0, keep_traces=False)
 """
+
 from __future__ import division
 from __future__ import print_function
 
@@ -60,10 +49,10 @@ from os import path, makedirs
 from os import getcwd
 from datetime import datetime
 from scipy.signal import argrelextrema
-from scipy.interpolate import interp1d
 
 from bisip import invResults as iR
 from bisip.utils import format_results, get_data
+from bisip.utils import split_filepath, get_model_type
 
 try:
     import lib_dd.decomposition.ccd_single as ccd_single
@@ -145,15 +134,23 @@ class mcmcinv(object):
     plot_summary = iR.plot_summary
     plot_hexbin = iR.plot_hexbin
     plot_KDE = iR.plot_KDE
-    get_model_type = iR.get_model_type
     
-    def __init__(self, model, filename, mcmc=default_mcmc, headers=1,
+    def __init__(self, model, filepath, mcmc=default_mcmc, headers=1,
                    ph_units="mrad", cc_modes=2, decomp_poly=4, c_exp=1.0, 
                    log_min_tau=-3, guess_noise=False, keep_traces=False, 
                    ccdt_priors='auto', ccdt_cfg=None):
+        """
+        Call with minimal arguments:
+        sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+
+        Call with all optional arguments:
+        sol = mcmcinv( model='ColeCole', filepath='/Documents/DataFiles/DATA.dat',
+                 mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
+                 debye_poly=4, c_exp = 1.0, keep_traces=False)
+        """
         
         self.model = model
-        self.filename = filename 
+        self.filepath = filepath 
         self.mcmc = mcmc
         self.headers = headers
         self.ph_units = ph_units
@@ -166,6 +163,7 @@ class mcmcinv(object):
         self.ccd_priors = ccdt_priors
         self.ccdtools_config = ccdt_cfg
         self.ccdt_last_it = None
+        self.filename = split_filepath(self.filepath)
         
         if model == "CCD":
             if self.ccd_priors == 'auto':
@@ -177,7 +175,7 @@ class mcmcinv(object):
         
 
     def get_ccd_priors(self, config=None):
-        data = get_data(self.filename, self.headers, self.ph_units)
+        data = get_data(self.filepath, self.headers, self.ph_units)
         data_ccdtools = np.hstack((data['amp'][::-1], 1000*data['pha'][::-1]))
         freq_ccdtools = data['freq'][::-1]
         if config == None:
@@ -464,10 +462,6 @@ class mcmcinv(object):
             @pymc.deterministic(plot=False)
             def log_mean_tau(m=m_i[cond], log_tau=log_tau[cond]):
                 return np.log10(np.exp(old_div(np.sum(m*np.log(10**log_tau)),np.sum(m))))
-            # Likelihood
-#            obs = pymc.Normal('obs', mu=zmod, tau=1./((self.data["zn_err"]+noise)**2), value=self.data["zn"], size = (2, len(w)), observed=True)
-#            for i in range(2):
-#                obs_i = pymc.Normal('obs_%s'%i, mu=zmod[i], tau=1./((self.data["zn_err"][i]+noise[i])**2), value=self.data["zn"][i], size = len(w), observed=True)
             @pymc.deterministic(plot=False)
             def log_U_tau(m=m_i[cond], log_tau=log_tau[cond]):
                 tau_60 = log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.6)[0][0]]
@@ -502,7 +496,7 @@ class mcmcinv(object):
         """
     #==============================================================================
         # Importing data
-        self.data = get_data(self.filename, self.headers, self.ph_units)
+        self.data = get_data(self.filepath, self.headers, self.ph_units)
         
         
         data_ccd = np.hstack((self.data['amp'][::-1], 1000*self.data['pha'][::-1]))
@@ -529,7 +523,7 @@ class mcmcinv(object):
             self.data["tau"] = tau_10 # Put relaxation times in data dictionary
     
         # Time and date (for saving traces)
-        sample_name = self.filename.replace("\\", "/").split("/")[-1].split(".")[0]
+        sample_name = self.filepath.replace("\\", "/").split("/")[-1].split(".")[0]
     #    actual_path = str(path.dirname(path.realpath(argv[0])))
         working_path = getcwd().replace("\\", "/")+"/"
         now = datetime.now()
@@ -555,7 +549,7 @@ class mcmcinv(object):
                     }
         simulation = sim_dict[self.model] # Pick entries for the selected model
         self.MDL = run_MCMC(simulation["func"](*simulation["args"]), self.mcmc, save_traces=self.keep_traces, save_where=out_path) # Run MCMC simulation with selected model and arguments
-    #    if not keep_traces: rmtree(out_path)   # Deletes the traces if not wanted
+    #    if not keep_tracfes: rmtree(out_path)   # Deletes the traces if not wanted
     
         """
         #==========================================================================
@@ -572,8 +566,11 @@ class mcmcinv(object):
         u95 = self.data["Z_max"]*(zn_u95[0] + 1j*zn_u95[1]) # (In complex notation, de-normalized)
         self.fit = {"best": avg, "lo95": l95, "up95": u95} # Best fit dict with 95% HDP
         self.model_type = {"log_min_tau":self.log_min_tau, "c_exp":self.c_exp, "decomp_polyn":self.decomp_poly, "cc_modes":self.cc_modes}
+        self.model_type_str = get_model_type(self)
+        self.var_dict = dict([(x.__name__,x) for x in self.MDL.deterministics] + [(x.__name__,x) for x in self.MDL.stochastics])
+
         # Output
-#        return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filename, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
+#        return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filepath, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}
         # End of inversion
                     
     
