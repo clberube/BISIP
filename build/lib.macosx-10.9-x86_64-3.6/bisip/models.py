@@ -53,6 +53,7 @@ from scipy.signal import argrelextrema
 from bisip import invResults as iR
 from bisip.utils import format_results, get_data
 from bisip.utils import split_filepath, get_model_type
+from bisip.utils import var_depth, flatten
 
 try:
     import lib_dd.decomposition.ccd_single as ccd_single
@@ -223,13 +224,13 @@ class mcmcinv(object):
             c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'], size=cc_modes)
             
             # Deterministic variables
-            @pymc.deterministic(plot=False)
+            @pymc.deterministic()
             def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
                 return ColeCole_cyth1(w, R0, m, lt, c)
-            @pymc.deterministic(plot=False)
+            @pymc.deterministic()
             def NRMSE_r(zmod=zmod, data=self.data["zn"]):
                 return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
-            @pymc.deterministic(plot=False)
+            @pymc.deterministic()
             def NRMSE_i(zmod=zmod, data=self.data["zn"]):
                 return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
             # Likelihood
@@ -568,6 +569,20 @@ class mcmcinv(object):
         self.model_type = {"log_min_tau":self.log_min_tau, "c_exp":self.c_exp, "decomp_polyn":self.decomp_poly, "cc_modes":self.cc_modes}
         self.model_type_str = get_model_type(self)
         self.var_dict = dict([(x.__name__,x) for x in self.MDL.deterministics] + [(x.__name__,x) for x in self.MDL.stochastics])
+
+        # Get names of parameters for save file
+        pm_names = [x for x in sorted(self.var_dict.keys())]
+        # Get all stochastic and deterministic variables
+        trl = [self.var_dict[x] for x in pm_names]
+        # Concatenate all traces in 1 matrix
+        trace_mat = np.hstack([t.trace().reshape(-1, var_depth(t)) for t in trl])
+        # Get numbers for each subheader
+        num_names = [var_depth(v) for v in trl]     
+        # Make list of headers
+        headers = flatten([['%s%d'%(pm_names[p],x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))])
+        
+        self.trace_dict = {k: t for k,t in zip(headers, trace_mat.T)}
+
 
         # Output
 #        return {"pymc_model": MDL, "params": pm, "data": data, "fit": fit, "SIP_model": model, "path": filepath, "mcmc": mcmc, "model_type": {"log_min_tau":log_min_tau, "c_exp":c_exp, "decomp_polyn":decomp_poly, "cc_modes":cc_modes}}

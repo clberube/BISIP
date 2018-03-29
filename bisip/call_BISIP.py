@@ -31,9 +31,8 @@ def save_object(obj, filename):
     Model to use ?"""
 # ex: model = "ColeCole", "Dias", "Debye", "Shin"
 #model = "ColeCole"
-#model = "Dias"
-#model = "PDebye"
-model = "PDecomp"
+model = "Dias"
+#model = "PDecomp"
 #model = "DDebye"
 #model = "Shin"
 #model = "CCD"
@@ -42,7 +41,7 @@ model = "PDecomp"
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
-          "nb_chain"   : 5,
+          "nb_chain"   : 1,
           "nb_iter"    : 10000,
           "nb_burn"    : 8000,
           "thin"       : 1,
@@ -123,7 +122,7 @@ for noise in [1]:
         """Save results ?"""
 #        sol[i].save_results()
 #        print(sol[i].pm['peak_m'])
-        sol[i].plot_summary(save=True)
+#        sol[i].plot_summary(save=True)
         """Plot Debye relaxation time distribution ?"""
 #        sol[i].plot_rtd(save=True, draw=False)
     

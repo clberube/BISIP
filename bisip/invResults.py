@@ -137,9 +137,9 @@ parlbl_dic = {'NRMSE_r': r"$\rho''_{\mathrm{NRMSE}}$",
               'log_Q2': r'$\log_{10}(Q_2)$',
               }
     
-subplots_to_ignore = [
-                      "zmod", "log_m_i", "log_tau_i", "cond", "m_i", 
-                      'peak_m', 'log_peak_tau', 'log_peak_m', 
+default_ignore = [
+                  'zmod', 'log_m_i', 'log_tau_i', 'cond', 'm_i', 
+                  'peak_m', 'log_peak_tau', 'log_peak_m', 
                       ]
 
 #==============================================================================
@@ -317,58 +317,51 @@ def plot_fit(sol, save=False, draw=True,
     else:       return None
             
 def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None, 
-               ignore=subplots_to_ignore,
+               ignore=default_ignore,
                ):    
     """
     Plots the traces of stochastic and
     deterministic parameters in mcmcinv object (sol)
     Ignores the ones in list argument ignore
     """
-    ext = ['png' if save_as_png else 'pdf'][0]
-    MDL = sol.MDL
-
-    keys = [k for k in sol.var_dict.keys() if k not in ignore]
-
-    for (i, k) in enumerate(keys):
-        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
-        if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(1,vect+1)]
-    keys = list(flatten(keys))
-
+    # Get some settings
+    ext = ['png' if save_as_png else 'pdf'][0] # get figure format  
+    
+    # Get all variable names from mcmcinv object
+    headers = sorted(sol.trace_dict.keys())
+    # Remove unwanted headers
+    headers = [h for h in headers if h.strip('0123456789') not in ignore]
+    # Extract the needed traces
+    traces = [sol.trace_dict[h] for h in headers]
+    
+    # Subplot settings
     ncols = 2
-    nrows = int(ceil(len(keys)*1.0 / ncols))
+    nrows = int(ceil(len(headers)*1.0 / ncols))
     fig, ax = plt.subplots(nrows, ncols, figsize=(8,nrows*1.8))
-    for c, (a, k) in enumerate(zip(ax.flat, keys)):
-        if k == "R0":
-            stoc = "R0"
-        else:
-            stoc =  ''.join([i for i in k if not i.isdigit()])
-            stoc_num = [int(i) for i in k if i.isdigit()]
-        try:
-            data = sorted(MDL.trace(stoc)[:][:,stoc_num[0]-1])
-        except:
-            data = sorted(MDL.trace(stoc)[:])
-        plt.sca(a)
-        plt.xlabel(parlbl_dic[k])
+
+    # Plot histograms
+    for i in range(len(headers)):
+        data = sorted(traces[i])
+        plt.sca(ax.flat[i])
+        plt.xlabel(parlbl_dic[headers[i]])
         try:
             hist = plt.hist(data, bins=20, histtype='stepfilled', density=False, linewidth=1.0, color='0.95', alpha=1)
             plt.hist(data, bins=20, histtype='step', density=False, linewidth=1.0, alpha=1)
             fit = norm.pdf(data, np.mean(data), np.std(data))                
             xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in range(len(hist[1])-1)]
-            binwidth = old_div((max(xh) - min(xh)), len(hist[1]))
+            binwidth = (max(xh) - min(xh)) / len(hist[1])
             fit *= len(data) * binwidth
             plt.plot(data, fit, "-", color='k', linewidth=1)
         except:
-            print("File %s: failed to plot %s histogram. Parameter not mobile enough (see traces)." %(sol.filename,k))
+            print("File %s: failed to plot %s histogram.\nNot enough accepted moves." %(sol.filename,headers[i]))
         plt.grid(False)
         plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-    
+        
     for c in range(nrows):
         ax[c][0].set_ylabel("Frequency")
-
-    plt.tight_layout(pad=1, w_pad=1, h_pad=0)
-    for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
+    for a in ax.flat[ax.size - 1:len(headers) - 1:-1]:
         a.set_visible(False)
+    plt.tight_layout(pad=1, w_pad=1, h_pad=0)
         
     if save: 
         fn = 'HST-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
@@ -379,61 +372,53 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
     else:       return None
 
 def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None, 
-                ignore=subplots_to_ignore,
+                ignore=default_ignore,
                 ):
     """
     Plots the traces of stochastic and
     deterministic parameters in mcmcinv object (sol)
     Ignores the ones in list argument ignore
     """
-    ext = ['png' if save_as_png else 'pdf'][0]
-        
-    MDL = sol.MDL
-    sampler = MDL.get_state()["sampler"]
-
-    keys = [k for k in sol.var_dict.keys() if k not in ignore]
-
-    for (i, k) in enumerate(keys):
-        vect = old_div((MDL.trace(k)[:].size),(len(MDL.trace(k)[:])))
-        if vect > 1:
-            keys[i] = [k+"%d"%n for n in range(1,vect+1)]
-            
-    keys = list(flatten(keys))
+    # Get some settings
+    ext = ['png' if save_as_png else 'pdf'][0] # get figure format  
+    mcmc = sol.mcmc # get MCMC parameters
+    
+    # Get all variable names from mcmcinv object
+    headers = sorted(sol.trace_dict.keys()) # In alphabetical order
+    # Remove unwanted headers
+    headers = [h for h in headers if h.strip('0123456789') not in ignore]
+    # Extract the needed traces
+    traces = [sol.trace_dict[h] for h in headers]
+    
+    # Subplot settings
     ncols = 2
-    nrows = int(ceil(len(keys)*1.0 / ncols))
-    
-    fig, ax = plt.subplots(nrows, ncols, figsize=(8,nrows*1.5), sharex=True)
-    
-    for c, (a, k) in enumerate(zip(ax.flat, keys)):
-        if k == "R0":
-            stoc = "R0"
-        else:
-            stoc =  ''.join([i for i in k if not i.isdigit()])
-            stoc_num = [int(i) for i in k if i.isdigit()]
-        try:
-            data = MDL.trace(stoc)[:][:,stoc_num[0]-1]
-        except:
-            data = MDL.trace(stoc)[:]
-        x = np.arange(sampler["_burn"]+1, sampler["_iter"]+1, sampler["_thin"])
-        plt.sca(a)
-        plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-        plt.ylabel(parlbl_dic[k])    
-        plt.plot(x, data,'-', alpha=0.8)
-        plt.plot(x, np.mean(data)*np.ones(len(x)), color='k',linestyle='--', linewidth=2)
-#        plt.plot(x, np.median(data)*np.ones(len(x)), color='k',linestyle=':', linewidth=2)
+    nrows = int(ceil(len(headers)*1.0 / ncols))
+    fig, ax = plt.subplots(nrows, ncols, figsize=(8, nrows*1.5), sharex=True)
 
-        if sampler["_burn"] == 0:
+    # Plot traces
+    for i in range(len(headers)):
+        data = traces[i]
+        x = np.arange(mcmc["nb_burn"]+1, mcmc["nb_iter"]+1, mcmc["thin"])
+        plt.sca(ax.flat[i])
+        plt.ylabel(parlbl_dic[headers[i]])    
+        plt.plot(x, data,'-', color='0.8', alpha=1)
+        av = np.mean(data)*np.ones(len(x))
+        sd = np.std(data)*np.ones(len(x))
+        plt.plot(x, av, linestyle='--', linewidth=1.5)
+        plt.plot(x, av+sd, color='0.2',linestyle=':', linewidth=1)
+        plt.plot(x, av-sd, color='0.2',linestyle=':', linewidth=1)
+        if x[0] == 1:
             plt.xscale('log')
         else:
-            plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-            
-        plt.grid(False)
-        
-    plt.tight_layout(pad=0, w_pad=0.5, h_pad=0)
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(-1,1))    
     
+    for a in ax.flat:
+        a.grid(False)
     for a in ax[-1]:
         a.set_xlabel("Iteration number")
-        
+
+    plt.tight_layout(pad=0, w_pad=0.5, h_pad=0.5)
+
     if save: 
         fn = 'TRA-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Traces', fname=fn, dpi=dpi)
@@ -554,7 +539,7 @@ def plot_hexbin(sol, var1, var2, draw=True, save=False, save_as_png=False, dpi=N
 
 
 def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
-                 ignore=subplots_to_ignore,
+                 ignore=default_ignore,
                  fig_nb="",
                  ):
     """
@@ -619,7 +604,7 @@ def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
     else:       return None
 
 def plot_autocorr(sol, save=False, draw=True, save_as_png=False, dpi=None,
-                 ignore=subplots_to_ignore,
+                 ignore=default_ignore,
                  ):
     """
     Plots autocorrelations
@@ -848,6 +833,8 @@ def save_csv_traces(sol):
     np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,sol.model_type_str,sol.filename), trace_mat, delimiter=',', header=header, comments="")
 
 def save_resul(sol):
+    
+    # To do: rewrite with new mcmcinv object attributes
     # Fonction pour enregistrer les résultats
     MDL, pm = sol.MDL, sol.pm
     model = sol.model_type_str
@@ -941,12 +928,12 @@ def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
 
 def plot_par():
-    rc = {u'figure.dpi': 72.0,
+    rc = {
           u'figure.edgecolor': 'white',
           u'figure.facecolor': 'white',
           u'savefig.bbox': u'tight',
           u'savefig.directory': u'~',
-          u'savefig.dpi': 200.0,
+          
           u'savefig.edgecolor': u'white',
           u'savefig.facecolor': u'white',
           u'axes.formatter.use_mathtext': True,

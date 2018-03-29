@@ -42,7 +42,7 @@ model = "PDecomp"
 """ 2.
     Markov-chain Monte-Carlo parameters ?"""
 mcmc_p = {"adaptive"   : True,
-          "nb_chain"   : 5,
+          "nb_chain"   : 1,
           "nb_iter"    : 10000,
           "nb_burn"    : 8000,
           "thin"       : 1,
