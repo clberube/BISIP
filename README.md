@@ -11,7 +11,7 @@ This code is not designed for large-scale production!
 It is best used to learn about the SIP parameters and to evaluate the quality of your laboratory data.
 
 **[Latest releases](https://github.com/clberube/BISIP/releases)**  
-![Alt text](screenshots/ExampleFit_K389369.png "Fit!")
+![Alt text](screenshots/ExampleFit_K389369.png 'Fit!')
 
 ### 1. Installation
 The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended. I recommend first creating a new virtual environment with with PyMC and Python 3.6 as a base:
@@ -75,16 +75,16 @@ sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
 MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
 
 ```python
-mcmc_dict = {"adaptive"   : True,
-             "nb_chain"   : 1,
-             "nb_iter"    : 100000,
-             "nb_burn"    : 80000,
-             "thin"       : 1,
-             "tune_inter" : 10000,    # Only used when "adaptive" = False
-             "prop_scale" : 1.0,      # Only used when "adaptive" = False
-             "verbose"    : False,
-             "cov_inter"  : 10000,    # Only used when "adaptive" = True
-             "cov_delay"  : 10000,    # Only used when "adaptive" = True
+mcmc_dict = {'adaptive': True,
+             'nb_chain': 1,
+             'nb_iter': 100000,
+             'nb_burn': 80000,
+             'thin': 1,
+             'tune_inter': 10000,    # Only used when 'adaptive' = False
+             'prop_scale': 1.0,      # Only used when 'adaptive' = False
+             'verbose': False,
+             'cov_inter': 10000,    # Only used when 'adaptive' = True
+             'cov_delay': 10000,    # Only used when 'adaptive' = True
              }
 ```
 
@@ -237,9 +237,9 @@ Results will be saved in the working directory.
   These were compiled on OS X 10.11.6 and Windows 10.
   Binaries will **NOT** be maintained and will most likely stay on v1.0. For latest versions it is recommended to use the Python package installed through `pip`.
 
-  On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
+  On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select 'Allow apps downloaded from: Anywhere'.
 
-  On Windows: The first time you launch the application you will get a warning. Click "More info" then "Run anyway".
+  On Windows: The first time you launch the application you will get a warning. Click 'More info' then 'Run anyway'.
 
     a. Extract the BISIP Workplace folder to a local directory  
     b. Launch the executable in BISIP Workplace  
