@@ -10,115 +10,90 @@ Python 3.7 is not currently supported due to a limitation with PyMC.
 This code is not designed for large-scale production!
 It is best used to learn about the SIP parameters and to evaluate the quality of your laboratory data.
 
-#### [Latest releases](https://github.com/clberube/BISIP/releases)
-
+**[Latest releases](https://github.com/clberube/BISIP/releases)**
 ![Alt text](screenshots/ExampleFit_K389369.png "Fit!")
 
+### 1. Installation
+The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended. I recommend first creating a new virtual environment with with PyMC and Python 3.6 as a base:
+```sh
+conda create -n YourEnvName python=3.6 pymc
+```  
 
-**1. Installation**
-
-  The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended.  
-  Simply enter the following line in the terminal:
-
+To install bisip from the latest `pip` release simply enter the following line in the terminal:
 ```sh
 pip install bisip
 ```  
-
-  The lastest release of BISIP and PyMC 2.3.6 will install.
-  If you run into problems installing PyMC with `pip` then try installing it first with either:
-
+For the development version run the `setup.py` script contained in this repository:
 ```sh
-conda install pymc
-pip install git+git://github.com/pymc-devs/pymc
-easy_install pymc
+python setup.py install
 ```  
 
-  Then run `pip install bisip` after PyMC has been installed.  
 
-  BISIP wraps C functions for faster forward modelling!
-  Make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6.  
-  If in doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP.
+Then run `pip install bisip` after PyMC has been installed.  
 
-**2. Starting the GUI (only recommended for quick use or if not familiar with Python)**
+BISIP wraps C extensions for faster forward modeling!
+If you are using Windows make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6. If in doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP. On MacOS and Linux the C extensions should cause no issue.
 
-  Open a Python interpreter and type:
+### 2. Getting started
+**See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples**
 
-    from bisip import GUI
-    GUI.launch()
+Import the inversion function using:
+```python
+from bisip import mcmcinv
+```  
 
-  Results will be saved in the working directory.
+And obtain results using all default arguments and MCMC parameters with:
+```python
+sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+```  
 
-**3. Using the standalone executables**
-#### The BISIP executables are no longer supported.
+To call the function with optional arguments:
 
-  If you are not familiar with Python then you may download the binaries.
-  These were compiled on OS X 10.11.6 and Windows 10.
-  Binaries will **NOT** be maintained and will most likely stay on v1.0. For latest versions it is recommended to use the Python package installed through `pip`.
+* Example for Debye decomposition:
+```python
+sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
+               headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
+               debye_poly=4, c_exp = 1.0, keep_traces=False)
+```
 
-  On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
+* Example for Warburg decomposition:
+```python
+sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
+               headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
+               debye_poly=3, c_exp = 0.5, keep_traces=False)
+```
 
-  On Windows: The first time you launch the application you will get a warning. Click "More info" then "Run anyway".
+* Example for Cole-Cole inversion:
+```python
+sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
+               headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=False,  
+               cc_modes=2, keep_traces=False)
+```
 
-    a. Extract the BISIP Workplace folder to a local directory  
-    b. Launch the executable in BISIP Workplace  
-    c. A terminal window will open (Allow a few seconds to load Python if using Windows)
-    d. Import example data files and launch inversions using the default MCMC parameters  
-    e. Results are saved in subfolders inside the BISIP Workplace folder
+### 3. Choosing the MCMC parameters
 
-**4. Calling the `mcmcinv` inversion class from your scripts**
+MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
 
-  **See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples**
+```python
+mcmc_dict = { "adaptive"   : True,
+              "nb_chain"   : 1,
+              "nb_iter"    : 100000,
+              "nb_burn"    : 80000,
+              "thin"       : 1,
+              "tune_inter" : 10000,    # Only used when "adaptive" = False
+              "prop_scale" : 1.0,      # Only used when "adaptive" = False
+              "verbose"    : False,
+              "cov_inter"  : 10000,    # Only used when "adaptive" = True
+              "cov_delay"  : 10000,    # Only used when "adaptive" = True
+              }
+```
 
-  Import only the inversion function using:
+### 4. Getting results from `mcmcinv` class
+```python
+sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
+```
 
-    from bisip import mcmcinv
-
-  And obtain results using all default arguments and MCMC parameters with:
-
-    sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
-
-  To call the function with optional arguments:
-
-  Example for Debye decomposition:
-
-    sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
-                   headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
-                   debye_poly=4, c_exp = 1.0, keep_traces=False)
-
-  Example for Warburg decomposition:
-
-    sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
-                   headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
-                   debye_poly=3, c_exp = 0.5, keep_traces=False)
-
-  Example for Cole-Cole inversion:
-
-    sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
-                   headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=False,  
-                   cc_modes=2, keep_traces=False)
-
-
-**Choosing the MCMC parameters**
-
-  MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
-
-    mcmc_dict = { "adaptive"   : True,
-                  "nb_chain"   : 1,
-                  "nb_iter"    : 100000,
-                  "nb_burn"    : 80000,
-                  "thin"       : 1,
-                  "tune_inter" : 10000,    # Only used when "adaptive" = False
-                  "prop_scale" : 1.0,      # Only used when "adaptive" = False
-                  "verbose"    : False,
-                  "cov_inter"  : 10000,    # Only used when "adaptive" = True
-                  "cov_delay"  : 10000,    # Only used when "adaptive" = True
-                  }
-
-**Getting results from `mcmcinv` class**
-
-    sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
-
-  For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
+For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
 
     In []: sol.pm
     Out[]: {'R0': 51467.05483286261,
@@ -133,7 +108,7 @@ easy_install pymc
     In []: sol.pm['c']
     Out[]: array([2.127E-01, 5.805E-01])
 
-  To return the MCMC parameters that were used in the inversion:
+To return the MCMC parameters that were used in the inversion:
 
     In []: sol.mcmc
     Out[]: {'adaptive': True,
@@ -147,7 +122,7 @@ easy_install pymc
            'tune_inter': 10000,
            'verbose': False}
 
-  To return the most probable fit:
+To return the most probable fit:
 
     In []: sol.fit['best']
     Out[]: array([ 74597.52558689-51642.13051532j,   93161.78463202-47966.09987357j,
@@ -177,16 +152,16 @@ To return the raw data:
                   217279.66579033 -9154.96275503j,  225820.90718799 -6727.65204251j,
                   232480.53201552 -5313.6790781j ,  242925.22993713 -4502.38295756j])
 
-  The inversion function also returns the full PyMC object:
+The inversion function also returns the full PyMC object:
 
     In []: sol.MDL
     Out[]: <pymc.MCMC.MCMC at 0x11e37a110>
 
-  See the PyMC documentation (<https://pymc-devs.github.io/pymc/>) to extract information from the PyMC object
+See the PyMC documentation (<https://pymc-devs.github.io/pymc/>) to extract information from the PyMC object.
 
-**5. Data format**
+### 5. Data format
 
-*Data must be formatted using the following template:*
+Data must be formatted using the following template:
 
     Frequency, Amplitude  , Phase shift , Amplit error, Phase error  
     6.000e+03, 1.17152e+05, -2.36226e+02, 1.171527e+01, 9.948376e-02  
@@ -204,14 +179,14 @@ Comma separation between columns is mandatory
 Column order is very important  
 Frequency, Amplitude, Phase, Error of Amplitude, Error of Phase  
 Phase units may be milliradians, radians or degrees  
-Units are specified in main GUI window or as function argument (e.g. `ph_units="mrad"`)  
+Units are specified in main GUI window or as function argument (e.g. `ph_units='mrad'`)  
 Amplitude units may be Ohm-m or Ohm  
 A number of header lines may be skipped in the main GUI window or as function argument (e.g. `headers=1`)  
 In this example Nb header lines = 1  
 To skip high-frequencies, increase Nb header lines  
 Scientific or standard notation is OK  
 
-**6. Building the standalone GUI executables**
+### 6. Building the standalone GUI executables
 
 Install pyinstaller with:  
 ```sh
@@ -229,7 +204,7 @@ pyinstaller BISIP_GUI_osx.spec
 ```
 This works best in Anaconda 2.3 with PyInstaller 3.1 and Setuptools 19.2
 
-**7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files**
+### 7. Building the BISIP_cython_funcs.pyd (Windows) or BISIP_cython_funcs.so (OS X) files
 
 If you are running into problems loading the .pyd or .so files you might need to build them on your computer.  
 On Windows make sure you have Visual Studio 2008 if using Python 2.7 or Visual C++ Build Tools 2015 if using Python 3.6.
@@ -245,46 +220,62 @@ Enter the following:
 python cython_setup.py build_ext --inplace
 ```
 
-**8. References**
+### 8. Starting the GUI (only recommended for quick use or if not familiar with Python)
+#### The BISIP GUI is no longer supported.
 
-<sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
+Open a Python interpreter and type:
+```python
+from bisip import GUI
+GUI.launch()
+```
+Results will be saved in the working directory.
 
-<sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
+### 9. Using the standalone executables
+#### The BISIP executables are no longer supported.
+
+  If you are not familiar with Python then you may download the binaries.
+  These were compiled on OS X 10.11.6 and Windows 10.
+  Binaries will **NOT** be maintained and will most likely stay on v1.0. For latest versions it is recommended to use the Python package installed through `pip`.
+
+  On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select "Allow apps downloaded from: Anywhere".
+
+  On Windows: The first time you launch the application you will get a warning. Click "More info" then "Run anyway".
+
+    a. Extract the BISIP Workplace folder to a local directory  
+    b. Launch the executable in BISIP Workplace  
+    c. A terminal window will open (Allow a few seconds to load Python if using Windows)
+    d. Import example data files and launch inversions using the default MCMC parameters  
+    e. Results are saved in subfolders inside the BISIP Workplace folder
+
+### 10. References
+
+* <sub>Bérubé, C.L., Chouteau, M., Shamsipour, P., Enkin, R.J., Olivo, G.R., 2017. Bayesian inference of spectral induced polarization parameters for laboratory complex resistivity measurements of rocks and soils. Computers & Geosciences 105, 51–64. doi:10.1016/j.cageo.2017.05.001
+* <sub>Chen, Jinsong, Andreas Kemna, and Susan S. Hubbard. 2008. “A Comparison between
     Gauss-Newton and Markov-Chain Monte Carlo–based Methods for Inverting
     Spectral Induced-Polarization Data for Cole-Cole Parameters.” Geophysics
     73 (6): F247–59. doi:10.1190/1.2976115.
-
-<sub>Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
+* <sub>Dias, Carlos A. 2000. “Developments in a Model to Describe Low-Frequency
     Electrical Polarization of Rocks.” Geophysics 65 (2): 437–51.
     doi:10.1190/1.1444738.
-
-<sub>Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
+* <sub>Gamerman, Dani, and Hedibert F. Lopes. 2006. Markov Chain Monte Carlo:
     Stochastic Simulation for Bayesian Inference, Second Edition. CRC Press.
-
-<sub>Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
+* <sub>Ghorbani, A., C. Camerlynck, N. Florsch, P. Cosenza, and A. Revil. 2007.
     “Bayesian Inference of the Cole–Cole Parameters from Time- and Frequency-
     Domain Induced Polarization.” Geophysical Prospecting 55 (4): 589–605.
     doi:10.1111/j.1365-2478.2007.00627.x.
-
-<sub>Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
+* <sub>Hoff, Peter D. 2009. A First Course in Bayesian Statistical Methods. Springer
     Science & Business Media.
-
-<sub>Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
+* <sub>Keery, John, Andrew Binley, Ahmed Elshenawy, and Jeremy Clifford. 2012.
     “Markov-Chain Monte Carlo Estimation of Distributed Debye Relaxations in
     Spectral Induced Polarization.” Geophysics 77 (2): E159–70.
     doi:10.1190/geo2011-0244.1.
-
-<sub>Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
+* <sub>Nordsiek, Sven, and Andreas Weller. 2008. “A New Approach to Fitting Induced-
     Polarization Spectra.” Geophysics 73 (6): F235–45. doi:10.1190/1.2987412.
-
-<sub>Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
+* <sub>Patil, A., D. Huard and C.J. Fonnesbeck. 2010. PyMC: Bayesian Stochastic
     Modelling in Python. Journal of Statistical Software, 35(4), pp. 1-81
-
-<sub>Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
+* <sub>Pelton, W. H., S. H. Ward, P. G. Hallof, W. R. Sill, and P. H. Nelson. 1978.
     “Mineral Discrimination and Removal of Inductive Coupling with
     Multifrequency IP.” Geophysics 43 (3): 588–609. doi:10.1190/1.1440839.
-
-<sub>Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
+* <sub>Pelton, W. H., W. R. Sill, and B. D. Smith. 1983. Interpretation of Complex
     Resistivity and Dielectric Data — Part 1. Vol 29. Geophysical Transactions.
-
-<sub>Weigand, M., Kemna, A., 2016. Debye decomposition of time-lapse spectral induced polarisation data. Computers & Geosciences 86, 34–45. doi:10.1016/j.cageo.2015.09.021
+* <sub>Weigand, M., Kemna, A., 2016. Debye decomposition of time-lapse spectral induced polarisation data. Computers & Geosciences 86, 34–45. doi:10.1016/j.cageo.2015.09.021
