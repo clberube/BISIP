@@ -1,5 +1,6 @@
 # **BISIP**
-## Fast + robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
+Fast and robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data.
+
 Tested on Python 3.6.  
 Python 3.7 is not currently supported due to a limitation with PyMC.
 * Generalized Cole-Cole/Warburg/Debye decomposition scheme.
