@@ -36,17 +36,36 @@ BISIP wraps C extensions for faster forward modeling!
 If you are using Windows make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6. If in doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP. On MacOS and Linux the C extensions should cause no issue.
 
 ### 2. Getting started
-**See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples**
+**See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples.**
 
 Import the inversion function using:
 ```python
 from bisip import mcmcinv
 ```  
 
-And obtain results using all default arguments and MCMC parameters with:
+And obtain results using all default arguments and MCMC parameters with and plot the fitted curve:
 ```python
 sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+sol.plot_fit()
 ```  
+
+### 3. More advanced use with mcmc parameters
+
+MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
+
+```python
+mcmc_dict = {'adaptive': True,  # use adaptive Metropolis or not
+             'nb_chain': 1,  # number of chains to run
+             'nb_iter': 100000,  # number of iterations per chain
+             'nb_burn': 80000,  # burn-in period to discard
+             'thin': 1,  # thinning factor
+             'tune_inter': 10000,  # only used when 'adaptive'=False
+             'prop_scale': 1.0,  # only used when 'adaptive'=False
+             'verbose': False,  # print output
+             'cov_inter': 10000,  # only used when 'adaptive'=True
+             'cov_delay': 10000,  # only used when 'adaptive'=True
+             }
+```
 
 To call the function with optional arguments:
 
@@ -71,23 +90,6 @@ sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
               cc_modes=2, keep_traces=False)
 ```
 
-### 3. Choosing the MCMC parameters
-
-MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
-
-```python
-mcmc_dict = {'adaptive': True,
-             'nb_chain': 1,
-             'nb_iter': 100000,
-             'nb_burn': 80000,
-             'thin': 1,
-             'tune_inter': 10000,  # only used when 'adaptive'=False
-             'prop_scale': 1.0,  # only used when 'adaptive'=False
-             'verbose': False,
-             'cov_inter': 10000,  # only used when 'adaptive'=True
-             'cov_delay': 10000,  # only used when 'adaptive'=True
-             }
-```
 
 ### 4. Getting results from `mcmcinv` class
 First run an inversion:
