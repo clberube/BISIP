@@ -49,6 +49,7 @@ And obtain results using all default arguments and MCMC parameters with and plot
 sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
 sol.plot_fit()
 ```  
+![Alt text](screenshots/FIT-DD-SIP-K389170_avg.png 'Fit!')
 
 ### 3. More advanced use with mcmc parameters
 
