@@ -31,4 +31,4 @@ mcmc = {'adaptive': True,
 sol = mcmcinv(model, src_path, mcmc=mcmc)
 
 sol.plot_rtd()
-sol.plot_fit()
+sol.plot_fit(save=True, save_as_png=True, dpi=144)
