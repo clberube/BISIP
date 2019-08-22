@@ -80,11 +80,11 @@ mcmc_dict = {'adaptive': True,
              'nb_iter': 100000,
              'nb_burn': 80000,
              'thin': 1,
-             'tune_inter': 10000,    # Only used when 'adaptive' = False
-             'prop_scale': 1.0,      # Only used when 'adaptive' = False
+             'tune_inter': 10000,  # only used when 'adaptive'=False
+             'prop_scale': 1.0,  # only used when 'adaptive'=False
              'verbose': False,
-             'cov_inter': 10000,    # Only used when 'adaptive' = True
-             'cov_delay': 10000,    # Only used when 'adaptive' = True
+             'cov_inter': 10000,  # only used when 'adaptive'=True
+             'cov_delay': 10000,  # only used when 'adaptive'=True
              }
 ```
 
@@ -233,13 +233,13 @@ Results will be saved in the working directory.
 ### 9. Using the standalone executables
 #### The BISIP executables are no longer supported.
 
-  If you are not familiar with Python then you may download the binaries.
-  These were compiled on OS X 10.11.6 and Windows 10.
-  Binaries will **NOT** be maintained and will most likely stay on v1.0. For latest versions it is recommended to use the Python package installed through `pip`.
+If you are not familiar with Python then you may download the binaries.
+These were compiled on OS X 10.11.6 and Windows 10.
+Binaries will **NOT** be maintained and will most likely stay on v1.0. For latest versions it is recommended to use the Python package installed through `pip`.
 
-  On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select 'Allow apps downloaded from: Anywhere'.
+On MAC OS: If your mac only allows apps from the app store you will run into errors saying the executable is corrupted. Go to System Preferences - Security and Privacy - General and select 'Allow apps downloaded from: Anywhere'.
 
-  On Windows: The first time you launch the application you will get a warning. Click 'More info' then 'Run anyway'.
+On Windows: The first time you launch the application you will get a warning. Click 'More info' then 'Run anyway'.
 
     a. Extract the BISIP Workplace folder to a local directory  
     b. Launch the executable in BISIP Workplace  
