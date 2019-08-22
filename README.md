@@ -2,15 +2,15 @@
 ## Fast + robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data
 Tested on Python 3.6.  
 Python 3.7 is not currently supported due to a limitation with PyMC.
-* Generalized Cole-Cole/Warburg/Debye decomposition scheme
-* Simple Dias and single/double/triple Pelton models
-* Stochastic noise analysis of RTD results from [CCD_tools](https://github.com/m-weigand/ccd_tools) code
-* Good for batch inversion of laboratory data and propagating SIP data uncertainty to model parameter uncertainty
+* Generalized Cole-Cole/Warburg/Debye decomposition scheme.
+* Simple Dias and single/double/triple Pelton models.
+* Stochastic noise analysis of RTD results from [CCD_tools](https://github.com/m-weigand/ccd_tools) code.
+* Good for batch inversion of laboratory data and propagating SIP data uncertainty to model parameter uncertainty.
 
 This code is not designed for large-scale production!
 It is best used to learn about the SIP parameters and to evaluate the quality of your laboratory data.
 
-**[Latest releases](https://github.com/clberube/BISIP/releases)**
+**[Latest releases](https://github.com/clberube/BISIP/releases)**  
 ![Alt text](screenshots/ExampleFit_K389369.png "Fit!")
 
 ### 1. Installation
@@ -51,23 +51,23 @@ To call the function with optional arguments:
 
 * Example for Debye decomposition:
 ```python
-sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
-               headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
-               debye_poly=4, c_exp = 1.0, keep_traces=False)
+sol = mcmcinv(model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
+              headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
+              debye_poly=4, c_exp = 1.0, keep_traces=False)
 ```
 
 * Example for Warburg decomposition:
 ```python
-sol = mcmcinv( model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
-               headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
-               debye_poly=3, c_exp = 0.5, keep_traces=False)
+sol = mcmcinv(model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
+              headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
+              debye_poly=3, c_exp = 0.5, keep_traces=False)
 ```
 
 * Example for Cole-Cole inversion:
 ```python
-sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
-               headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=False,  
-               cc_modes=2, keep_traces=False)
+sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
+              headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=False,  
+              cc_modes=2, keep_traces=False)
 ```
 
 ### 3. Choosing the MCMC parameters
@@ -75,25 +75,25 @@ sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
 MCMC parameters are passed to the `mcmcinv` function in a dictionary using the `mcmc` optional argument. If nothing is passed then the default values are used. The default settings below fit most SIP measurements at our lab on the first try with a 4th order Debye decomposition. Experiment around these values. Computation time for 100 000 iterations: 10.2 seconds on OS X with i7-4980HQ @ 2.80GHz and 7.4 seconds on Windows with i5-6600K @ 3.50GHz.
 
 ```python
-mcmc_dict = { "adaptive"   : True,
-              "nb_chain"   : 1,
-              "nb_iter"    : 100000,
-              "nb_burn"    : 80000,
-              "thin"       : 1,
-              "tune_inter" : 10000,    # Only used when "adaptive" = False
-              "prop_scale" : 1.0,      # Only used when "adaptive" = False
-              "verbose"    : False,
-              "cov_inter"  : 10000,    # Only used when "adaptive" = True
-              "cov_delay"  : 10000,    # Only used when "adaptive" = True
-              }
+mcmc_dict = {"adaptive"   : True,
+             "nb_chain"   : 1,
+             "nb_iter"    : 100000,
+             "nb_burn"    : 80000,
+             "thin"       : 1,
+             "tune_inter" : 10000,    # Only used when "adaptive" = False
+             "prop_scale" : 1.0,      # Only used when "adaptive" = False
+             "verbose"    : False,
+             "cov_inter"  : 10000,    # Only used when "adaptive" = True
+             "cov_delay"  : 10000,    # Only used when "adaptive" = True
+             }
 ```
 
 ### 4. Getting results from `mcmcinv` class
+First run an inversion:
 ```python
-sol = mcmcinv( model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
+sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
 ```
-
-For example, to return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2):
+To return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2), simply access the `pm` attribute of the `mcmcinv` object.
 
     In []: sol.pm
     Out[]: {'R0': 51467.05483286261,
