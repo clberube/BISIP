@@ -5,7 +5,7 @@ BISIP/root_ini
 
 *.pdf
 
-*.png
+# *.png
 
 *.csv
 
