@@ -14,9 +14,10 @@ It is best used to learn about the SIP parameters and to evaluate the quality of
 ![Alt text](screenshots/ExampleFit_K389369.png 'Fit!')
 
 ### 1. Installation
-The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended. I recommend first creating a new virtual environment with with PyMC and Python 3.6 as a base:
+The lastest version of Anaconda with either Python 2.7 or 3.6 is recommended. I recommend first creating and activating a new virtual environment with with PyMC and Python 3.6 as a base:
 ```sh
 conda create -n YourEnvName python=3.6 pymc
+conda activate YourEnvName
 ```  
 
 To install bisip from the latest `pip` release simply enter the following line in the terminal:
