@@ -21,20 +21,18 @@ conda create -n YourEnvName python=3.6 pymc
 conda activate YourEnvName
 ```  
 
+For the most up to date (development) version, clone this repository to your computer and run the `setup.py` script with:
+```sh
+python setup.py install --force
+```  
+
 To install bisip from the latest `pip` release simply enter the following line in the terminal:
 ```sh
 pip install bisip
 ```  
-For the development version run the `setup.py` script contained in this repository:
-```sh
-python setup.py install
-```  
-
-
-Then run `pip install bisip` after PyMC has been installed.  
 
 BISIP wraps C extensions for faster forward modeling!
-If you are using Windows make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6. If in doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP. On MacOS and Linux the C extensions should cause no issue.
+If you are using Windows make sure you have the appropriate *Visual Studio Build Tools* for your Python version: VS 2008 for Python 2.7 and VS 2015 for Python 3.6. If in doubt, `pip` should spit out a direct download link if it fails to build the C file upon installing BISIP. On MacOS and Linux the C extensions should work without issues.
 
 ### 2. Getting started
 **See the [Jupyter Notebooks](https://github.com/clberube/BISIP/tree/master/examples) for examples.**
@@ -44,9 +42,10 @@ Import the inversion function using:
 from bisip import mcmcinv
 ```  
 
-And obtain results using all default arguments and MCMC parameters with and plot the fitted curve:
+Run an inversion on a data file and visualize the fit results with:
 ```python
-sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
+sol = mcmcinv(model='ColeCole',
+              filename='/Documents/DataFiles/DATA.dat')
 sol.plot_fit()
 ```  
 ![Alt text](screenshots/FIT-DD-SIP-K389170_avg.png 'Fit!')
@@ -73,30 +72,41 @@ To call the function with optional arguments:
 
 * Example for Debye decomposition:
 ```python
-sol = mcmcinv(model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
-              headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
-              debye_poly=4, c_exp = 1.0, keep_traces=False)
+sol = mcmcinv(model='PDecomp',
+              filename='/Documents/DataFiles/DATA.dat',
+              headers=1,
+              ph_units='mrad',
+              mcmc=mcmc_dict,
+              debye_poly=4,
+              c_exp = 1.0)
 ```
 
 * Example for Warburg decomposition:
 ```python
-sol = mcmcinv(model='PDecomp', filename='/Documents/DataFiles/DATA.dat',
-              headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=True,  
-              debye_poly=3, c_exp = 0.5, keep_traces=False)
+sol = mcmcinv(model='PDecomp',
+              filename='/Documents/DataFiles/DATA.dat',
+              headers=3,
+              ph_units='mrad',
+              mcmc=mcmc_dict,
+              debye_poly=3,
+              c_exp = 0.5,
+              guess_noise=True)
 ```
 
-* Example for Cole-Cole inversion:
+* Example for double Cole-Cole inversion:
 ```python
-sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat',
-              headers=1, ph_units='mrad', mcmc=mcmc_dict, adaptive=False,  
-              cc_modes=2, keep_traces=False)
+sol = mcmcinv(model='ColeCole',
+              filename='/Documents/DataFiles/DATA.dat',
+              mcmc=mcmc_dict,
+              cc_modes=2)
 ```
 
 
 ### 4. Getting results from `mcmcinv` class
 First run an inversion:
 ```python
-sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
+sol = mcmcinv(model='ColeCole',
+              filename='/Documents/DataFiles/DATA.dat')  
 ```
 To return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2), simply access the `pm` attribute of the `mcmcinv` object.
 
