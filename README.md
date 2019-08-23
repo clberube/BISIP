@@ -44,8 +44,7 @@ from bisip import mcmcinv
 
 Run an inversion on a data file and visualize the fit results with:
 ```python
-sol = mcmcinv(model='ColeCole',
-              filename='/Documents/DataFiles/DATA.dat')
+sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')
 sol.plot_fit()
 ```  
 ![Alt text](screenshots/FIT-DD-SIP-K389170_avg.png 'Fit!')
@@ -105,10 +104,9 @@ sol = mcmcinv(model='ColeCole',
 ### 4. Getting results from `mcmcinv` class
 First run an inversion:
 ```python
-sol = mcmcinv(model='ColeCole',
-              filename='/Documents/DataFiles/DATA.dat')  
+sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
 ```
-To return the optimal parameters of a Double Cole-Cole model (R0, c1, c2, m1, m2, tau1, tau2), simply access the `pm` attribute of the `mcmcinv` object.
+To return the optimal parameters of a Double Cole-Cole model and their uncertainties, simply access the `pm` dictionary within of the `mcmcinv` object.
 
     In []: sol.pm
     Out[]: {'R0': 51467.05483286261,
