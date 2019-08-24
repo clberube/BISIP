@@ -44,8 +44,9 @@ from bisip import mcmcinv
 
 Run an inversion on a data file and visualize the fit results with:
 ```python
-sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')
-sol.plot_fit()
+sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  # initialize the model
+sol.fit()  # fit the model (run the inversion)
+sol.plot_fit()  # plot the best model against the input data
 ```  
 ![Alt text](Figures/Fit%20figures/FIT-CC2-SIP-K389170_avg.png 'Fit!')
 
@@ -78,6 +79,7 @@ sol = mcmcinv(model='PDecomp',
               mcmc=mcmc_dict,
               debye_poly=4,
               c_exp = 1.0)
+sol.fit()
 ```
 
 * Example for Warburg decomposition:
@@ -90,6 +92,7 @@ sol = mcmcinv(model='PDecomp',
               debye_poly=3,
               c_exp = 0.5,
               guess_noise=True)
+sol.fit()
 ```
 
 * Example for double Cole-Cole inversion:
@@ -98,6 +101,7 @@ sol = mcmcinv(model='ColeCole',
               filename='/Documents/DataFiles/DATA.dat',
               mcmc=mcmc_dict,
               cc_modes=2)
+sol.fit()
 ```
 
 
@@ -105,6 +109,7 @@ sol = mcmcinv(model='ColeCole',
 First run an inversion:
 ```python
 sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  
+sol.fit()
 ```
 To return the optimal parameters of a Double Cole-Cole model and their uncertainties, simply access the `pm` dictionary within of the `mcmcinv` object.
 

@@ -567,7 +567,6 @@ class mcmcinv(object):
 
         self.pm = format_results(self.MDL, self.data['Z_max'])  # Format output
         zmodstats = self.MDL.stats(chain=-1)['zmod']  # Take last chain
-        print(zmodstats)
         zn_avg = zmodstats['mean']
         zn_l95 = zmodstats['95% HPD interval'][0]
         zn_u95 = zmodstats['95% HPD interval'][1]
