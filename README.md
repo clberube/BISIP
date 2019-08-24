@@ -26,7 +26,7 @@ For the most up to date (development) version, clone this repository to your com
 python setup.py install --force
 ```  
 
-To install bisip from the latest `pip` release simply enter the following line in the terminal:
+To install bisip from the latest `pip` release simply enter the following line in the terminal. Note that the `pip` release may be behind the master branch.
 ```sh
 pip install bisip
 ```  
@@ -47,7 +47,7 @@ Run an inversion on a data file and visualize the fit results with:
 sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')
 sol.plot_fit()
 ```  
-![Alt text](screenshots/FIT-DD-SIP-K389170_avg.png 'Fit!')
+![Alt text](Figures/Fit%20figures/FIT-CC2-SIP-K389170_avg.png 'Fit!')
 
 ### 3. More advanced use with mcmc parameters
 

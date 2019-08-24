@@ -136,10 +136,10 @@ parlbl_dic = {'NRMSE_r': r"$\rho''_{\mathrm{NRMSE}}$",
               'log_Q1': r'$\log_{10}(Q_1)$',
               'log_Q2': r'$\log_{10}(Q_2)$',
               }
-    
+
 default_ignore = [
-                  'zmod', 'log_m_i', 'log_tau_i', 'cond', 'm_i', 
-                  'peak_m', 'log_peak_tau', 'log_peak_m', 
+                  'zmod', 'log_m_i', 'log_tau_i', 'cond', 'm_i',
+                  'peak_m', 'log_peak_tau', 'log_peak_m',
                       ]
 
 #==============================================================================
@@ -167,9 +167,9 @@ def print_resul(sol):
             print(l, np.atleast_1d(pm[v]), '+/-', np.atleast_1d(pm[e]), np.char.mod('(%.2f%%)',abs(100*pm[e]/pm[v])))
         else:
             print(l, np.atleast_1d(pm[v]), '+/-', np.atleast_1d(pm[e]))
-            
-            
-def plot_data(filename, headers, ph_units, save=False, 
+
+
+def plot_data(filename, headers, ph_units, save=False,
               save_as_png=False, dpi=None, fig_nb=None):
     """
     Plots data before doing inversion
@@ -195,7 +195,7 @@ def plot_data(filename, headers, ph_units, save=False,
     plt.errorbar(f, zn_dat.real, zn_err.real, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     ax[0,0].set_xscale("log")
     plt.ylabel(sym_labels['realrho'])
-    
+
     plt.axes(ax[0,1])
     plt.errorbar(f, -zn_dat.imag, zn_err.imag, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     ax[0,1].set_xscale("log")
@@ -211,10 +211,10 @@ def plot_data(filename, headers, ph_units, save=False,
 
     # Adjust for low or high phase response
     if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
-        plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])  
+        plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])
     if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
-        plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))]) 
-    
+        plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))])
+
     # Freq-Ampl
     plt.axes(ax[1,0])
     plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
@@ -224,18 +224,18 @@ def plot_data(filename, headers, ph_units, save=False,
 
     for a in ax.flat:
         a.grid('on')
-        
+
     fig.tight_layout()
 
-    if save: 
+    if save:
         fn = 'DAT-%s.%s'%(filename,ext)
         save_figure(fig, subfolder='Data', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     return fig
 
 
-def plot_fit(sol, save=False, draw=True, 
+def plot_fit(sol, save=False, draw=True,
              save_as_png=False, dpi=None, fig_nb=""):
     """
     Plots the average fit and uncertainty
@@ -251,21 +251,21 @@ def plot_fit(sol, save=False, draw=True,
     zn_fit = sol.fit["best"]/Zr0
     zn_min = sol.fit["lo95"]/Zr0
     zn_max = sol.fit["up95"]/Zr0
-    
+
     Pha_dat = 1000*sol.data["pha"]
     Pha_err = 1000*sol.data["pha_err"]
     Pha_fit = 1000*np.angle(sol.fit["best"])
     Pha_min = 1000*np.angle(sol.fit["lo95"])
     Pha_max = 1000*np.angle(sol.fit["up95"])
-    
+
     Amp_dat = sol.data["amp"]/Zr0
     Amp_err = sol.data["amp_err"]/Zr0
     Amp_fit = abs(sol.fit["best"])/Zr0
     Amp_min = abs(sol.fit["lo95"])/Zr0
     Amp_max = abs(sol.fit["up95"])/Zr0
-    
+
     fig, ax = plt.subplots(2, 2, figsize=(8,5), sharex=True)
-    
+
     # Freq-Imag
     plt.sca(ax[0,0])
     plt.errorbar(f, -zn_dat.imag, zn_err.imag, None, color='k', fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
@@ -273,7 +273,7 @@ def plot_fit(sol, save=False, draw=True,
     plt.fill_between(f, -zn_max.imag, -zn_min.imag, alpha=0.4, color=p[0].get_color(), zorder=1, label='95% HPD')
     plt.ylabel(sym_labels['imag'])
     plt.legend(loc='best', labelspacing=0.2, handlelength=1, framealpha=1)
-    
+
     # Freq-Real
     plt.sca(ax[0,1])
     plt.errorbar(f, zn_dat.real, zn_err.real, None, color='k', fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
@@ -281,7 +281,7 @@ def plot_fit(sol, save=False, draw=True,
     plt.fill_between(f, zn_max.real, zn_min.real, alpha=0.4, color=p[0].get_color(), zorder=1, label='95% HPD')
     plt.ylabel(sym_labels['imag'])
     plt.legend(loc='best', labelspacing=0.2, handlelength=1, framealpha=1)
-    
+
     # Freq-Phas
     plt.sca(ax[1,0])
     plt.errorbar(f, -Pha_dat, Pha_err, None, fmt='o', color='k', mfc='white', markersize=5, label='Data', zorder=0)
@@ -307,33 +307,33 @@ def plot_fit(sol, save=False, draw=True,
         a.grid(True)
 
     plt.tight_layout(pad=0, h_pad=0.5, w_pad=1)
-        
+
     if save:
         fn = '%sFIT-%s-%s.%s'%(fig_nb,sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Fit figures', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
-            
-def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None, 
+
+def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
                ignore=default_ignore,
-               ):    
+               ):
     """
     Plots the traces of stochastic and
     deterministic parameters in mcmcinv object (sol)
     Ignores the ones in list argument ignore
     """
     # Get some settings
-    ext = ['png' if save_as_png else 'pdf'][0] # get figure format  
-    
+    ext = ['png' if save_as_png else 'pdf'][0] # get figure format
+
     # Get all variable names from mcmcinv object
     headers = sorted(sol.trace_dict.keys())
     # Remove unwanted headers
     headers = [h for h in headers if h.strip('0123456789') not in ignore]
     # Extract the needed traces
     traces = [sol.trace_dict[h] for h in headers]
-    
+
     # Subplot settings
     ncols = 2
     nrows = int(ceil(len(headers)*1.0 / ncols))
@@ -347,7 +347,7 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
         try:
             hist = plt.hist(data, bins=20, histtype='stepfilled', density=False, linewidth=1.0, color='0.95', alpha=1)
             plt.hist(data, bins=20, histtype='step', density=False, linewidth=1.0, alpha=1)
-            fit = norm.pdf(data, np.mean(data), np.std(data))                
+            fit = norm.pdf(data, np.mean(data), np.std(data))
             xh = [0.5 * (hist[1][r] + hist[1][r+1]) for r in range(len(hist[1])-1)]
             binwidth = (max(xh) - min(xh)) / len(hist[1])
             fit *= len(data) * binwidth
@@ -356,22 +356,22 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
             print("File %s: failed to plot %s histogram.\nNot enough accepted moves." %(sol.filename,headers[i]))
         plt.grid(False)
         plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
-        
+
     for c in range(nrows):
         ax[c][0].set_ylabel("Frequency")
     for a in ax.flat[ax.size - 1:len(headers) - 1:-1]:
         a.set_visible(False)
     plt.tight_layout(pad=1, w_pad=1, h_pad=0)
-        
-    if save: 
+
+    if save:
         fn = 'HST-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Histograms', fname=fn, dpi=dpi)
-    
-    plt.close(fig)        
+
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
-def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None, 
+def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
                 ignore=default_ignore,
                 ):
     """
@@ -380,16 +380,16 @@ def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
     Ignores the ones in list argument ignore
     """
     # Get some settings
-    ext = ['png' if save_as_png else 'pdf'][0] # get figure format  
+    ext = ['png' if save_as_png else 'pdf'][0] # get figure format
     mcmc = sol.mcmc # get MCMC parameters
-    
+
     # Get all variable names from mcmcinv object
     headers = sorted(sol.trace_dict.keys()) # In alphabetical order
     # Remove unwanted headers
     headers = [h for h in headers if h.strip('0123456789') not in ignore]
     # Extract the needed traces
     traces = [sol.trace_dict[h] for h in headers]
-    
+
     # Subplot settings
     ncols = 2
     nrows = int(ceil(len(headers)*1.0 / ncols))
@@ -400,7 +400,7 @@ def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
         data = traces[i]
         x = np.arange(mcmc["nb_burn"]+1, mcmc["nb_iter"]+1, mcmc["thin"])
         plt.sca(ax.flat[i])
-        plt.ylabel(parlbl_dic[headers[i]])    
+        plt.ylabel(parlbl_dic[headers[i]])
         plt.plot(x, data,'-', color='0.8', alpha=1)
         av = np.mean(data)*np.ones(len(x))
         sd = np.std(data)*np.ones(len(x))
@@ -410,8 +410,8 @@ def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
         if x[0] == 1:
             plt.xscale('log')
         else:
-            plt.ticklabel_format(style='sci', axis='x', scilimits=(-1,1))    
-    
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(-1,1))
+
     for a in ax.flat:
         a.grid(False)
     for a in ax[-1]:
@@ -419,11 +419,11 @@ def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
 
     plt.tight_layout(pad=0, w_pad=0.5, h_pad=0.5)
 
-    if save: 
+    if save:
         fn = 'TRA-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Traces', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
@@ -455,7 +455,7 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False, save_as_
     except:
         y = MDL.trace(stoc2)[:]
     xmin, xmax = min(x), max(x)
-    ymin, ymax = min(y), max(y) 
+    ymin, ymax = min(y), max(y)
     # Peform the kernel density estimate
     xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
     positions = np.vstack([xx.ravel(), yy.ravel()])
@@ -480,11 +480,11 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False, save_as_
     plt.ylabel("%s" %var2)
     plt.xlabel("%s" %var1)
 
-    if save: 
+    if save:
         fn = 'KDE-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='2D-KDE', fname=fn, dpi=dpi)
-    
-    plt.close(fig)        
+
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
@@ -523,17 +523,17 @@ def plot_hexbin(sol, var1, var2, draw=True, save=False, save_as_png=False, dpi=N
     plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
     plt.xticks(rotation=90)
     plt.locator_params(axis = 'y', nbins = 5)
-    plt.locator_params(axis = 'x', nbins = 5)    
+    plt.locator_params(axis = 'x', nbins = 5)
     cb = plt.colorbar()
     cb.set_label('Number of observations')
     plt.ylabel("%s" %var2)
     plt.xlabel("%s" %var1)
 
-    if save: 
+    if save:
         fn = 'HEX-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Hexbins', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
@@ -543,26 +543,26 @@ def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
                  fig_nb="",
                  ):
     """
-    Plots a parameter summary and 
+    Plots a parameter summary and
     Gelman-Rubin R-hat for multiple chains
     """
-    
+
     ext = ['png' if save_as_png else 'pdf'][0]
     ch_nb = sol.mcmc["nb_chain"]
 
-    keys = sorted([k for k in sol.var_dict.keys() if k not in ignore])        
+    keys = sorted([k for k in sol.var_dict.keys() if k not in ignore])
     trac = [[sol.var_dict[x].trace(chain=n).mean(axis=0) for x in keys] for n in range(ch_nb)]
     deps = [var_depth(sol.var_dict[x]) for x in keys]
     lbls = list(reversed(flatten([[k+'%s'%(x+1) for x in range(d)] if d > 1 else k for k, d in zip(keys,deps)])))
-    
+
     if ch_nb >= 2:
         rhat = [gelman_rubin([sol.MDL.trace(var, -x)[:] for x in range(sol.mcmc['nb_chain'])]) for var in keys]
         R = np.array(flatten(rhat))
-        R[R > 5] = 5 
+        R[R > 5] = 5
     else:
         print("\nTwo or more chains of equal length required for Gelman-Rubin convergence")
         R = len(lbls)*[None]
-        
+
     fig, axes = plt.subplots(figsize=(6,4))
     gs2 = gridspec.GridSpec(3, 3)
     ax1 = plt.subplot(gs2[:, :-1])
@@ -570,7 +570,7 @@ def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
     for i in range(len(lbls)):
         for c in range(ch_nb):
             val_m = np.array(flatten(trac[c]))
-            ax1.scatter(val_m[i], len(val_m)-(i+1) , color="C0", marker=".", 
+            ax1.scatter(val_m[i], len(val_m)-(i+1) , color="C0", marker=".",
                         s=50, facecolor='k', edgecolors='k',alpha=1)
         ax2.scatter(R[i], i, color="C3", marker="<", s=50, alpha=1)
 
@@ -594,9 +594,9 @@ def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
     ax2.axvline(1, ls='--', color='C0', zorder=0)
 
     plt.tight_layout()
-    plt.close(fig)        
+    plt.close(fig)
 
-    if save: 
+    if save:
         fn = '%sSUM-%s-%s.%s'%(fig_nb,sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Summaries', fname=fn, dpi=dpi)
 
@@ -611,7 +611,7 @@ def plot_autocorr(sol, save=False, draw=True, save_as_png=False, dpi=None,
     """
     ext = ['png' if save_as_png else 'pdf'][0]
     MDL = sol.MDL
-    
+
     keys = [k for k in sol.var_dict.keys() if k not in ignore]
 
     for (i, k) in enumerate(keys):
@@ -644,12 +644,12 @@ def plot_autocorr(sol, save=False, draw=True, save_as_png=False, dpi=None,
     fig.tight_layout()
     for a in ax.flat[ax.size - 1:len(keys) - 1:-1]:
         a.set_visible(False)
-        
-    if save: 
+
+    if save:
         fn = 'AC-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Autocorrelations', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
@@ -668,8 +668,8 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None):
     except:
         bot95 = sol.MDL.stats()["m_i"]['95% HPD interval'][0]
         top95 = sol.MDL.stats()["m_i"]['95% HPD interval'][1]
-        log_tau = 10**sol.MDL.log_tau
-        log_m = sol.MDL.stats()["m_i"]['mean']            
+        log_tau = 10**sol.log_tau
+        log_m = sol.MDL.stats()["m_i"]['mean']
     plt.errorbar(log_tau, log_m, None, None, color="C7", linestyle='-', label="RTD")
     try:
         peaks = 10**np.atleast_1d(sol.MDL.stats()["log_peak_tau"]["mean"])
@@ -698,11 +698,11 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None):
     plt.xscale('log')
     plt.yscale('log', nonposy='clip')
     fig.tight_layout()
-    if save: 
+    if save:
         fn = 'RTD-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='RTD', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
@@ -726,12 +726,12 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=None):
         plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     fig.tight_layout()
-    
-    if save: 
+
+    if save:
         fn = 'MDEV-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='ModelDeviance', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
@@ -777,55 +777,55 @@ def plot_logp(sol, save=False, draw=True, save_as_png=False, dpi=None):
         plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     fig.tight_layout()
-    
-    if save: 
+
+    if save:
         fn = 'LOGP-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='LogLikelihood', fname=fn, dpi=dpi)
 
-    plt.close(fig)        
+    plt.close(fig)
     if draw:    return fig
     else:       return None
 
 def save_csv_traces(sol):
     """
-    Saves the traces contained in mcmcinv 
+    Saves the traces contained in mcmcinv
     object sol to a single csv file.
     call with sol.save_csv_traces()
     """
-    
+
     # Decide where to save the csv
     save_where = '/TraceResults/'
     working_path = getcwd().replace("\\", "/")+"/"
     save_path = working_path + save_where + "%s/"%sol.filename # Add subfolder for the sample
-    
+
     # Get stochastics and deterministics
 #    sto = MDL.stochastics
 #    det = MDL.deterministics
     # Get names of parameters for save file
     pm_names = sorted(sol.var_dict.keys())
-    
+
     # Get all stochastic and deterministic variables
     trl = [sol.var_dict[x] for x in pm_names]
 
     # Concatenate all traces in 1 matrix
     trace_mat = np.hstack([t.trace().reshape(-1, var_depth(t)) for t in trl])
     # Insert normalization resistivity in first column
-    trace_mat = np.insert(trace_mat, 0, sol.data['Z_max'], axis=1) 
+    trace_mat = np.insert(trace_mat, 0, sol.data['Z_max'], axis=1)
 
     # Get numbers for each subheader
-    num_names = [var_depth(v) for v in trl]    
+    num_names = [var_depth(v) for v in trl]
     # Make list of headers
     headers = [['%s%d'%(pm_names[p],x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))]
-    
+
     # Change zmod numbers for real and imaginary parts
     for h, head in enumerate(headers):
-        if 'zmod' in head[0]:   
-            headers[h] = [head[i]+'.real' for i in range(int(len(head)/2))] + [head[i]+'.imag' for i in range(int(len(head)/2))]    
-    
-    flat_headers = [item for sublist in headers for item in sublist] # Flaten list 
+        if 'zmod' in head[0]:
+            headers[h] = [head[i]+'.real' for i in range(int(len(head)/2))] + [head[i]+'.imag' for i in range(int(len(head)/2))]
+
+    flat_headers = [item for sublist in headers for item in sublist] # Flaten list
     flat_headers.insert(0, 'rho_max') # Insert normalization resistivity in first column
-    header = ','.join(flat_headers) # Join list into csv string 
-    
+    header = ','.join(flat_headers) # Join list into csv string
+
     # Do the saving
     print("\nSaving CSV traces in:\n", save_path)
     if not path.exists(save_path):
@@ -833,7 +833,7 @@ def save_csv_traces(sol):
     np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,sol.model_type_str,sol.filename), trace_mat, delimiter=',', header=header, comments="")
 
 def save_resul(sol):
-    
+
     # To do: rewrite with new mcmcinv object attributes
     # Fonction pour enregistrer les résultats
     MDL, pm = sol.MDL, sol.pm
@@ -845,9 +845,9 @@ def save_resul(sol):
     print("\nSaving csv file in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
-    if sol.model == 'PDecomp': 
+    if sol.model == 'PDecomp':
         tag = 0
-    else: 
+    else:
         tag = 1
     A = []
     B = []
@@ -858,11 +858,11 @@ def save_resul(sol):
         keys += [keys.pop(keys.index("peak_m"))] # Move to end
 
     keys = [k for k in keys if "_std" not in k]
-        
+
     for c, key in enumerate(keys):
-        
+
         A.append(list(np.array(pm[key]).ravel()))
-        B.append(list(np.array(pm[key+"_std"]).ravel()))        
+        B.append(list(np.array(pm[key+"_std"]).ravel()))
 
         length = len(np.atleast_1d(pm[key]))
 
@@ -870,11 +870,11 @@ def save_resul(sol):
             for i in range(len(A[c])):
                 headers.append(model+"_"+key+"_%d" %(i+tag))
                 headers.append(model+"_"+key+("_%d"%(i+tag))+"_std")
-        else:           
+        else:
             if (key == "peak_tau")|(key == "peak_m"):
                 headers.append(model+"_"+key+"_1")
-                headers.append(model+"_"+key+"_1"+"_std")                
-            else: 
+                headers.append(model+"_"+key+"_1"+"_std")
+            else:
                 headers.append(model+"_"+key)
                 headers.append(model+"_"+key+"_std")
 
@@ -888,10 +888,10 @@ def save_resul(sol):
     headers = ','.join(headers)
     results = np.array(results)
 
-    if sol.model == 'PDecomp': 
+    if sol.model == 'PDecomp':
         tau_ = sol.data["tau"]
         add = ["%s_tau"%model+"%d"%(i) for i in range(len(tau_))]
-        add = ','.join(add) + ',' 
+        add = ','.join(add) + ','
         headers = add+headers
         results = np.concatenate((tau_,results))
     headers = "Z_max,Input_c_exponent," + headers
@@ -933,13 +933,13 @@ def plot_par():
           u'figure.facecolor': 'white',
           u'savefig.bbox': u'tight',
           u'savefig.directory': u'~',
-          
+
           u'savefig.edgecolor': u'white',
           u'savefig.facecolor': u'white',
           u'axes.formatter.use_mathtext': True,
           u'xtick.direction'  : 'in',
           u'ytick.direction'  : 'in',
-          
+
           }
     return rc
 rcParams.update(plot_par())

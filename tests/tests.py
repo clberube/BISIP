@@ -4,7 +4,7 @@
 # @Date:   22-08-2019
 # @Email:  charles@goldspot.ca
 # @Last modified by:   charles
-# @Last modified time: 22-08-2019
+# @Last modified time: 24-08-2019
 
 
 import sys
@@ -29,6 +29,6 @@ mcmc = {'adaptive': True,
         }
 
 sol = mcmcinv(model, src_path, mcmc=mcmc)
-
+sol.fit()
 sol.plot_rtd()
-sol.plot_fit(save=True, save_as_png=True, dpi=144)
+sol.plot_fit()

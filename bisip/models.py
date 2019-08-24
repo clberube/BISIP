@@ -182,7 +182,7 @@ class mcmcinv(object):
             self.ccdt_last_it = self.get_ccd_priors(config=self.ccdtools_config)[1]
             print('\nUpdated CCD priors with new data')
 
-        self.start()
+        # self.start()
 
     def get_ccd_priors(self, config=None):
         data = get_data(self.filepath, self.headers, self.ph_units)
@@ -213,294 +213,290 @@ class mcmcinv(object):
         priors['log_m'] = ccdt_last_it.m[1:]
         return priors, ccdt_last_it
 
-    def start(self):
+    def ColeColeModel(self, cc_modes):
 
-        def ColeColeModel(cc_modes):
+        """Cole-Cole Bayesian Model
+        """
+        # Initial guesses
+        p0 = {'R0': 1.0,
+              'm': None,
+              'log_tau': None,
+              'c': None,
+              }
 
-            """Cole-Cole Bayesian Model
-            """
-            # Initial guesses
-            p0 = {'R0': 1.0,
-                  'm': None,
-                  'log_tau': None,
-                  'c': None,
-                  }
+        # Stochastic variables
+        R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
+        m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0['m'],
+                         size=cc_modes)
+        log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=4.0,
+                               value=p0['log_tau'], size=cc_modes)
+        c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'],
+                         size=cc_modes)
 
-            # Stochastic variables
-            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
-            m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0['m'],
-                             size=cc_modes)
-            log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=4.0,
-                                   value=p0['log_tau'], size=cc_modes)
-            c = pymc.Uniform('c', lower=0.0, upper=1.0, value=p0['c'],
-                             size=cc_modes)
+        # Deterministic variables
+        @pymc.deterministic()
+        def zmod(R0=R0, m=m, lt=log_tau, c=c):
+            return ColeCole_cyth1(self.w, R0, m, lt, c)
 
-            # Deterministic variables
-            @pymc.deterministic()
-            def zmod(cc_modes=cc_modes, R0=R0, m=m, lt=log_tau, c=c):
-                return ColeCole_cyth1(w, R0, m, lt, c)
+        @pymc.deterministic()
+        def NRMSE_r(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
 
-            @pymc.deterministic()
-            def NRMSE_r(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+        @pymc.deterministic()
+        def NRMSE_i(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
 
-            @pymc.deterministic()
-            def NRMSE_i(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+        # Likelihood
+        obs = pymc.Normal('obs', mu=zmod,
+                          tau=old_div(1.0, (self.data['zn_err']**2)),
+                          value=self.data['zn'], size=(2, len(self.w)),
+                          observed=True)
 
-            # Likelihood
+        return locals()
+
+    def ShinModel(self):
+        """Shin Bayesian Model"""
+        # Initial guesses
+        p0 = {'R': [0.5, 0.5],
+              'log_Q': [0, -4],
+              'n': [0.5, 0.5],
+              'log_tau': None,
+              'm': None,
+              }
+        # Stochastics
+        R = pymc.Uniform('R', lower=0.0, upper=1.0, value=p0['R'], size=2)
+        log_Q = pymc.Uniform('log_Q', lower=-7, upper=2,
+                             value=p0['log_Q'], size=2)
+        n = pymc.Uniform('n', lower=0.0, upper=1.0, value=p0['n'], size=2)
+        # Deterministics
+        @pymc.deterministic(plot=False)
+        def zmod(R=R, log_Q=log_Q, n=n):
+            return Shin_cyth(self.w, R, log_Q, n)
+
+        @pymc.deterministic(plot=False)
+        def log_tau(R=R, log_Q=log_Q, n=n):
+            return np.log10((R*(10**log_Q))**(old_div(1., n)))
+
+        @pymc.deterministic(plot=False)
+        def R0(R=R):
+            return R[0]+R[1]
+
+        @pymc.deterministic(plot=False)
+        def m(R=R):
+            return self.seigle_m*(old_div(max(R), (max(R) + min(R))))
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_r(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_i(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+
+        #Likelihood
+        obs = pymc.Normal('obs', mu=zmod,
+                          tau=old_div(1.0, (self.data['zn_err']**2)),
+                          value=self.data['zn'], size=(2, len(self.w)),
+                          observed=True)
+
+        return locals()
+
+    def DiasModel(self):
+        """Dias Bayesian Model
+        """
+        # Initial guesses
+        p0 = {'R0': 1.0,
+              'm': self.seigle_m,
+              'log_tau': None,
+              'eta': None,
+              'delta': None,
+              }
+        # Stochastics
+        R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=1)
+        m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0['m'])
+        log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=0.0,
+                               value=p0['log_tau'])
+        eta = pymc.Uniform('eta', lower=0.0, upper=50.0, value=p0['eta'])
+        delta = pymc.Uniform('delta', lower=0.0, upper=1.0,
+                             value=p0['delta'])
+
+        # Deterministics
+        @pymc.deterministic(plot=False)
+        def zmod(R0=R0, m=m, lt=log_tau, eta=eta, delta=delta):
+            return Dias_cyth(self.w, R0, m, lt, eta, delta)
+
+        # Likelihood
+        obs = pymc.Normal('obs', mu=zmod,
+                          tau=old_div(1.0, (self.data['zn_err']**2)),
+                          value=self.data['zn'], size=(2, len(self.w)),
+                          observed=True)
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_r(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_i(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+
+        return locals()
+
+    def stoCCD(self, c_exp, ccd_priors):
+        # Stochastic variables (noise on CCDtools output)
+        # The only assumption we make is that the RTD noise is
+        # assumed to be equal to 0 and below 20% with 1 standard deviation
+        noise_tau = pymc.Normal('log_noise_tau', mu=0, tau=1/(0.2**2))
+        noise_m = pymc.Normal('log_noise_m', mu=0, tau=1/(0.2**2))
+        noise_rho = pymc.Normal('log_noise_rho', mu=0, tau=1/(0.2**2))
+
+        # Deterministic variables of CCD
+        @pymc.deterministic(plot=False)
+        def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
+            # log chargeability array
+            return logm + dm
+
+        @pymc.deterministic(plot=False)
+        def log_tau_i(logt=ccd_priors['log_tau'], dt=noise_tau):
+            # log tau array
+            return logt + dt
+
+        @pymc.deterministic(plot=False)
+        def R0(R=ccd_priors['R0'], dR=noise_rho):
+            # DC resistivity (normalized)
+            return R + dR
+
+        @pymc.deterministic(plot=False)
+        def cond(log_tau=log_tau_i):
+            # Condition on log_tau to compute integrating parameters
+            log_tau_min = np.log10(1./self.w.max())
+            log_tau_max = np.log10(1./self.w.min())
+            return (log_tau >= log_tau_min) & (log_tau <= log_tau_max)
+
+        @pymc.deterministic(plot=False)
+        def log_total_m(m=10**log_m_i[cond]):
+            # Total chargeability
+            return np.log10(np.nansum(m))
+
+        @pymc.deterministic(plot=False)
+        def log_half_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
+            # Tau 50
+            return log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.5)[0][0]]
+
+        @pymc.deterministic(plot=False)
+        def log_U_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
+            tau_60 = log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.6)[0][0]]
+            tau_10 = log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.1)[0][0]]
+            return np.log10(10**tau_60 / 10**tau_10)
+
+        @pymc.deterministic(plot=False)
+        def log_peak_tau(m_i=log_m_i, log_tau=log_tau_i):
+            # Tau peaks
+            peak_cond = argrelextrema(m_i, np.greater)
+            return np.squeeze(log_tau[peak_cond])
+
+        @pymc.deterministic(plot=False)
+        def log_peak_m(log_m=log_m_i):
+            peak_cond = argrelextrema(log_m, np.greater)
+            # Peak chargeability
+            return np.squeeze(log_m[peak_cond])
+
+        @pymc.deterministic(plot=False)
+        def log_mean_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
+            # Tau logarithmic average
+            return np.log10(np.exp(np.nansum(m_i*np.log(10**log_tau))/np.nansum(m_i)))
+
+        @pymc.deterministic(plot=False)
+        def zmod(R0=R0, m=10**log_m_i, tau=10**log_tau_i):
+            Z = R0 * (1 - np.sum(m*(1 - 1.0/(1 + ((1j*self.w[:, np.newaxis]*tau)**c_exp))), axis=1))
+            return np.array([Z.real, Z.imag])
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_r(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_i(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+
+        # Likelihood function
+        obs = pymc.Normal('obs', mu=zmod,
+                          tau=1./(2*self.data['zn_err']**2),
+                          value=self.data['zn'], size=(2, len(self.w)),
+                          observed=True)
+
+        return locals()
+
+    def PolyDecompModel(self, decomp_poly, c_exp, ccd_priors):
+        """Debye, Warburg, Cole-Cole decomposition Bayesian Model
+        """
+        # Initial guesses
+        p0 = {'R0': 1.0,
+              'a': None,
+              'log_tau_hi': -5.0,
+              'm_hi': 0.5,
+              'TotalM': None,
+              'log_MeanTau': None,
+              'U': None,
+              }
+        # Stochastics
+        R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
+        a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0['a'],
+                        size=decomp_poly+1)
+        if self.guess_noise:
+            noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
+            noise_i = pymc.Uniform('noise_imag', lower=0., upper=1.)
+
+        @pymc.deterministic(plot=False)
+        def zmod(R0=R0, a=a):
+            return Decomp_cyth(self.w, self.tau_10, self.log_taus, c_exp, R0, a)
+
+        @pymc.deterministic(plot=False)
+        def m_i(a=a):
+            return np.sum((a*self.log_taus.T).T, axis=0)
+
+        @pymc.deterministic(plot=False)
+        def total_m(m=m_i[self.cond]):
+            return np.nansum(m)
+
+        @pymc.deterministic(plot=False)
+        def log_half_tau(m=m_i[self.cond], log_tau=self.log_tau[self.cond]):
+            # Tau 50
+            return self.log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.5)[0][0]]
+
+        @pymc.deterministic(plot=False)
+        def log_mean_tau(m=m_i[self.cond], log_tau=self.log_tau[self.cond]):
+            return np.log10(np.exp(old_div(np.sum(m*np.log(10**log_tau)), np.sum(m))))
+
+        @pymc.deterministic(plot=False)
+        def log_U_tau(m=m_i[self.cond], log_tau=self.log_tau[self.cond]):
+            tau_60 = log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.6)[0][0]]
+            tau_10 = log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.1)[0][0]]
+            return np.log10(10**tau_60 / 10**tau_10)
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_r(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
+
+        @pymc.deterministic(plot=False)
+        def NRMSE_i(zmod=zmod, data=self.data['zn']):
+            return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
+
+        if self.guess_noise:
+            obs_r = pymc.Normal('obs_r', mu=zmod[0], tau=1./((noise_r)**2),
+                                value=self.data['zn'][0], size=len(self.w),
+                                observed=True)
+            obs_i = pymc.Normal('obs_i', mu=zmod[1], tau=1./((noise_i)**2),
+                                value=self.data['zn'][1], size=len(self.w),
+                                observed=True)
+        else:
             obs = pymc.Normal('obs', mu=zmod,
-                              tau=old_div(1.0, (self.data['zn_err']**2)),
-                              value=self.data['zn'], size=(2, len(w)),
-                              observed=True)
+                              tau=1./(self.data['zn_err']**2),
+                              value=self.data['zn'],
+                              size=(2, len(self.w)), observed=True)
 
-            return locals()
+        return locals()
 
-        def ShinModel():
-            """Shin Bayesian Model"""
-            # Initial guesses
-            p0 = {'R': [0.5, 0.5],
-                  'log_Q': [0, -4],
-                  'n': [0.5, 0.5],
-                  'log_tau': None,
-                  'm': None,
-                  }
-            # Stochastics
-            R = pymc.Uniform('R', lower=0.0, upper=1.0, value=p0['R'], size=2)
-            log_Q = pymc.Uniform('log_Q', lower=-7, upper=2,
-                                 value=p0['log_Q'], size=2)
-            n = pymc.Uniform('n', lower=0.0, upper=1.0, value=p0['n'], size=2)
-            # Deterministics
-            @pymc.deterministic(plot=False)
-            def zmod(R=R, log_Q=log_Q, n=n):
-                return Shin_cyth(w, R, log_Q, n)
-
-            @pymc.deterministic(plot=False)
-            def log_tau(R=R, log_Q=log_Q, n=n):
-                return np.log10((R*(10**log_Q))**(old_div(1., n)))
-
-            @pymc.deterministic(plot=False)
-            def R0(R=R):
-                return R[0]+R[1]
-
-            @pymc.deterministic(plot=False)
-            def m(R=R):
-                return seigle_m*(old_div(max(R), (max(R) + min(R))))
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_r(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_i(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
-
-            #Likelihood
-            obs = pymc.Normal('obs', mu=zmod,
-                              tau=old_div(1.0, (self.data['zn_err']**2)),
-                              value=self.data['zn'], size=(2, len(w)),
-                              observed=True)
-
-            return locals()
-
-        def DiasModel():
-            """Dias Bayesian Model
-            """
-            # Initial guesses
-            p0 = {'R0': 1.0,
-                  'm': seigle_m,
-                  'log_tau': None,
-                  'eta': None,
-                  'delta': None,
-                  }
-            # Stochastics
-            R0 = pymc.Uniform('R0', lower=0.9, upper=1.1, value=1)
-            m = pymc.Uniform('m', lower=0.0, upper=1.0, value=p0['m'])
-            log_tau = pymc.Uniform('log_tau', lower=-7.0, upper=0.0,
-                                   value=p0['log_tau'])
-            eta = pymc.Uniform('eta', lower=0.0, upper=50.0, value=p0['eta'])
-            delta = pymc.Uniform('delta', lower=0.0, upper=1.0,
-                                 value=p0['delta'])
-
-            # Deterministics
-            @pymc.deterministic(plot=False)
-            def zmod(R0=R0, m=m, lt=log_tau, eta=eta, delta=delta):
-                return Dias_cyth(w, R0, m, lt, eta, delta)
-
-            # Likelihood
-            obs = pymc.Normal('obs', mu=zmod,
-                              tau=old_div(1.0, (self.data['zn_err']**2)),
-                              value=self.data['zn'], size=(2, len(w)),
-                              observed=True)
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_r(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_i(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
-
-            return locals()
-
-
-        def stoCCD(c_exp, ccd_priors):
-            # Stochastic variables (noise on CCDtools output)
-            # The only assumption we make is that the RTD noise is
-            # assumed to be equal to 0 and below 20% with 1 standard deviation
-            noise_tau = pymc.Normal('log_noise_tau', mu=0, tau=1/(0.2**2))
-            noise_m = pymc.Normal('log_noise_m', mu=0, tau=1/(0.2**2))
-            noise_rho = pymc.Normal('log_noise_rho', mu=0, tau=1/(0.2**2))
-
-            # Deterministic variables of CCD
-            @pymc.deterministic(plot=False)
-            def log_m_i(logm=ccd_priors['log_m'], dm=noise_m):
-                # log chargeability array
-                return logm + dm
-
-            @pymc.deterministic(plot=False)
-            def log_tau_i(logt=ccd_priors['log_tau'], dt=noise_tau):
-                # log tau array
-                return logt + dt
-
-            @pymc.deterministic(plot=False)
-            def R0(R=ccd_priors['R0'], dR=noise_rho):
-                # DC resistivity (normalized)
-                return R + dR
-
-            @pymc.deterministic(plot=False)
-            def cond(log_tau=log_tau_i):
-                # Condition on log_tau to compute integrating parameters
-                log_tau_min = np.log10(1./w.max())
-                log_tau_max = np.log10(1./w.min())
-                return (log_tau >= log_tau_min)&(log_tau <= log_tau_max)
-
-            @pymc.deterministic(plot=False)
-            def log_total_m(m=10**log_m_i[cond]):
-                # Total chargeability
-                return np.log10(np.nansum(m))
-
-            @pymc.deterministic(plot=False)
-            def log_half_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
-                # Tau 50
-                return log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.5)[0][0]]
-
-            @pymc.deterministic(plot=False)
-            def log_U_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
-                tau_60 = log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.6)[0][0]]
-                tau_10 = log_tau[np.where(np.cumsum(m_i)/np.nansum(m_i) > 0.1)[0][0]]
-                return np.log10(10**tau_60 / 10**tau_10)
-
-            @pymc.deterministic(plot=False)
-            def log_peak_tau(m_i=log_m_i, log_tau=log_tau_i):
-                # Tau peaks
-                peak_cond = argrelextrema(m_i, np.greater)
-                return np.squeeze(log_tau[peak_cond])
-
-            @pymc.deterministic(plot=False)
-            def log_peak_m(log_m=log_m_i):
-                peak_cond = argrelextrema(log_m, np.greater)
-                # Peak chargeability
-                return np.squeeze(log_m[peak_cond])
-
-            @pymc.deterministic(plot=False)
-            def log_mean_tau(m_i=10**log_m_i[cond], log_tau=log_tau_i[cond]):
-                # Tau logarithmic average
-                return np.log10(np.exp(np.nansum(m_i*np.log(10**log_tau))/np.nansum(m_i)))
-
-            @pymc.deterministic(plot=False)
-            def zmod(R0=R0, m=10**log_m_i, tau=10**log_tau_i):
-                Z = R0 * (1 - np.sum(m*(1 - 1.0/(1 + ((1j*w[:, np.newaxis]*tau)**c_exp))), axis=1))
-                return np.array([Z.real, Z.imag])
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_r(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_i(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
-
-            # Likelihood function
-            obs = pymc.Normal('obs', mu=zmod,
-                              tau=1./(2*self.data['zn_err']**2),
-                              value=self.data['zn'], size=(2, len(w)),
-                              observed=True)
-
-            return locals()
-
-    #==============================================================================
-    #==============================================================================
-        def PolyDecompModel(decomp_poly, c_exp, ccd_priors):
-            """Debye, Warburg, Cole-Cole decomposition Bayesian Model
-            """
-            # Initial guesses
-            p0 = {'R0': 1.0,
-                  'a': None,
-                  'log_tau_hi': -5.0,
-                  'm_hi': 0.5,
-                  'TotalM': None,
-                  'log_MeanTau': None,
-                  'U': None,
-                  }
-            # Stochastics
-            R0 = pymc.Uniform('R0', lower=0.7, upper=1.3, value=p0['R0'])
-            a = pymc.Normal('a', mu=0, tau=1./(0.01**2), value=p0['a'],
-                            size=decomp_poly+1)
-            if self.guess_noise:
-                noise_r = pymc.Uniform('noise_real', lower=0., upper=1.)
-                noise_i = pymc.Uniform('noise_imag', lower=0., upper=1.)
-
-            @pymc.deterministic(plot=False)
-            def zmod(R0=R0, a=a):
-                return Decomp_cyth(w, tau_10, log_taus, c_exp, R0, a)
-
-            @pymc.deterministic(plot=False)
-            def m_i(a=a):
-                return np.sum((a*log_taus.T).T, axis=0)
-
-            @pymc.deterministic(plot=False)
-            def total_m(m=m_i[cond]):
-                return np.nansum(m)
-
-            @pymc.deterministic(plot=False)
-            def log_half_tau(m=m_i[cond], log_tau=log_tau[cond]):
-                # Tau 50
-                return log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.5)[0][0]]
-
-            @pymc.deterministic(plot=False)
-            def log_mean_tau(m=m_i[cond], log_tau=log_tau[cond]):
-                return np.log10(np.exp(old_div(np.sum(m*np.log(10**log_tau)), np.sum(m))))
-
-            @pymc.deterministic(plot=False)
-            def log_U_tau(m=m_i[cond], log_tau=log_tau[cond]):
-                tau_60 = log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.6)[0][0]]
-                tau_10 = log_tau[np.where(np.cumsum(m)/np.nansum(m) > 0.1)[0][0]]
-                return np.log10(10**tau_60 / 10**tau_10)
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_r(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[0] - data[0])**2))/abs(max(data[0])-min(data[0]))
-
-            @pymc.deterministic(plot=False)
-            def NRMSE_i(zmod=zmod, data=self.data['zn']):
-                return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
-
-            if self.guess_noise:
-                obs_r = pymc.Normal('obs_r', mu=zmod[0], tau=1./((noise_r)**2),
-                                    value=self.data['zn'][0], size=len(w),
-                                    observed=True)
-                obs_i = pymc.Normal('obs_i', mu=zmod[1], tau=1./((noise_i)**2),
-                                    value=self.data['zn'][1], size=len(w),
-                                    observed=True)
-            else:
-                obs = pymc.Normal('obs', mu=zmod,
-                                  tau=1./(self.data['zn_err']**2),
-                                  value=self.data['zn'],
-                                  size=(2, len(w)), observed=True)
-
-            return locals()
-
+    def fit(self):
         """
         Main section
         """
@@ -520,9 +516,10 @@ class mcmcinv(object):
         if (self.data['pha_err'] == 0).all():
             self.guess_noise = True
         # Estimating Seigel chargeability
-        seigle_m = (old_div((self.data['amp'][-1] - self.data['amp'][0]), self.data['amp'][-1]))
+        self.seigle_m = (old_div((self.data['amp'][-1] - self.data['amp'][0]), self.data['amp'][-1]))
         w = 2*np.pi*self.data['freq'] # Frequencies measured in rad/s
         # Relaxation times associated with the measured frequencies (Debye decomposition only)
+        self.w = w
 
         if self.model == 'PDecomp':
             log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
@@ -531,6 +528,10 @@ class mcmcinv(object):
             log_taus = np.array([log_tau**i for i in list(reversed(range(0,self.decomp_poly+1)))])
             tau_10 = 10**log_tau  # Accelerates sampling
             self.data['tau'] = tau_10  # Put relaxation times in data dictionary
+            self.log_taus = log_taus
+            self.log_tau = log_tau
+            self.tau_10 = tau_10
+            self.cond = cond
 
         # Time and date (for saving traces)
         sample_name = self.filepath.replace('\\', '/').split('/')[-1].split('.')[0]
@@ -548,12 +549,12 @@ class mcmcinv(object):
         #==========================================================================
         """
         # 'ColeCole', 'Dias', 'Debye' or 'Shin'
-        sim_dict = {'ColeCole': {'func': ColeColeModel, 'args': [self.cc_modes]},
-                    'Dias': {'func': DiasModel, 'args': []},
-                    'PDecomp': {'func': PolyDecompModel, 'args': [self.decomp_poly, self.c_exp, self.ccd_priors]},
-                    'Shin': {'func': ShinModel, 'args': []},
+        sim_dict = {'ColeCole': {'func': self.ColeColeModel, 'args': [self.cc_modes]},
+                    'Dias': {'func': self.DiasModel, 'args': []},
+                    'PDecomp': {'func': self.PolyDecompModel, 'args': [self.decomp_poly, self.c_exp, self.ccd_priors]},
+                    'Shin': {'func': self.ShinModel, 'args': []},
     #                'Custom':   {'func': YourModel,     'args': [opt_args]   },
-                    'CCD': {'func': stoCCD, 'args': [self.c_exp, self.ccd_priors]},
+                    'CCD': {'func': self.stoCCD, 'args': [self.c_exp, self.ccd_priors]},
                     }
         simulation = sim_dict[self.model]  # Pick entries for the selected model
         self.MDL = run_MCMC(simulation['func'](*simulation['args']), self.mcmc, save_traces=self.keep_traces, save_where=out_path)  # Run MCMC simulation with selected model and arguments
