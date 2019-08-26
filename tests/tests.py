@@ -4,7 +4,7 @@
 # @Date:   22-08-2019
 # @Email:  charles@goldspot.ca
 # @Last modified by:   charles
-# @Last modified time: 24-08-2019
+# @Last modified time: 26-08-2019
 
 
 import sys
@@ -31,4 +31,9 @@ mcmc = {'adaptive': True,
 sol = mcmcinv(model, src_path, mcmc=mcmc)
 sol.fit()
 sol.plot_rtd()
+
 sol.plot_fit()
+
+sol.plot_histograms()
+
+sol.plot_KDE('total_m', 'log_mean_tau')

@@ -169,8 +169,8 @@ def print_resul(sol):
             print(l, np.atleast_1d(pm[v]), '+/-', np.atleast_1d(pm[e]))
 
 
-def plot_data(filename, headers, ph_units, save=False,
-              save_as_png=False, dpi=None, fig_nb=None):
+def plot_data(filename, headers, ph_units, save=False, draw=True,
+              save_as_png=False, dpi=None, fig_nb=None, return_fig=False):
     """
     Plots data before doing inversion
     Pass full file path, number of headers and phase units
@@ -210,15 +210,16 @@ def plot_data(filename, headers, ph_units, save=False,
     plt.ylabel(sym_labels['phas'])
 
     # Adjust for low or high phase response
-    if  (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
-        plt.ylim([0.1,10**np.ceil(max(np.log10(-Pha_dat)))])
-    if  (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
-        plt.ylim([0.01,10**np.ceil(max(np.log10(-Pha_dat)))])
+    if (-Pha_dat < 1).any() and (-Pha_dat >= 0.1).any():
+        plt.ylim([0.1, 10**np.ceil(max(np.log10(-Pha_dat)))])
+    if (-Pha_dat < 0.1).any() and (-Pha_dat >= 0.01).any():
+        plt.ylim([0.01, 10**np.ceil(max(np.log10(-Pha_dat)))])
 
     # Freq-Ampl
-    plt.axes(ax[1,0])
-    plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
-    ax[1,0].set_xscale("log")
+    plt.axes(ax[1, 0])
+    plt.errorbar(f, Amp_dat, Amp_err, None, fmt='o', mfc='white',
+                 markersize=5, label='Data', zorder=0)
+    ax[1, 0].set_xscale("log")
     plt.xlabel(sym_labels['freq'])
     plt.ylabel(sym_labels['resi'])
 
@@ -228,15 +229,20 @@ def plot_data(filename, headers, ph_units, save=False,
     fig.tight_layout()
 
     if save:
-        fn = 'DAT-%s.%s'%(filename,ext)
+        fn = 'DAT-%s.%s' % (filename, ext)
         save_figure(fig, subfolder='Data', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    return fig
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
 
 
-def plot_fit(sol, save=False, draw=True,
-             save_as_png=False, dpi=None, fig_nb=""):
+def plot_fit(sol, save=False, draw=True, save_as_png=False,
+             dpi=None, fig_nb='', return_fig=False):
     """
     Plots the average fit and uncertainty
     Pass mcmcinv object (sol)
@@ -264,7 +270,7 @@ def plot_fit(sol, save=False, draw=True,
     Amp_min = abs(sol.fit["lo95"])/Zr0
     Amp_max = abs(sol.fit["up95"])/Zr0
 
-    fig, ax = plt.subplots(2, 2, figsize=(8,5), sharex=True)
+    fig, ax = plt.subplots(2, 2, figsize=(8, 5), sharex=True)
 
     # Freq-Imag
     plt.sca(ax[0,0])
@@ -279,7 +285,7 @@ def plot_fit(sol, save=False, draw=True,
     plt.errorbar(f, zn_dat.real, zn_err.real, None, color='k', fmt='o', mfc='white', markersize=5, label='Data', zorder=0)
     p=plt.plot(f, zn_fit.real, ls='-', label="Model",zorder=2)
     plt.fill_between(f, zn_max.real, zn_min.real, alpha=0.4, color=p[0].get_color(), zorder=1, label='95% HPD')
-    plt.ylabel(sym_labels['imag'])
+    plt.ylabel(sym_labels['real'])
     plt.legend(loc='best', labelspacing=0.2, handlelength=1, framealpha=1)
 
     # Freq-Phas
@@ -303,22 +309,27 @@ def plot_fit(sol, save=False, draw=True,
     plt.ylabel(sym_labels['ampl'])
     plt.legend(loc='best', labelspacing=0.2, handlelength=1, framealpha=1)
 
-    for a in ax.flat:
-        a.grid(True)
+    # for a in ax.flat:
+    #     a.grid(True)
 
     plt.tight_layout(pad=0, h_pad=0.5, w_pad=1)
 
     if save:
-        fn = '%sFIT-%s-%s.%s'%(fig_nb,sol.model_type_str,sol.filename,ext)
+        fn = '%sFIT-%s-%s.%s' % (fig_nb, sol.model_type_str,
+                                 sol.filename, ext)
         save_figure(fig, subfolder='Fit figures', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
+
 
 def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
-               ignore=default_ignore,
-               ):
+               ignore=default_ignore, return_fig=False):
     """
     Plots the traces of stochastic and
     deterministic parameters in mcmcinv object (sol)
@@ -367,13 +378,16 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
         fn = 'HST-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Histograms', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
 
 def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
-                ignore=default_ignore,
-                ):
+                ignore=default_ignore, return_fig=False):
     """
     Plots the traces of stochastic and
     deterministic parameters in mcmcinv object (sol)
@@ -423,11 +437,17 @@ def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
         fn = 'TRA-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Traces', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
 
-def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False, save_as_png=False, dpi=None):
+    if return_fig:
+        return fig
+
+
+def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False,
+             save_as_png=False, dpi=None, return_fig=False, cmap='bone_r'):
     """
     Like the hexbin plot but a 2D KDE
     Pass mcmcinv object and 2 variable names as strings
@@ -474,8 +494,8 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False, save_as_
     plt.xticks(rotation=90)
     plt.locator_params(axis = 'y', nbins = 7)
     plt.locator_params(axis = 'x', nbins = 7)
-    ax.contourf(xx, yy, f, cmap=plt.cm.viridis, alpha=0.8)
-    ax.scatter(x, y, color='k', s=1, zorder=2)
+    ax.contourf(xx, yy, f, cmap=cmap, alpha=0.8)
+    ax.scatter(x, y, color='k', s=1, marker='.', zorder=2)
 
     plt.ylabel("%s" %var2)
     plt.xlabel("%s" %var1)
@@ -484,11 +504,17 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False, save_as_
         fn = 'KDE-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='2D-KDE', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
 
-def plot_hexbin(sol, var1, var2, draw=True, save=False, save_as_png=False, dpi=None):
+    if return_fig:
+        return fig
+
+
+def plot_hexbin(sol, var1, var2, draw=True, save=False, save_as_png=False,
+                dpi=None, return_fig=False):
     """
     Like the 2D KDE plot but a hexbin
     Pass mcmcinv object and 2 variable names as strings
@@ -533,15 +559,17 @@ def plot_hexbin(sol, var1, var2, draw=True, save=False, save_as_png=False, dpi=N
         fn = 'HEX-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Hexbins', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
 
 
 def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
-                 ignore=default_ignore,
-                 fig_nb="",
-                 ):
+                 ignore=default_ignore, fig_nb="", return_fig=False):
     """
     Plots a parameter summary and
     Gelman-Rubin R-hat for multiple chains
@@ -600,12 +628,17 @@ def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
         fn = '%sSUM-%s-%s.%s'%(fig_nb,sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Summaries', fname=fn, dpi=dpi)
 
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
+
 
 def plot_autocorr(sol, save=False, draw=True, save_as_png=False, dpi=None,
-                 ignore=default_ignore,
-                 ):
+                 ignore=default_ignore, return_fig=False):
     """
     Plots autocorrelations
     """
@@ -649,11 +682,17 @@ def plot_autocorr(sol, save=False, draw=True, save_as_png=False, dpi=None,
         fn = 'AC-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='Autocorrelations', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
 
-def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None):
+    if return_fig:
+        return fig
+
+
+def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None,
+             return_fig=False):
     """
     Plots the relaxation time distribution (RTD)
     for a polynomial decomposition or ccdt results
@@ -702,11 +741,17 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None):
         fn = 'RTD-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='RTD', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
 
-def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=None):
+    if return_fig:
+        return fig
+
+
+def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=None,
+                  return_fig=False):
     """
     Plots the model deviance trace
     """
@@ -731,9 +776,14 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=None):
         fn = 'MDEV-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='ModelDeviance', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
+
 
 def logp_trace(model):
     """
@@ -758,7 +808,9 @@ def logp_trace(model):
         logp[i_sample] = model.logp
     return logp
 
-def plot_logp(sol, save=False, draw=True, save_as_png=False, dpi=None):
+
+def plot_logp(sol, save=False, draw=True, save_as_png=False, dpi=None,
+              return_fig=False):
     """
     Plots the model log-likelihood
     """
@@ -782,9 +834,14 @@ def plot_logp(sol, save=False, draw=True, save_as_png=False, dpi=None):
         fn = 'LOGP-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
         save_figure(fig, subfolder='LogLikelihood', fname=fn, dpi=dpi)
 
-    plt.close(fig)
-    if draw:    return fig
-    else:       return None
+    if draw:
+        plt.show()
+    else:
+        plt.close(fig)
+
+    if return_fig:
+        return fig
+
 
 def save_csv_traces(sol):
     """
@@ -831,6 +888,7 @@ def save_csv_traces(sol):
     if not path.exists(save_path):
         makedirs(save_path)
     np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,sol.model_type_str,sol.filename), trace_mat, delimiter=',', header=header, comments="")
+
 
 def save_resul(sol):
 
@@ -902,6 +960,7 @@ def save_resul(sol):
     if "zmod" in vars_: vars_.remove("zmod")
     MDL.write_csv(save_path+'STATS_%s-%s_%s.csv' %(sol.model,model,sample_name), variables=(vars_))
 
+
 def merge_results(sol,files):
     """
     Merge a batch of csv files to a single one
@@ -927,19 +986,20 @@ def merge_results(sol,files):
 def print_diagn(M, q, r, s):
     return raftery_lewis(M, q, r, s, verbose=0)
 
+
 def plot_par():
     rc = {
           u'figure.edgecolor': 'white',
           u'figure.facecolor': 'white',
           u'savefig.bbox': u'tight',
           u'savefig.directory': u'~',
-
           u'savefig.edgecolor': u'white',
           u'savefig.facecolor': u'white',
           u'axes.formatter.use_mathtext': True,
-          u'xtick.direction'  : 'in',
-          u'ytick.direction'  : 'in',
-
+          u'xtick.direction': 'in',
+          u'ytick.direction': 'in',
           }
     return rc
+
+
 rcParams.update(plot_par())
