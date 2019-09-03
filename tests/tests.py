@@ -12,11 +12,11 @@ from bisip import mcmcinv
 
 
 model = 'CCD'
-src_path = '/Users/cberube/Repositories/BISIP/data files/SIP-K389170_avg.dat'
+src_path = '/Users/cberube/Desktop/B1-semaine22-mrad-ohm.csv'
 mcmc = {'adaptive': True,
         'nb_chain': 1,
-        'nb_iter': 100000,
-        'nb_burn': 80000,
+        'nb_iter': 10000,
+        'nb_burn': 8000,
         'thin': 1,
         'tune_inter': 500,
         'prop_scale': 1.0,
@@ -25,7 +25,7 @@ mcmc = {'adaptive': True,
         'cov_delay': 1000,
         }
 
-sol = mcmcinv(model, src_path, mcmc=mcmc, guess_noise=False, ccdt_lambda=0.1)
+sol = mcmcinv(model, src_path, mcmc=mcmc, guess_noise=False, ph_units='mrad')
 sol.fit()
 
 sol.plot_rtd()

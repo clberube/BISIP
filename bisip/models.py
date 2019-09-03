@@ -602,12 +602,13 @@ class mcmcinv(object):
         # Get all stochastic and deterministic variables
         trl = [self.var_dict[x] for x in pm_names]
         # Concatenate all traces in 1 matrix
-        trace_mat = np.hstack([t.trace().reshape(-1, var_depth(t)) for t in trl])
+        traces_to_concat = [t.trace().reshape(-1, var_depth(t)) for t in trl if var_depth(t) > 0]
+        traces_matrix = np.hstack(traces_to_concat)
         # Get numbers for each subheader
         num_names = [var_depth(v) for v in trl]
         # Make list of headers
         headers = flatten([['%s%d'%(pm_names[p], x+1) for x in range(num_names[p])] if num_names[p] > 1 else [pm_names[p]] for p in range(len(pm_names))])
 
-        self.trace_dict = {k: t for k, t in zip(headers, trace_mat.T)}
+        self.trace_dict = {k: t for k, t in zip(headers, traces_matrix.T)}
 
         # End of inversion
