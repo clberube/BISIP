@@ -25,7 +25,7 @@ mcmc = {'adaptive': True,
         'cov_delay': 1000,
         }
 
-sol = mcmcinv(model, src_path, mcmc=mcmc, guess_noise=False, ccdt_lambda=200)
+sol = mcmcinv(model, src_path, mcmc=mcmc, guess_noise=False, ccdt_lambda=0.1)
 sol.fit()
 
 sol.plot_rtd()
