@@ -80,8 +80,10 @@ sym_labels = dict([('resi', r"$\rho$ ($\Omega$m)"),
                    ('imagrho', r"$-\rho$'' ($\Omega$m)"),
                    ])
 
-parlbl_dic = {'NRMSE_r': r"$\rho''_{\mathrm{NRMSE}}$",
-              'NRMSE_i': r"$\rho'_{\mathrm{NRMSE}}$",
+parlbl_dic = {'NRMSE_r': r"$\rho'_{\mathrm{NRMSE}}$",
+              'NRMSE_i': r"$\rho''_{\mathrm{NRMSE}}$",
+              'noise_real': r"$\rho'_{\mathrm{noise}}$",
+              'noise_imag': r"$\rho''_{\mathrm{noise}}$",
               'delta': r'$\delta$',
               'eta': r'$\eta$',
               'R0': r'$\rho_0/\rho_{max}$',
@@ -336,7 +338,7 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
     Ignores the ones in list argument ignore
     """
     # Get some settings
-    ext = ['png' if save_as_png else 'pdf'][0] # get figure format
+    ext = ['png' if save_as_png else 'pdf'][0]  # get figure format
 
     # Get all variable names from mcmcinv object
     headers = sorted(sol.trace_dict.keys())
@@ -348,7 +350,7 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
     # Subplot settings
     ncols = 2
     nrows = int(ceil(len(headers)*1.0 / ncols))
-    fig, ax = plt.subplots(nrows, ncols, figsize=(8,nrows*1.8))
+    fig, ax = plt.subplots(nrows, ncols, figsize=(8, nrows*1.8))
 
     # Plot histograms
     for i in range(len(headers)):
@@ -363,19 +365,21 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
             binwidth = (max(xh) - min(xh)) / len(hist[1])
             fit *= len(data) * binwidth
             plt.plot(data, fit, "-", color='k', linewidth=1)
-        except:
-            print("File %s: failed to plot %s histogram.\nNot enough accepted moves." %(sol.filename,headers[i]))
+        except ValueError:
+            print("File %s: failed to plot %s histogram.\nNot enough accepted moves." % (sol.filename,headers[i]))
         plt.grid(False)
-        plt.ticklabel_format(style='sci', axis='both', scilimits=(0,0))
+        plt.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))
 
     for c in range(nrows):
         ax[c][0].set_ylabel("Frequency")
     for a in ax.flat[ax.size - 1:len(headers) - 1:-1]:
         a.set_visible(False)
-    plt.tight_layout(pad=1, w_pad=1, h_pad=0)
+
+    plt.tight_layout()
+    # plt.tight_layout(pad=1, w_pad=1, h_pad=0)
 
     if save:
-        fn = 'HST-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
+        fn = 'HST-%s-%s.%s' % (sol.model_type_str, sol.filename, ext)
         save_figure(fig, subfolder='Histograms', fname=fn, dpi=dpi)
 
     if draw:
@@ -385,6 +389,7 @@ def plot_histo(sol, save=False, draw=True, save_as_png=False, dpi=None,
 
     if return_fig:
         return fig
+
 
 def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
                 ignore=default_ignore, return_fig=False):
@@ -415,26 +420,27 @@ def plot_traces(sol, save=False, draw=True, save_as_png=False, dpi=None,
         x = np.arange(mcmc["nb_burn"]+1, mcmc["nb_iter"]+1, mcmc["thin"])
         plt.sca(ax.flat[i])
         plt.ylabel(parlbl_dic[headers[i]])
-        plt.plot(x, data,'-', color='0.8', alpha=1)
+        plt.plot(x, data, '-', color='0.8', alpha=1)
         av = np.mean(data)*np.ones(len(x))
         sd = np.std(data)*np.ones(len(x))
         plt.plot(x, av, linestyle='--', linewidth=1.5)
-        plt.plot(x, av+sd, color='0.2',linestyle=':', linewidth=1)
-        plt.plot(x, av-sd, color='0.2',linestyle=':', linewidth=1)
+        plt.plot(x, av+sd, color='0.2', linestyle=':', linewidth=1)
+        plt.plot(x, av-sd, color='0.2', linestyle=':', linewidth=1)
         if x[0] == 1:
             plt.xscale('log')
         else:
-            plt.ticklabel_format(style='sci', axis='x', scilimits=(-1,1))
+            plt.ticklabel_format(style='sci', axis='x', scilimits=(-1, 1))
 
     for a in ax.flat:
         a.grid(False)
     for a in ax[-1]:
         a.set_xlabel("Iteration number")
 
-    plt.tight_layout(pad=0, w_pad=0.5, h_pad=0.5)
+    # plt.tight_layout(pad=0, w_pad=0.5, h_pad=0.5)
+    plt.tight_layout()
 
     if save:
-        fn = 'TRA-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
+        fn = 'TRA-%s-%s.%s' % (sol.model_type_str, sol.filename, ext)
         save_figure(fig, subfolder='Traces', fname=fn, dpi=dpi)
 
     if draw:
@@ -453,8 +459,8 @@ def plot_KDE(sol, var1, var2, fig=None, ax=None, draw=True, save=False,
     Pass mcmcinv object and 2 variable names as strings
     """
     ext = ['png' if save_as_png else 'pdf'][0]
-    if fig == None or ax == None:
-        fig, ax = plt.subplots(figsize=(3,3))
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=(3, 3))
     MDL = sol.MDL
     if var1 == "R0":
         stoc1 = "R0"
@@ -622,7 +628,6 @@ def plot_summary(sol, save=False, draw=True, save_as_png=False, dpi=None,
     ax2.axvline(1, ls='--', color='C0', zorder=0)
 
     plt.tight_layout()
-    plt.close(fig)
 
     if save:
         fn = '%sSUM-%s-%s.%s'%(fig_nb,sol.model_type_str,sol.filename,ext)
@@ -715,13 +720,17 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None,
         uncer_peaks = 10**sol.MDL.stats()["log_peak_tau"]['95% HPD interval'].T.reshape(len(np.atleast_1d(sol.MDL.stats()["log_peak_tau"]['mean'])),2)
         m_peaks = log_m[[list(log_tau).index(find_nearest(log_tau, peaks[x])) for x in range(len(peaks))]]
         if len(peaks) >= 1:
-            plt.errorbar(peaks, m_peaks*1.2, None, None, color="C3", marker="v", markersize=5, linestyle="", label=r"$\tau_{peak}$")
+            plt.errorbar(peaks, m_peaks*1.2, None, None, color="C3",
+                         marker="v", markersize=5, linestyle="",
+                         label=r"$\tau_{peak}$")
             for i, u in enumerate(uncer_peaks):
                 plt.axvspan(u[0], u[1], alpha=0.2, color="C3")
     except:
         pass
-    plt.axvline(10**sol.MDL.stats()["log_half_tau"]['mean'],color="C0",linestyle=':', label=r"$\tau_{50}$")
-    plt.axvline(10**sol.MDL.stats()["log_mean_tau"]['mean'],color='C2',linestyle='--', label=r"$\bar{\tau}$")
+    plt.axvline(10**sol.MDL.stats()["log_half_tau"]['mean'], color="C0",
+                linestyle=':', label=r"$\tau_{50}$")
+    plt.axvline(10**sol.MDL.stats()["log_mean_tau"]['mean'], color='C2',
+                linestyle='--', label=r"$\bar{\tau}$")
     inter = 10**sol.MDL.stats()["log_half_tau"]['95% HPD interval']
     plt.axvspan(inter[0], inter[1], alpha=0.2, color="C0")
     inter = 10**sol.MDL.stats()["log_mean_tau"]['95% HPD interval']
@@ -729,16 +738,17 @@ def plot_rtd(sol, save=False, draw=True, save_as_png=False, dpi=None,
     plt.axvspan(min(log_tau), min(log_tau)*10, alpha=0.1, color='C7')
     plt.axvspan(max(log_tau)/10, max(log_tau), alpha=0.1, color='C7')
     plt.fill_between(log_tau, bot95, top95, color="C7", alpha=0.2)
-    plt.xlim([10**np.ceil(np.log10(min(log_tau))), 10**np.floor(np.log10(max(log_tau)))])
+    plt.xlim([10**np.ceil(np.log10(min(log_tau))),
+              10**np.floor(np.log10(max(log_tau)))])
     ax.set_xlabel(r'$\tau$ (s)')
     ax.set_ylabel(r'$m$')
     plt.grid(False)
-    plt.legend(fontsize=9, loc=1,labelspacing=0.2, handlelength=1.5)
+    plt.legend(fontsize=9, loc=1, labelspacing=0.2, handlelength=1.5)
     plt.xscale('log')
     plt.yscale('log', nonposy='clip')
     fig.tight_layout()
     if save:
-        fn = 'RTD-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
+        fn = 'RTD-%s-%s.%s'%(sol.model_type_str, sol.filename,ext)
         save_figure(fig, subfolder='RTD', fname=fn, dpi=dpi)
 
     if draw:
@@ -756,11 +766,11 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=None,
     Plots the model deviance trace
     """
     ext = ['png' if save_as_png else 'pdf'][0]
-    fig, ax = plt.subplots(figsize=(4,3))
+    fig, ax = plt.subplots(figsize=(4, 3))
     deviance = sol.MDL.trace('deviance')[:]
     sampler_state = sol.MDL.get_state()["sampler"]
     x = np.arange(sampler_state["_burn"]+1, sampler_state["_iter"]+1, sampler_state["_thin"])
-    plt.plot(x, deviance, "-", color="C3", label="DIC = %d\nBPIC = %d" %(sol.MDL.DIC,sol.MDL.BPIC))
+    plt.plot(x, deviance, "-", color="C3", label="DIC = %d\nBPIC = %d" % (sol.MDL.DIC, sol.MDL.BPIC))
     plt.xlabel("Iteration")
     plt.ylabel("Model deviance")
     plt.legend(numpoints=1, loc="best", fontsize=9)
@@ -768,12 +778,12 @@ def plot_deviance(sol, save=False, draw=True, save_as_png=False, dpi=None,
     if sampler_state["_burn"] == 0:
         plt.xscale('log')
     else:
-        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     fig.tight_layout()
 
     if save:
-        fn = 'MDEV-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
+        fn = 'MDEV-%s-%s.%s'%(sol.model_type_str, sol.filename,ext)
         save_figure(fig, subfolder='ModelDeviance', fname=fn, dpi=dpi)
 
     if draw:
@@ -826,12 +836,12 @@ def plot_logp(sol, save=False, draw=True, save_as_png=False, dpi=None,
     if sampler_state["_burn"] == 0:
         plt.xscale('log')
     else:
-        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0, 0))
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     fig.tight_layout()
 
     if save:
-        fn = 'LOGP-%s-%s.%s'%(sol.model_type_str,sol.filename,ext)
+        fn = 'LOGP-%s-%s.%s'%(sol.model_type_str, sol.filename, ext)
         save_figure(fig, subfolder='LogLikelihood', fname=fn, dpi=dpi)
 
     if draw:
@@ -853,7 +863,7 @@ def save_csv_traces(sol):
     # Decide where to save the csv
     save_where = '/TraceResults/'
     working_path = getcwd().replace("\\", "/")+"/"
-    save_path = working_path + save_where + "%s/"%sol.filename # Add subfolder for the sample
+    save_path = working_path + save_where + "%s/" % sol.filename  # add subfolder for the sample
 
     # Get stochastics and deterministics
 #    sto = MDL.stochastics
@@ -887,7 +897,8 @@ def save_csv_traces(sol):
     print("\nSaving CSV traces in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
-    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' %(sol.model,sol.model_type_str,sol.filename), trace_mat, delimiter=',', header=header, comments="")
+    np.savetxt(save_path+'TRACES_%s-%s_%s.csv' % (sol.model, sol.model_type_str, sol.filename),
+               trace_mat, delimiter=',', header=header, comments="")
 
 
 def save_resul(sol):
@@ -899,7 +910,7 @@ def save_resul(sol):
     sample_name = sol.filename
     save_where = '/Results/'
     working_path = getcwd().replace("\\", "/")+"/"
-    save_path = working_path+save_where+"%s/"%sample_name
+    save_path = working_path+save_where+"%s/" % sample_name
     print("\nSaving csv file in:\n", save_path)
     if not path.exists(save_path):
         makedirs(save_path)
@@ -911,9 +922,10 @@ def save_resul(sol):
     B = []
     headers = []
     keys = sorted(pm.keys())
-    if sol.model in ["CCD", "PDecomp"]:
-        keys += [keys.pop(keys.index("peak_tau"))] # Move to end
-        keys += [keys.pop(keys.index("peak_m"))] # Move to end
+    
+    # if sol.model in ["CCD", "PDecomp"]:
+    #     keys += [keys.pop(keys.index("peak_tau"))] # Move to end
+    #     keys += [keys.pop(keys.index("peak_m"))] # Move to end
 
     keys = [k for k in keys if "_std" not in k]
 
@@ -926,18 +938,18 @@ def save_resul(sol):
 
         if length > 1:
             for i in range(len(A[c])):
-                headers.append(model+"_"+key+"_%d" %(i+tag))
-                headers.append(model+"_"+key+("_%d"%(i+tag))+"_std")
+                headers.append(model+"_"+key+"_%d" % (i+tag))
+                headers.append(model+"_"+key+("_%d" % (i+tag))+"_std")
         else:
-            if (key == "peak_tau")|(key == "peak_m"):
+            if (key == "peak_tau") | (key == "peak_m"):
                 headers.append(model+"_"+key+"_1")
                 headers.append(model+"_"+key+"_1"+"_std")
             else:
                 headers.append(model+"_"+key)
                 headers.append(model+"_"+key+"_std")
 
-    A=flatten(A)
-    B=flatten(B)
+    A = flatten(A)
+    B = flatten(B)
 
     results = [None]*(len(A)+len(B))
     results[::2] = A
@@ -948,20 +960,23 @@ def save_resul(sol):
 
     if sol.model == 'PDecomp':
         tau_ = sol.data["tau"]
-        add = ["%s_tau"%model+"%d"%(i) for i in range(len(tau_))]
+        add = ["%s_tau" % model + "%d" % (i) for i in range(len(tau_))]
         add = ','.join(add) + ','
         headers = add+headers
-        results = np.concatenate((tau_,results))
+        results = np.concatenate((tau_, results))
     headers = "Z_max,Input_c_exponent," + headers
-    results = np.concatenate((np.array([sol.data["Z_max"]]),np.array([sol.c_exp]),results))
-    np.savetxt(save_path+'INV_%s-%s_%s.csv' %(sol.model,model,sample_name), results[None],
-               header=headers, comments='', delimiter=',')
+    results = np.concatenate((np.array([sol.data["Z_max"]]),
+                              np.array([sol.c_exp]), results))
+    np.savetxt(save_path+'INV_%s-%s_%s.csv' % (sol.model, model, sample_name),
+               results[None], header=headers, comments='', delimiter=',')
     vars_ = ["%s"%x for x in MDL.stochastics]+["%s"%x for x in MDL.deterministics]
-    if "zmod" in vars_: vars_.remove("zmod")
-    MDL.write_csv(save_path+'STATS_%s-%s_%s.csv' %(sol.model,model,sample_name), variables=(vars_))
+    if "zmod" in vars_:
+        vars_.remove("zmod")
+    MDL.write_csv(save_path+'STATS_%s-%s_%s.csv' % (sol.model, model, sample_name),
+                  variables=(vars_))
 
 
-def merge_results(sol,files):
+def merge_results(sol, files):
     """
     Merge a batch of csv files to a single one
     """
@@ -972,14 +987,14 @@ def merge_results(sol,files):
     print("\nMerging csv files")
     if not path.exists(save_path):
         makedirs(save_path)
-    dfs = [pd.read_csv(working_path+"/Results/%s/INV_%s-%s_%s.csv" %(f,sol.model,sol.model_type_str,f)) for f in files]
+    dfs = [pd.read_csv(working_path+"/Results/%s/INV_%s-%s_%s.csv" % (f, sol.model, sol.model_type_str, f)) for f in files]
     listed_dfs = [list(d) for d in dfs]
     df_tot = pd.concat(dfs, axis=0)
-    longest = max(enumerate(listed_dfs), key = lambda tup: len(tup[1]))[0]
+    longest = max(enumerate(listed_dfs), key=lambda tup: len(tup[1]))[0]
     df_tot['Sample_ID'] = files
     df_tot.set_index('Sample_ID', inplace=True)
     df_tot = df_tot[dfs[longest].columns]
-    df_tot.to_csv(save_path+"Merged_%s-%s_%s_TO_%s.csv" %(sol.model,sol.model_type_str,files[0],files[-1]))
+    df_tot.to_csv(save_path+"Merged_%s-%s_%s_TO_%s.csv" % (sol.model, sol.model_type_str, files[0], files[-1]))
     print("Batch file successfully saved in:\n", save_path)
 
 

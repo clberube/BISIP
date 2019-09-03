@@ -39,6 +39,7 @@ from __future__ import print_function
 
 #==============================================================================
 # Import PyMC, Numpy, and Cython extension
+import warnings
 from builtins import range
 from past.utils import old_div
 import pymc
@@ -58,9 +59,9 @@ from bisip.utils import var_depth, flatten
 try:
     import lib_dd.decomposition.ccd_single as ccd_single
     import lib_dd.config.cfg_single as cfg_single
-    print('\nCCDtools available')
-except:
-    pass
+except ImportError:
+    ccd_single = None
+    cfg_single = None
 
 import matplotlib as mpl
 mpl.rc_file_defaults()
@@ -105,6 +106,7 @@ def run_MCMC(function, mc_p, save_traces=False, save_where=None):
                    tune_throughout=False)
     return MDL
 
+
 class mcmcinv(object):
     """
     List of models:
@@ -112,7 +114,7 @@ class mcmcinv(object):
                 'Dias'
                 'PDecomp'
                 'Shin'
-                'CCDtools'
+                'CCD'
                 )
     """
 
@@ -155,9 +157,10 @@ class mcmcinv(object):
         sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
 
         Call with all optional arguments:
-        sol = mcmcinv( model='ColeCole', filepath='/Documents/DataFiles/DATA.dat',
-                 mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
-                 debye_poly=4, c_exp = 1.0, keep_traces=False)
+        sol = mcmcinv(model='ColeCole',
+                      filepath='/Documents/DataFiles/DATA.dat',
+                      mcmc=mcmc_params, headers=1, ph_units='mrad', cc_modes=2,
+                      debye_poly=4, c_exp = 1.0, keep_traces=False)
         """
 
         self.model = model
@@ -176,11 +179,22 @@ class mcmcinv(object):
         self.ccdt_last_it = None
         self.filename = split_filepath(self.filepath)
 
+        if model == 'CCD' and ccd_single is None:
+            raise ImportError('BISIP attempted to import ccd_tools but it \n'
+                              'is not installed in this Python environment. \n'
+                              'Install it using `pip install ccd_tools`.')
+
         if model == 'CCD':
             if self.ccd_priors == 'auto':
                 self.ccd_priors = self.get_ccd_priors(config=self.ccdtools_config)[0]
             self.ccdt_last_it = self.get_ccd_priors(config=self.ccdtools_config)[1]
-            print('\nUpdated CCD priors with new data')
+            print('Updated CCD priors with input data.')
+
+        if model != 'PDecomp' and guess_noise:
+            warnings.warn("\nThe guess_noise feature is only supported for \n"
+                          "the Polynomial Decomposition model. Please use \n"
+                          "`guess_noise=False` or `model='PDecomp'`.",
+                          UserWarning)
 
         # self.start()
 
@@ -214,7 +228,6 @@ class mcmcinv(object):
         return priors, ccdt_last_it
 
     def ColeColeModel(self, cc_modes):
-
         """Cole-Cole Bayesian Model
         """
         # Initial guesses
@@ -293,7 +306,7 @@ class mcmcinv(object):
         def NRMSE_i(zmod=zmod, data=self.data['zn']):
             return np.sqrt(np.mean((zmod[1] - data[1])**2))/abs(max(data[1])-min(data[1]))
 
-        #Likelihood
+        # Likelihood
         obs = pymc.Normal('obs', mu=zmod,
                           tau=old_div(1.0, (self.data['zn_err']**2)),
                           value=self.data['zn'], size=(2, len(self.w)),
@@ -517,15 +530,15 @@ class mcmcinv(object):
             self.guess_noise = True
         # Estimating Seigel chargeability
         self.seigle_m = (old_div((self.data['amp'][-1] - self.data['amp'][0]), self.data['amp'][-1]))
-        w = 2*np.pi*self.data['freq'] # Frequencies measured in rad/s
+        w = 2*np.pi*self.data['freq']  # frequencies measured in rad/s
         # Relaxation times associated with the measured frequencies (Debye decomposition only)
         self.w = w
 
         if self.model == 'PDecomp':
-            log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0,w)))-1), np.floor(max(np.log10(old_div(1.0,w)))+1), 50)
-            cond = (log_tau >= min(log_tau)+1)&(log_tau <= max(log_tau)-1)
+            log_tau = np.linspace(np.floor(min(np.log10(old_div(1.0, w)))-1), np.floor(max(np.log10(old_div(1.0, w)))+1), 50)
+            cond = (log_tau >= min(log_tau)+1) & (log_tau <= max(log_tau)-1)
             # Polynomial approximation for the RTD
-            log_taus = np.array([log_tau**i for i in list(reversed(range(0,self.decomp_poly+1)))])
+            log_taus = np.array([log_tau**i for i in list(reversed(range(0, self.decomp_poly+1)))])
             tau_10 = 10**log_tau  # Accelerates sampling
             self.data['tau'] = tau_10  # Put relaxation times in data dictionary
             self.log_taus = log_taus
@@ -579,7 +592,7 @@ class mcmcinv(object):
                            'decomp_polyn': self.decomp_poly,
                            'cc_modes': self.cc_modes}
         self.model_type_str = get_model_type(self)
-        self.var_dict = dict([(x.__name__,x) for x in self.MDL.deterministics] + [(x.__name__,x) for x in self.MDL.stochastics])
+        self.var_dict = dict([(x.__name__, x) for x in self.MDL.deterministics] + [(x.__name__, x) for x in self.MDL.stochastics])
 
         # Get names of parameters for save file
         pm_names = [x for x in sorted(self.var_dict.keys())]
