@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from bisip import mcmcinv
 
 
-model = 'PDecomp'
+model = 'CCD'
 src_path = '/Users/cberube/Repositories/BISIP/data files/SIP-K389170_avg.dat'
 mcmc = {'adaptive': True,
         'nb_chain': 1,
@@ -25,11 +25,12 @@ mcmc = {'adaptive': True,
         'cov_delay': 1000,
         }
 
-sol = mcmcinv(model, src_path, mcmc=mcmc, guess_noise=False)
+sol = mcmcinv(model, src_path, mcmc=mcmc, guess_noise=False, ccdt_lambda=200)
 sol.fit()
 
 sol.plot_rtd()
 sol.plot_fit()
+
 sol.plot_histograms()
 sol.plot_KDE('total_m', 'log_mean_tau')
 sol.plot_traces()

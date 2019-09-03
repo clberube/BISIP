@@ -151,7 +151,8 @@ class mcmcinv(object):
     def __init__(self, model, filepath, mcmc=default_mcmc, headers=1,
                  ph_units='mrad', cc_modes=2, decomp_poly=4, c_exp=1.0,
                  log_min_tau=-3, guess_noise=False, keep_traces=False,
-                 ccdt_priors='auto', ccdt_cfg=None):
+                 ccdt_priors='auto', ccdt_cfg=None, ccdt_lambda=20,
+                 ccdt_norm=10):
         """
         Call with minimal arguments:
         sol = mcmcinv('ColeCole', '/Documents/DataFiles/DATA.dat')
@@ -177,6 +178,8 @@ class mcmcinv(object):
         self.ccd_priors = ccdt_priors
         self.ccdtools_config = ccdt_cfg
         self.ccdt_last_it = None
+        self.ccdt_lambda = ccdt_lambda
+        self.ccdt_norm = ccdt_norm
         self.filename = split_filepath(self.filepath)
 
         if model == 'CCD' and ccd_single is None:
@@ -204,8 +207,8 @@ class mcmcinv(object):
         freq_ccdtools = data['freq'][::-1]
         if config is None:
             config = cfg_single.cfg_single()
-            config['fixed_lambda'] = 20
-            config['norm'] = 10
+            config['fixed_lambda'] = self.ccdt_lambda
+            config['norm'] = self.ccdt_norm
 
         config['frequency_file'] = freq_ccdtools
         config['data_file'] = data_ccdtools
