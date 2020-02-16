@@ -44,7 +44,7 @@ from bisip import mcmcinv
 
 Run an inversion on a data file and visualize the fit results with:
 ```python
-sol = mcmcinv(model='ColeCole', filename='/Documents/DataFiles/DATA.dat')  # initialize the model
+sol = mcmcinv(model='ColeCole', filepath='/Documents/DataFiles/DATA.dat')  # initialize the model
 sol.fit()  # fit the model (run the inversion)
 sol.plot_fit()  # plot the best model against the input data
 ```  
