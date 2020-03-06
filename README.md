@@ -1,3 +1,5 @@
+**Also check out the development repository for [BISIP2](https://github.com/clberube/bisip2), which uses Ensemble MCMC sampling for faster inversions.**  
+
 # **BISIP**
 Fast and robust **B**ayesian **I**nversion of **S**pectral **I**nduced **P**olarization data.
 
@@ -11,7 +13,6 @@ Python 3.7 is not currently supported due to a limitation with PyMC.
 This code is not designed for large-scale production!
 It is best used to learn about the SIP parameters and to evaluate the quality of your laboratory data.
 
-**[Check out the developpement repository for BISIP2](https://github.com/clberube/bisip2)**  
 ![Alt text](screenshots/ExampleFit_K389369.png 'Fit!')
 
 ### 1. Installation
