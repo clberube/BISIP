@@ -11,7 +11,7 @@ Python 3.7 is not currently supported due to a limitation with PyMC.
 This code is not designed for large-scale production!
 It is best used to learn about the SIP parameters and to evaluate the quality of your laboratory data.
 
-**[Latest releases](https://github.com/clberube/BISIP/releases)**  
+**[Check out the developpement repository for BISIP2](https://github.com/clberube/bisip2)**  
 ![Alt text](screenshots/ExampleFit_K389369.png 'Fit!')
 
 ### 1. Installation
