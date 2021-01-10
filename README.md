@@ -5,7 +5,7 @@ BISIP is a fast, robust and open-source inversion program for laboratory spectra
 
 BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better coding practice and improved documentation in 2019. See our original 2017 paper in [Computers & Geosciences](https://doi.org/10.1016/j.cageo.2017.05.001).
 
-![Example](/figures/ExampleFit_K389369)
+![Example](/figures/ExampleFit_K389369.png)
 
 ## Requirements
 - Python 3 (BISIP is developed on Python 3.8)  
