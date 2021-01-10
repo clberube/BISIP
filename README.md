@@ -1,7 +1,9 @@
-# BISIP - Bayesian inversion of spectral induced polarization data
+# BISIP | Bayesian inversion of SIP data
 [![Documentation Status](https://readthedocs.org/projects/bisip/badge/?version=latest)](https://bisip.readthedocs.io/en/latest/?badge=latest)
 
-BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better coding practice and improved documentation. See our original paper in [Computers & Geosciences](doi.org/10.1016/j.cageo.2017.05.001).
+BISIP is a fast, robust and open-source inversion program for laboratory spectral induced polarization (SIP) data. It allows propagation of data uncertainty onto parameters of various empirical SIP models. Additional mechanistic models will be included in the future.
+
+BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better coding practice and improved documentation in 2019. See our original 2017 paper in [Computers & Geosciences](https://doi.org/10.1016/j.cageo.2017.05.001).
 
 ## Requirements
 - Python 3 (BISIP is developed on Python 3.8)  
@@ -16,7 +18,7 @@ Visit https://bisip.readthedocs.io/en/latest/ to consult the full documentation 
 Clone this repository to your computer. Then navigate to the bisip directory. Finally run the setup.py script with Python. The `-f` option forces a reinstall if the package is already present.
 
 ```
-git clone https://github.com/clberube/bisip2
+git clone https://github.com/clberube/bisip
 cd bisip2
 python setup.py install -f
 ```
