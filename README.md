@@ -1,11 +1,10 @@
-# BISIP
+# BISIP - Bayesian inversion of spectral induced polarization data
 [![Documentation Status](https://readthedocs.org/projects/bisip/badge/?version=latest)](https://bisip.readthedocs.io/en/latest/?badge=latest)
 
-## Bayesian inference of spectral induced polarization parameters
 BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better coding practice and improved documentation. See our original paper in [Computers & Geosciences](doi.org/10.1016/j.cageo.2017.05.001).
 
 ## Requirements
-- Python 3 (BISIP is developed on Python 3.7)  
+- Python 3 (BISIP is developed on Python 3.8)  
 - emcee (https://emcee.readthedocs.io/en/stable/)
 - numpy (https://numpy.org/)
 - matplotlib (https://matplotlib.org/)
