@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @Author: cberube
+# @Date:   05-03-2020
+# @Email:  charles@goldspot.ca
+# @Last modified by:   charles
+# @Last modified time: 2020-03-12T22:10:53-04:00
 # -*- coding: utf-8 -*-
 """
 Created on Fri Sep 29 16:18:50 2017
@@ -6,60 +13,41 @@ Created on Fri Sep 29 16:18:50 2017
 """
 
 from setuptools import setup, find_packages
-
-from distutils.core import setup
 from distutils.extension import Extension
-from distutils.command.sdist import sdist as _sdist
-import numpy
-
-class sdist(_sdist):
-    def run(self):
-        # Make sure the compiled Cython files in the distribution are up-to-date
-        from Cython.Build import cythonize
-        cythonize(['bisip/cython_funcs.pyx'])
-        _sdist.run(self)
-
 try:
-    from Cython.Distutils import build_ext
+    import numpy
 except ImportError:
-    use_cython = False
-else:
-    use_cython = True
+    from setuptools import dist
+    dist.Distribution().fetch_build_eggs(['numpy'])
+    import numpy
 
-cmdclass = { }
-ext_modules = [ ]
 
-cmdclass['sdist'] = sdist
+SRC_DIR = 'src'
+PACKAGES = find_packages(where=SRC_DIR)
+PREREQ = ['setuptools>=18.0', 'cython']
+REQUIRES = ['emcee', 'corner', 'matplotlib', 'tqdm']
 
-if use_cython:    
-    ext_modules += [
-        Extension("bisip.cython_funcs", [ "bisip/cython_funcs.pyx" ]),
-    ]
-    cmdclass.update({ 'build_ext': build_ext })
-    print("up")
-else:
-    ext_modules += [
-        Extension("bisip.cython_funcs", [ "bisip/cython_funcs.c" ],
-                  include_dirs=[numpy.get_include()]),
-    ]
-    print("down")
+cmdclass = {}
+EXT_MODULES = [Extension("bisip.cython_funcs",
+                         sources=["src/bisip/cython_funcs.pyx"])]
 
 setup(
-  name = 'bisip',
-  packages=['bisip',], # this must be the same as the name above
-  py_models=['models','invResults','GUI'],
-  version = '0.0.15',
-  license = 'MIT',
-  install_requires=['pymc'],
-  description = 'Bayesian inversion of SIP data',
-  long_description = 'README.md',
-  author = 'Charles L. Berube',
-  author_email = 'cberube@ageophysics.com',
-  url = 'https://github.com/clberube/BISIP', # use the URL to the github repo
-#  download_url = 'https://github.com/clberube/BISIP/archive/0.0.1.tar.gz', # I'll explain this in a second
-  keywords = ['stochastic inversion','spectral induced polarization','mcmc'], # arbitrary keywords
-  classifiers = [],
-  cmdclass = cmdclass,
-  ext_modules = ext_modules,
-  include_dirs=[numpy.get_include()],
+    name='bisip',
+    setup_requires=PREREQ,
+    packages=PACKAGES,
+    package_dir={"": SRC_DIR},
+    version='0.0.1',
+    license='MIT',
+    install_requires=REQUIRES,
+    description='Bayesian inversion of SIP data',
+    long_description='README.md',
+    author='Charles L. Berube',
+    author_email='charleslberube@gmail.com',
+    url='https://github.com/clberube/bisip2',
+    keywords=['stochastic inversion', 'spectral induced polarization', 'mcmc'],
+    classifiers=[],
+    cmdclass=cmdclass,
+    ext_modules=EXT_MODULES,
+    include_dirs=[numpy.get_include()],
+    include_package_data=True,
 )

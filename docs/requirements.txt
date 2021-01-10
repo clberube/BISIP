@@ -1,0 +1,8 @@
+numpy
+matplotlib
+emcee
+corner
+cython
+nbsphinx
+ipython
+jupyter_client

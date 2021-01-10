@@ -1,9 +1,11 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 26 13:25:48 2015
+# @Author: cberube
+# @Date:   03-03-2020
+# @Email:  charles@goldspot.ca
+# @Last modified by:   charles
+# @Last modified time: 2020-03-06T09:03:28-05:00
 
-@author: Charles
-"""
 
 try:
     from setuptools import setup
@@ -16,6 +18,7 @@ from Cython.Build import cythonize
 import numpy
 
 setup(
-    ext_modules=cythonize("bisip/cython_funcs.pyx"),
-    include_dirs=[numpy.get_include()]
+    ext_modules=cythonize("./src/bisip/cython_funcs.pyx"),
+    include_dirs=[numpy.get_include()],
+    package_dir={'': 'src'},
 )
