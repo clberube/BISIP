@@ -17,6 +17,8 @@ jobs:
 
 before_install:
   - pip3 install --upgrade pip  # all three OSes agree about 'pip3'
+  - pip3 install -U pytest
+  - pip3 install -U codecov
 
 install:
   - pip3 install -r requirements.txt
