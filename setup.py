@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Author: cberube
 # @Date:   05-03-2020
-# @Email:  charles@goldspot.ca
+# @Email:  charles.lafreniere-berube@polymtl.ca
 # @Last modified by:   charles
 # @Last modified time: 2020-03-12T22:10:53-04:00
 # -*- coding: utf-8 -*-
