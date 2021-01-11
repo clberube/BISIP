@@ -5,6 +5,7 @@ python:
 before_install:
   - "pip install -U pip"
   - "python setup.py install"
+  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
 
 # install:
   #- pip install -r requirements
