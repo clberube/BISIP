@@ -7,9 +7,9 @@
 # @Last modified time: 2021-01-11 09:01:93
 
 
-from .test_module import run_test
+from .test_module import test_run
 
 
 __all__ = (
-    'run_test',
+    'test_run',
 )

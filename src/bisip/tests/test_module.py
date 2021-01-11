@@ -17,7 +17,7 @@ import bisip
 from bisip import PolynomialDecomposition, PeltonColeCole, Dias2000
 
 
-def run_test(dias=True, colecole=True, debye=True):
+def test_run(dias=True, colecole=True, debye=True):
 
     fp = f'data/SIP-K389175.dat'
     fp = os.path.join(os.path.dirname(bisip.__file__), fp)
@@ -72,26 +72,26 @@ def run_test(dias=True, colecole=True, debye=True):
     print('Testing plotlib with last results')
 
     fig = model.plot_data(feature='phase')
-    plt.close()
+    plt.close(fig)
     # plt.show(block=False)
 
     fig = model.plot_traces()
-    plt.close()
+    plt.close(fig)
     # fig.savefig('./docs/tutorials/figures/ex1_traces.png', dpi=144, bbox_inches='tight')
     # plt.show(block=False)
 
     fig = model.plot_histograms(chain)
     # fig.savefig('./figures/histograms.png', dpi=144, bbox_inches='tight')
-    plt.close()
+    plt.close(fig)
 
     fig = model.plot_fit(chain)
     # fig.savefig('./figures/fitted.png', dpi=144, bbox_inches='tight')
     # plt.show(block=False)
-    plt.close()
+    plt.close(fig)
 
     try:
         fig = model.plot_corner(chain)
-        plt.close()
+        plt.close(fig)
         # fig.savefig('./figures/corner.png', dpi=144, bbox_inches='tight')
     except ImportError:
         warnings.warn('The `corner` package was not found. Install it with '

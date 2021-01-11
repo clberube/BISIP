@@ -14,7 +14,7 @@ from .models import Dias2000
 from .models import Shin2015
 from .plotlib import plotlib
 from .data import DataFiles
-from .test import run_test
+from .tests import test_run
 
 
 __all__ = (
@@ -24,6 +24,6 @@ __all__ = (
     'Dias2000',
     'Shin2015',
     'plotlib',
-    'run_test',
+    'test_run',
     'DataFiles',
 )
