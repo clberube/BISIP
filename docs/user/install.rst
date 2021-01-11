@@ -28,15 +28,15 @@ TODO: Add BISIP to conda-forge.
 From source
 -----------
 
-BISIP is developed on `GitHub <https://github.com/clberube/bisip2>`_.
+BISIP is developed on `GitHub <https://github.com/clberube/bisip>`_.
 Clone the repository to your computer.
 Then navigate to the bisip directory.
 Finally run the setup.py script with Python.
 
 .. code-block:: bash
 
-  git clone https://github.com/clberube/bisip2
-  cd bisip2
+  git clone https://github.com/clberube/bisip
+  cd bisip
   python setup.py install -f
 
 Testing
@@ -46,9 +46,9 @@ To test if everything was installed correctly, do the following:
 
 .. code-block:: python
 
-  # Last tested on Python 3.7.3 (default, Mar 27 2019, 16:54:48)
+  # Last tested on Python 3.8.3 (default, May 19 2020, 13:54:14)
   import bisip
-  bisip.run_test()
+  bisip.test_run()
 
 If everything is OK the code will load a data file and perform inversion of a
 data file using various models. Then it will print the best parameters and
