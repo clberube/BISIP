@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: cberube
+# @Author: clberube
 # @Date:   12-03-2020
-# @Email:  charles@goldspot.ca
+# @Email:  charles.lafreniere-berube@polymtl.ca
 # @Last modified by:   charles
 # @Last modified time: 2020-03-18T16:01:58-04:00
 
