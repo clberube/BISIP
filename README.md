@@ -1,7 +1,7 @@
 # BISIP | Bayesian inversion of SIP data
 [![Documentation Status](https://readthedocs.org/projects/bisip/badge/?version=latest)](https://bisip.readthedocs.io/en/latest/?badge=latest)
 
-BISIP is a fast, robust and open-source inversion program for laboratory spectral induced polarization (SIP) data. It allows propagation of data uncertainty onto parameters of various empirical SIP models. Mechanistic models will be included in the future.
+BISIP is a fast, robust and open-source inversion program for laboratory spectral induced polarization (SIP) data. It allows the evaluation of SIP parameter uncertainty by propagating measurement errors through the inversion process. Dias, Cole-Cole, Debye and Warburg decomposition schemes are currently implemented. Additional models will be included in the future.
 
 In 2019 BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better code practice and improved [documentation](https://bisip.readthedocs.io/en/latest/). See our original [2017 paper](https://doi.org/10.1016/j.cageo.2017.05.001) in Computers & Geosciences.
 
