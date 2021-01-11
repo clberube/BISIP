@@ -20,7 +20,7 @@ In 2019 BISIP was re-written from the ground up with a powerful ensemble MCMC sa
 - [corner](https://corner.readthedocs.io/en/latest/): enables beautiful corner plots
 
 ## Documentation
-Visit https://bisip.readthedocs.io/en/latest/ to consult the full documentation including API docs, tutorials and examples.
+Visit https://bisip.readthedocs.io/en/latest/ for the full documentation including API docs, tutorials and examples.
 
 ## Installation
 Clone this repository to your computer. Then navigate to the bisip directory. Finally run the setup.py script with Python. The `-f` option forces a reinstall if a previous version of the package was already installed.
