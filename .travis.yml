@@ -22,7 +22,7 @@ before_install:
 
 install:
   - pip3 install -r requirements.txt
-  - pip3 install .
+  - python3 setup.py install -f
 
 # 'python' points to Python 2.7 on macOS but points to Python 3.8 on Linux and Windows
 # 'python3' is a 'command not found' error on Windows but 'py' works on Windows only
