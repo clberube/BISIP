@@ -25,7 +25,7 @@ Visit https://bisip.readthedocs.io for the full documentation including API docs
 ## Installation
 Clone this repository to your computer. Then navigate to the bisip directory. Finally run the setup.py script with Python. The `-f` option forces a reinstall if a previous version of the package was already installed.
 
-```console
+```zsh
 $ git clone https://github.com/clberube/bisip
 $ cd bisip
 $ python setup.py install -f
