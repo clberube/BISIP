@@ -10,20 +10,24 @@ In 2019 BISIP was re-written from the ground up with a powerful ensemble MCMC sa
 </p>
 
 ## Requirements
-- Python 3 (BISIP is developed on Python 3.8)  
-- emcee (https://emcee.readthedocs.io/en/stable/)
-- numpy (https://numpy.org/)
-- matplotlib (https://matplotlib.org/)
+- [Python 3.6+](https://www.python.org/downloads/)
+- [emcee](https://emcee.readthedocs.io/en/stable/)
+- [NumPy](https://numpy.org/)
+- [matplotlib](https://matplotlib.org/)
+
+## Optional dependencies
+- [tqdm](https://tqdm.github.io/): enables progress bars
+- [corner](https://corner.readthedocs.io/en/latest/): enables beautiful corner plots
 
 ## Documentation
 Visit https://bisip.readthedocs.io/en/latest/ to consult the full documentation including API docs, tutorials and examples.
 
 ## Installation
-Clone this repository to your computer. Then navigate to the bisip directory. Finally run the setup.py script with Python. The `-f` option forces a reinstall if the package is already present.
+Clone this repository to your computer. Then navigate to the bisip directory. Finally run the setup.py script with Python. The `-f` option forces a reinstall if a previous version of the package was already installed.
 
 ```
 git clone https://github.com/clberube/bisip
-cd bisip2
+cd bisip
 python setup.py install -f
 ```
 
