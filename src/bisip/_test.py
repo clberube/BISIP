@@ -39,11 +39,9 @@ def run_test(dias=True, colecole=True, debye=True):
         print('Testing Dias model')
         model = Dias2000(fp, nwalkers=32, nsteps=2000)
         start = np.vstack([[1.0, 0.25, -10, 5, 0.5] for _ in range(32)])
-        model.p0 = start + 1e-1*start*(np.random.rand(*start.shape) - 1)
+        start += 1e-1*start*(np.random.rand(*start.shape) - 1)
         # Update parameter boundaries inplace
-        # model.params.update(a0=[-2, 2])
-        model.fit()
-
+        model.fit(p0=start)
         chain = model.get_chain(discard=1000, thin=1, flat=True)
         # Get the mean parameter values and their std
         # discarding the first 1000 steps (burn-in)

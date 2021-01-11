@@ -13,8 +13,8 @@ from .models import PeltonColeCole
 from .models import Dias2000
 from .models import Shin2015
 from .plotlib import plotlib
-from .test import run_test
 from .data import DataFiles
+from ._test import run_test
 
 
 __all__ = (
