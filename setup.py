@@ -24,7 +24,7 @@ PACKAGES = find_packages(where=SRC_DIR)
 PREREQ = ['setuptools>=18.0', 'cython', 'numpy']
 
 thelibFolder = os.path.dirname(os.path.realpath(__file__))
-requirementPath = thelibFolder + '/requirements'
+requirementPath = thelibFolder + '/requirements.txt'
 REQUIRES = []  # To populate by reading the requirements file
 if os.path.isfile(requirementPath):
     with open(requirementPath) as f:

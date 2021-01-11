@@ -2,8 +2,11 @@ language: python
 python:
   - "3.8"
 # command to install dependencies
-install:
-  python setup.py install
+before_install:
+  - "pip install -U pip"
+  - "python setup.py install"
+
+# install:
   #- pip install -r requirements
   #- pip install .
 # command to run tests
