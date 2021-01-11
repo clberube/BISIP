@@ -4,8 +4,7 @@ python:
 # command to install dependencies
 before_install:
   - "pip install -U pip"
-  - "python setup.py install"
-  - "export PYTHONPATH=$PYTHONPATH:$(pwd)"
+  - "python setup.py install --user"
 
 # install:
   #- pip install -r requirements
