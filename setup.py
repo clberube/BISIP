@@ -6,12 +6,9 @@
 # @Last modified by:   charles
 # @Last modified time: 2020-03-12T22:10:53-04:00
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Sep 29 16:18:50 2017
 
-@author: Charles
-"""
 
+import os
 from setuptools import setup, find_packages
 from distutils.extension import Extension
 try:
