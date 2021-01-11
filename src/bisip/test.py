@@ -98,3 +98,6 @@ def run_test(dias=True, colecole=True, debye=True):
 
     print('All tests passed. Press ctrl+C or close figure windows to exit.')
     plt.show()
+    
+    
+run_test()
