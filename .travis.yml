@@ -7,4 +7,4 @@ install:
   #- pip install -r requirements
   #- pip install .
 # command to run tests
-script: pytest ./src/bisip/test.py
+script: pytest
