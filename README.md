@@ -15,7 +15,7 @@ In 2019 BISIP was re-written from the ground up with a powerful ensemble MCMC sa
 - [NumPy](https://numpy.org/)
 - [matplotlib](https://matplotlib.org/)
 
-## Optional dependencies
+### Optional dependencies
 - [tqdm](https://tqdm.github.io/): enables progress bars
 - [corner](https://corner.readthedocs.io/en/latest/): enables beautiful corner plots
 
