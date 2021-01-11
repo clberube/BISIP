@@ -24,8 +24,14 @@ except ImportError:
 
 SRC_DIR = 'src'
 PACKAGES = find_packages(where=SRC_DIR)
-PREREQ = ['setuptools>=18.0', 'cython']
-REQUIRES = ['emcee', 'corner', 'matplotlib', 'tqdm']
+PREREQ = ['setuptools>=18.0', 'cython', 'numpy']
+
+thelibFolder = os.path.dirname(os.path.realpath(__file__))
+requirementPath = thelibFolder + '/requirements'
+REQUIRES = []  # To populate by reading the requirements file
+if os.path.isfile(requirementPath):
+    with open(requirementPath) as f:
+        REQUIRES = f.read().splitlines()
 
 cmdclass = {}
 EXT_MODULES = [Extension("bisip.cython_funcs",
@@ -36,7 +42,7 @@ setup(
     setup_requires=PREREQ,
     packages=PACKAGES,
     package_dir={"": SRC_DIR},
-    version='0.0.1',
+    version='1.1.1',
     license='MIT',
     install_requires=REQUIRES,
     description='Bayesian inversion of SIP data',
