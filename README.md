@@ -3,11 +3,11 @@
 
 BISIP is a fast, robust and open-source Python program for bayesian inversion of spectral induced polarization (SIP) data. It allows the evaluation of SIP parameters and their uncertainties by propagating measurement errors through the inversion process. Dias, Cole-Cole, Debye and Warburg decomposition schemes are currently implemented. Additional models will be included in the future.
 
+In 2019 BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better code practice and improved [documentation](https://bisip.readthedocs.io/en/latest/). See our original [2017 paper](https://doi.org/10.1016/j.cageo.2017.05.001) in Computers & Geosciences.
+
 <p align="center">
   <img src="/figures/ExampleFit_K389369.png" width="50%">
 </p>
-
-In 2019 BISIP was re-written from the ground up with a powerful ensemble MCMC sampler, better code practice and improved [documentation](https://bisip.readthedocs.io/en/latest/). See our original [2017 paper](https://doi.org/10.1016/j.cageo.2017.05.001) in Computers & Geosciences.
 
 ## Requirements
 - [Python 3.6+](https://www.python.org/downloads/)
