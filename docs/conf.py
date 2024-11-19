@@ -29,7 +29,7 @@ copyright = '2020, Charles L. Bérubé'
 author = 'Charles L. Bérubé'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '1.2.1'
 
 
 # -- General configuration ---------------------------------------------------
