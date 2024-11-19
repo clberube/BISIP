@@ -6,3 +6,4 @@ cython
 nbsphinx
 ipython
 jupyter_client
+sphinx-rtd-theme
